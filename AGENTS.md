@@ -196,6 +196,8 @@ The gate (`checker/gen_verified.mjs`) rejects a file unless all of these hold:
 - `set_option` is allowed only as `set_option maxHeartbeats N` or `set_option maxRecDepth N`.
 - None of these words appear anywhere in the file, **including comments**: `sorry`, `admit`, `native_decide`, `axiom`, `unsafe`, `macro`, `macro_rules`, `syntax`, `notation`, `infix`, `infixl`, `infixr`, `prefix`, `postfix`, `elab`, `elab_rules`, `declare_syntax_cat`, `initialize`, `builtin_initialize`, `run_cmd`, `run_elab`, `run_meta`, `attribute`, `instance`, `implemented_by`, `extern`, `csimp`, `export`, `local`, `scoped`, `private`, `opaque`, `partial`, `deriving`, `IO`, `unsafeCast`, `reduceBool`, `ofReduceBool`, `trustCompiler`, `section`, `debug`, `skipKernelTC`.
 
+- These fragments appear nowhere, **not even inside a longer name or a comment**: `IO`, `unsafe`, `Unsafe`, `elab`, `Elab`, `_tac`, `simproc`, `eval%`, `_root_`, `Meta`, `TacticM`, `CoreM`, `CommandM`, `implemented`, `extern`, `reduceBool`, `include_str`, `declare_`, `register_`, `initialize`, `System`, `Process`, `FilePath`, `writeModule`, `Environment`. (They are the ways Lean code can run programs during checking. Proofs never need them.)
+
 Then Lean decides. Everything must compile, `main` may depend only on Lean's three standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and the whole environment is re-checked by Lean's kernel checker.
 
 ## Files you must not touch

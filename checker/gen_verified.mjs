@@ -17,8 +17,16 @@ const FORBIDDEN = ["sorry", "admit", "native_decide", "axiom", "unsafe", "macro"
   "ofReduceBool", "trustCompiler", "section", "debug", "skipKernelTC"];
 const IMPORT_OK = /^import (Mathlib(\.[A-Za-z0-9_.]+)?|OpenConjecture\.Collatz\.(Basic|Lemmas)|OpenConjecture\.Collatz\.(Proofs|Proposals)\.[A-Za-z0-9_]+)$/;
 
+// Fragments banned anywhere, even inside longer names (e.g. _root_.IO, unsafeBaseIO, by_elab,
+// run_tac, simproc, eval%): these are the ways Lean code can run programs while it is being
+// checked, which could tamper with the judge. Proofs never need them.
+const FORBIDDEN_FRAGMENTS = ["IO", "unsafe", "Unsafe", "elab", "Elab", "_tac", "simproc", "eval%", "_root_", "Meta",
+  "TacticM", "CoreM", "CommandM", "implemented", "extern", "reduceBool", "include_str", "declare_", "register_",
+  "initialize", "System", "Process", "FilePath", "writeModule", "Environment"];
+
 function commonChecks(where, src) {
   if (/["`]/.test(src)) fail(`${where}: string literals and backticks are not allowed`);
+  for (const w of FORBIDDEN_FRAGMENTS) if (src.includes(w)) fail(`${where}: forbidden text "${w}" (not allowed anywhere, even inside a longer name or a comment)`);
   if (/@\[/.test(src)) fail(`${where}: attributes (@[...]) are not allowed`);
   if (/(^|[^A-Za-z0-9_'.])#[A-Za-z_]/.test(src)) fail(`${where}: # commands are not allowed`);
   for (const w of FORBIDDEN) if (new RegExp(`(^|[^A-Za-z0-9_'.])${w}($|[^A-Za-z0-9_'])`).test(src)) fail(`${where}: forbidden word "${w}"`);
