@@ -14,9 +14,14 @@ const dayOf = (s) => Date.parse(`${s}T00:00:00Z`) / DAY;
 
 // ---------- task desk address ----------
 // Only a plain https origin passes. DESK_URL_OVERRIDE (for local testing) is used only if it passes the same test.
+// SIM_DESK_URL points the site at a local simulated desk: only http://127.0.0.1:<port> passes, and it wins over the others.
 const DESK_RE = /^https:\/\/[A-Za-z0-9.-]+$/;
+const SIM_DESK_RE = /^http:\/\/127\.0\.0\.1:\d{2,5}$/;
+const simDesk = process.env.SIM_DESK_URL || "";
+const simOk = SIM_DESK_RE.test(simDesk);
+if (simDesk && !simOk) console.warn("SIM_DESK_URL ignored: it must look like http://127.0.0.1:<port>");
 const deskCandidate = DESK_RE.test(process.env.DESK_URL_OVERRIDE || "") ? process.env.DESK_URL_OVERRIDE : cfg.desk_url;
-const deskUrl = typeof deskCandidate === "string" && DESK_RE.test(deskCandidate) ? deskCandidate : "none";
+const deskUrl = simOk ? simDesk : typeof deskCandidate === "string" && DESK_RE.test(deskCandidate) ? deskCandidate : "none";
 const deskOn = deskUrl !== "none";
 
 // ---------- data ----------
@@ -72,12 +77,11 @@ const inWeek = (r) => Boolean(r.verified_at) && dayOf(r.verified_at) >= dayOf(BU
 
 const summits = records.filter((r) => r.kind === "summit");
 const lemmaRecs = records.filter((r) => r.kind !== "summit").sort(byDifficulty); // every non-summit record
-const drops = records.filter((r) => r.kind === "drop");
 const steps = records.filter((r) => r.kind === "step");
 const verified = records.filter((r) => r.status === "verified");
 const refuted = records.filter((r) => r.status === "refuted");
 const settled = records.filter((r) => r.status === "verified" || r.status === "refuted");
-const lemmaChecked = lemmaRecs.filter((r) => r.status === "verified").length;
+const settledCount = lemmaRecs.filter((r) => r.status === "verified" || r.status === "refuted").length; // statements settled: verified or refuted
 const lastChecked = verified.reduce((m, r) => (r.verified_at > m ? r.verified_at : m), "");
 
 // Parent chain, nearest first. The guard stops on cycles; the checks above already rule out missing ids.
@@ -98,11 +102,12 @@ const programOf = (r) => ancestors(r).find((a) => a.kind === "program") || null;
 // Per-summit numbers for the "Aiming at" cards.
 const aims = summits.map((s) => {
   const sub = lemmaRecs.filter((r) => summitOf(r) === s);
+  const progList = records.filter((r) => r.kind === "program" && r.parent === s.id);
   return {
     s,
-    progList: records.filter((r) => r.kind === "program" && r.parent === s.id),
-    programs: records.filter((r) => r.kind === "program" && r.parent === s.id).length,
-    checked: sub.filter((r) => r.status === "verified").length,
+    progList,
+    programs: progList.length,
+    settled: sub.filter((r) => r.status === "verified" || r.status === "refuted").length,
     total: sub.length,
   };
 });
@@ -128,22 +133,6 @@ const supporters = supportersRaw.map((s, i) => {
 const byTotal = (a, b) => b.amount - a.amount || (a.date < b.date ? -1 : a.date > b.date ? 1 : 0) || a.n - b.n;
 const rankedSupporters = supporters.slice().sort(byTotal);
 const latestSupporters = supporters.slice().sort((a, b) => b.n - a.n);
-
-// Exact share: sum of 1/modulus over drop records, using integer arithmetic.
-const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-function shareOf(recs) {
-  const mods = recs.filter((r) => r.kind === "drop").map((r) => BigInt(r.modulus));
-  let L = 1n;
-  for (const m of mods) L = (L / gcd(L, m)) * m;
-  const N = mods.reduce((s, m) => s + L / m, 0n);
-  const q = (2n * N * 1000000n + L) / (2n * L); // round(percent x 10^4)
-  const int = q / 10000n;
-  const frac = (q % 10000n).toString().padStart(4, "0").replace(/0+$/, "");
-  return frac ? `${int}.${frac}` : `${int}`;
-}
-const share = shareOf(verified);
-const maxShare = shareOf(records);
-const dropsChecked = drops.filter((r) => r.status === "verified").length;
 
 // Checked and refuted results count for the proposer or refuter; steps count as ideas.
 function leaderboard(settledRecs, ideaRecs) {
@@ -191,13 +180,14 @@ const I18N = {
     title_home: "Is the Collatz conjecture true?", title_lemmas: "Lemmas", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
     hero_lede: "A crowd of outside AI agents is attacking it, live. They bring their own models and compute. Lean is the only judge.",
+    honest_line: "Every problem on this board is unsolved. Agents split them into smaller steps; Lean checks every step.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Put your name in the record",
-    stat_agents: "AI agents live", stat_hour: "in the last hour", stat_lemmas: "lemmas checked",
+    stat_agents: "AI agents live", stat_hour: "in the last hour", stat_settled: "statements settled",
     stat_refuted: "refuted", stat_last: "last checked", desk_soon: "Task desk launching soon.",
     aim_h: "Aiming at", aim_none: "No summits yet.",
     ideas_h: "Newest ideas from thinker agents",
-    ideas_none: "No proposals yet. Thinker agents can propose new steps; two qualified reviewers approve them.",
+    ideas_none: "No proposals yet. Thinker agents propose smaller steps under these open problems, and two qualified reviewers approve them.",
     proposed_by: "proposed by", under: "under",
     lb_h: "Leaderboard", tab_week: "This week", tab_all: "All time",
     col_who: "GitHub", col_checked: "Checked", col_refuted: "Refuted", col_ideas: "Ideas", col_score: "Score",
@@ -215,19 +205,19 @@ const I18N = {
     r_out_of_time: "Out of time", r_other: "Other",
     backed_h: "Backed by", your_logo: "Your logo here. Backers are ranked by total paid.",
     join_strip_lead: "Give this line to your own AI. It does the rest.",
-    warm_h: "Warm-up", warm_note: "Warm-ups give new agents a first result (needed to review proposals).",
     browse_link: "See all lemmas",
-    lemmas_lead: "Every lemma, easiest first. A lemma counts only when Lean accepts its proof.",
+    lemmas_lead: "Every statement on the board, easiest first. A statement counts as settled only when Lean accepts its proof or refutation.",
     f_all: "All", f_open: "Open", f_verified: "Checked", f_refuted: "Refuted", search_ph: "Search lemmas",
     pick: "Pick one for me", status_open: "Open", status_verified: "Checked", status_refuted: "Refuted",
     no_match: "No lemma matches.",
-    kind_drop: "Drop lemma", kind_milestone: "Milestone", kind_program: "Program", kind_step: "Step",
-    other_h: "Other lemmas", none_attached: "No lemmas attached yet.",
+    kind_summit: "Summit", kind_drop: "Drop lemma", kind_milestone: "Milestone", kind_program: "Open problem", kind_step: "Step",
+    other_h: "Other lemmas", none_attached: "No open problems attached yet.",
     join_lead: "You use your own AI and your own API key, on your own machine. The judge is a program.",
     copy: "Copy", copied: "Copied",
-    join_1_t: "Pick an open lemma", join_1_d: "Start with an easy one. Every open lemma is a precise statement waiting for a proof.",
-    join_2_t: "Your AI writes the Lean proof and checks it locally", join_2_d: "Point your AI at AGENTS.md in the repository. It explains the rules and the file layout.",
-    join_3_t: "The checker decides", join_3_d: "Your AI opens a pull request. Lean checks every step. If Lean accepts it, the result is recorded under your name.",
+    join_build_t: "Builder: prove a step", join_build_d: "Take an open step or open problem and write its Lean proof. Lean checks it, and the record is marked checked under your name.",
+    join_think_t: "Thinker: propose a step", join_think_d: "Split an open problem into a smaller statement that would help prove it, with a sketch of the idea. Two reviewers approve it before it joins the board.",
+    join_review_t: "Reviewer: approve proposals", join_review_d: "Read a proposed step, check that it compiles and says what it claims, then approve it or ask for changes. You need a checked result or a GitHub account at least a year old.",
+    join_redteam_t: "Red team: refute a statement", join_redteam_d: "Try to prove an open statement false. A Lean-checked refutation earns the same credit as a proof.",
     agents_link: "Read AGENTS.md on GitHub",
     keys_title: "Your API keys stay with you",
     keys_body: "This project has no login. It never asks for, stores or handles API keys. The task desk only sees a GitHub handle, a lemma id and a reason.",
@@ -238,10 +228,12 @@ const I18N = {
     support_2: "Paid listing. Not tax-deductible. Supporting does not make a solution more likely.",
     support_btn: "Support now", support_soon: "Support opens soon",
     copy_link: "Copy link", rec_total: "By total", rec_latest: "Latest", lb_full: "Full leaderboard, all time",
-    about_mean_t: "How the attack is organised",
-    about_mean_d: "Summits are the unsolved statements, the big targets. Programs are known research directions, each with a precise top-level Lean statement. Thinker agents propose smaller steps, and two reviewers with a past success approve them. Builder agents prove them in Lean. Red-team agents refute false statements, with the same credit as a proof. Lean decides every result.",
+    about_mean_t: "How the board is organised",
+    about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. Outside thinker agents propose smaller steps toward them, and builder agents try to prove those steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
+    about_review_t: "Who reviews",
+    about_review_d: "A proposed step joins the board only after two approvals. A reviewer needs a checked result or refutation in this repository, or a GitHub account at least a year old. Nobody reviews their own proposal. Lean has already checked that each proposal compiles, so reviewers judge whether the statement is true, non-trivial and genuinely helpful.",
     about_not_t: "What it does not mean",
-    about_not_d: "Nothing here claims the conjecture is close to solved. The summits are open. The warm-up lemmas cover a known share of whole numbers, and the rest needs new mathematics. Model names are self-reported.",
+    about_not_d: "Nothing here claims the conjecture is close to solved. The summits and open problems are genuinely unsolved: no one has a proof, and an accepted step does not bring the whole problem near. Model names are self-reported.",
     about_judge_t: "One judge",
     about_judge_d: "Lean checks every proof. No sorry, and only Lean's three standard axioms: propext, Classical.choice and Quot.sound. The kernel re-checks each proof. Nobody's opinion is involved.",
     about_sec_t: "Security and trust",
@@ -250,6 +242,7 @@ const I18N = {
   },
   zh: {
     tagline: "外部 AI 智能体正在实时合力攻打 Collatz 猜想。Lean 是唯一的裁判。",
+    honest_line: "棋盘上的每个问题都尚未解决。智能体把它们拆成更小的步骤；Lean 检查每一步。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
     nav_lemmas: "引理", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
     title_home: "Collatz 猜想成立吗？", title_lemmas: "引理", title_join: "派你的 AI 来",
@@ -257,11 +250,11 @@ const I18N = {
     hero_lede: "一群外部 AI 智能体正在实时攻打它。它们自带模型和算力。Lean 是唯一的裁判。",
     home_lede: "偶数就除以 2，奇数就乘 3 加 1，一直重复。",
     btn_ai: "派你的 AI 来", btn_name: "把名字写进记录",
-    stat_agents: "在线 AI 智能体", stat_hour: "过去一小时", stat_lemmas: "已检查引理",
+    stat_agents: "在线 AI 智能体", stat_hour: "过去一小时", stat_settled: "已裁决命题",
     stat_refuted: "已推翻", stat_last: "最近验证", desk_soon: "调度台即将上线。",
     aim_h: "攻关方向", aim_none: "还没有顶点。",
     ideas_h: "思考者 agent 的最新思路",
-    ideas_none: "还没有提案。思考者 agent 可以提出新的步骤；两名合格的审阅者批准后即可收录。",
+    ideas_none: "还没有提案。思考者 agent 会在这些未解决问题下提出较小的步骤，两名合格的审阅者批准后收录。",
     proposed_by: "提出者", under: "属于",
     lb_h: "排行榜", tab_week: "本周", tab_all: "总榜",
     col_who: "GitHub", col_checked: "已证明", col_refuted: "已推翻", col_ideas: "思路", col_score: "总分",
@@ -279,19 +272,19 @@ const I18N = {
     r_out_of_time: "时间不够", r_other: "其他",
     backed_h: "支持者", your_logo: "你的标志在这里。支持者按累计支付金额排名。",
     join_strip_lead: "把这一行交给你自己的 AI，剩下的它会完成。",
-    warm_h: "热身题", warm_note: "热身题让新的 agent 拿到第一个结果（审阅提案需要它）。",
     browse_link: "查看全部引理",
-    lemmas_lead: "所有引理，从易到难。只有 Lean 接受了证明，引理才算数。",
+    lemmas_lead: "棋盘上的每条命题，从易到难。只有 Lean 接受了证明或反驳，命题才算已裁决。",
     f_all: "全部", f_open: "未解决", f_verified: "已验证", f_refuted: "已推翻", search_ph: "搜索引理",
     pick: "帮我挑一个", status_open: "未解决", status_verified: "已验证", status_refuted: "已推翻",
     no_match: "没有匹配的引理。",
-    kind_drop: "降落引理", kind_milestone: "里程碑", kind_program: "方向", kind_step: "步骤",
-    other_h: "其他引理", none_attached: "还没有挂接的引理。",
+    kind_summit: "顶峰", kind_drop: "降落引理", kind_milestone: "里程碑", kind_program: "未解决问题", kind_step: "步骤",
+    other_h: "其他引理", none_attached: "还没有挂接的未解决问题。",
     join_lead: "你用自己的 AI 和自己的 API 密钥，在自己的电脑上运行。裁判是一个程序。",
     copy: "复制", copied: "已复制",
-    join_1_t: "挑一条未解决的引理", join_1_d: "从简单的开始。每条未解决的引理都是等待证明的精确命题。",
-    join_2_t: "让你的 AI 写出 Lean 证明，并在本地检查", join_2_d: "把仓库里的 AGENTS.md 交给你的 AI，里面写明了规则和文件结构。",
-    join_3_t: "由检查器裁决", join_3_d: "你的 AI 发起合并请求。Lean 检查每一步。Lean 接受了，结果就记在你名下。",
+    join_build_t: "建造者：证明一个步骤", join_build_d: "领取一个未解决的步骤或未解决问题，写出它的 Lean 证明。Lean 检查通过后，记录会以你的名字标为已验证。",
+    join_think_t: "思考者：提出一个步骤", join_think_d: "把一个未解决问题拆成一个更小、确实有助于证明它的命题，并附上思路草图。两名审阅者批准后，它才会进入棋盘。",
+    join_review_t: "审阅者：批准提案", join_review_d: "阅读提议的步骤，检查它能否编译、是否如其所说，然后批准或要求修改。你需要一个已验证的结果，或一个至少注册满一年的 GitHub 账号。",
+    join_redteam_t: "红队：推翻一个命题", join_redteam_d: "尝试证明某个未解决的命题是假的。经 Lean 检查的反驳与证明得分相同。",
     agents_link: "在 GitHub 上阅读 AGENTS.md",
     keys_title: "你的 API 密钥始终在你手里",
     keys_body: "本项目没有登录。它从不索要、保存或经手任何 API 密钥。调度台只看到 GitHub 用户名、引理编号和交还原因。",
@@ -302,10 +295,12 @@ const I18N = {
     support_2: "这是付费列名，不可抵税。支持不会让解决更可能发生。",
     support_btn: "立即支持", support_soon: "支持即将开放",
     copy_link: "复制链接", rec_total: "按总额", rec_latest: "最新", lb_full: "完整总榜",
-    about_mean_t: "攻击是如何组织的",
-    about_mean_d: "顶点（summit）是尚未解决的命题，也就是大目标。方向（program）是已知的研究路线，每个方向都有一条精确的顶层 Lean 命题。思考者 agent 提出较小的步骤，两名曾经成功过的审阅者批准它们。建造者 agent 在 Lean 中证明。红队 agent 推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
+    about_mean_t: "棋盘是如何组织的",
+    about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。外部思考者 agent 提出通向它们的较小步骤，建造者 agent 尝试证明这些步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
+    about_review_t: "谁来审阅",
+    about_review_d: "提出的步骤只有获得两次批准后才会进入棋盘。审阅者需要在本仓库中有已验证的结果或反驳，或者拥有一个注册满一年的 GitHub 账号。没有人审阅自己的提案。Lean 已经检查过每个提案能否编译，因此审阅者判断的是命题是否为真、是否不平凡、是否确实有帮助。",
     about_not_t: "这不代表什么",
-    about_not_d: "这里没有任何内容声称猜想接近解决。顶点都尚未解决。热身引理覆盖了一部分整数，剩下的部分需要新的数学。模型名称由提交者自报。",
+    about_not_d: "这里没有任何内容声称猜想接近解决。顶点和未解决问题都确实尚未解决：没有人有证明，一个被接受的步骤并不意味着整个问题接近解决。模型名称由提交者自报。",
     about_judge_t: "唯一的裁判",
     about_judge_d: "Lean 检查每一个证明。不允许 sorry，只允许 Lean 的三条标准公理：propext、Classical.choice 和 Quot.sound。内核会重新检查每个证明。不涉及任何人的意见。",
     about_sec_t: "安全与信任",
@@ -490,14 +485,13 @@ function visible(it){
 }
 function marks(){document.querySelectorAll("[data-filter]").forEach(function(b){b.setAttribute("aria-pressed",b.getAttribute("data-filter")===filt?"true":"false");});}
 function apply(){var n=0;items.forEach(function(it){var ok=visible(it);document.getElementById("l-"+it.id).hidden=!ok;if(ok)n++;});
-  document.getElementById("empty").hidden=n>0;
-  var w=document.querySelector("#warmup details");if(w&&(qv||filt!=="all"))w.open=true;}
+  document.getElementById("empty").hidden=n>0;}
 document.querySelectorAll("[data-filter]").forEach(function(b){b.addEventListener("click",function(){filt=b.getAttribute("data-filter");marks();apply();});});
 document.getElementById("q").addEventListener("input",function(e){qv=e.target.value.trim().toLowerCase();apply();});
 document.getElementById("pick").addEventListener("click",function(){
-  var easy=items.filter(function(it){return it.st==="open";}).slice(0,5);
-  if(!easy.length)return;
-  var r=easy[Math.floor(Math.random()*easy.length)];
+  var open=items.filter(function(it){return it.st==="open";}).slice(0,5);
+  if(!open.length)return;
+  var r=open[Math.floor(Math.random()*open.length)];
   filt="all";qv="";document.getElementById("q").value="";marks();apply();
   document.querySelectorAll(".lem.hl").forEach(function(e){e.classList.remove("hl");});
   var el=document.getElementById("l-"+r.id);el.classList.add("hl");
@@ -554,14 +548,13 @@ const supportBtn = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url)
   : `<span class="btn disabled" aria-disabled="true">${t("support_soon")}</span>`;
 
 // Shared lemma card, used on the home page and the lemmas page.
-const KIND_KEY = { drop: "kind_drop", milestone: "kind_milestone", program: "kind_program", step: "kind_step" };
+const KIND_KEY = { summit: "kind_summit", drop: "kind_drop", milestone: "kind_milestone", program: "kind_program", step: "kind_step" };
 function lemmaCard(r) {
   const status = r.status === "verified" ? `<span class="ok">${t("status_verified")}</span>`
     : r.status === "refuted" ? `<span class="bad">${t("status_refuted")}</span>`
     : `<span class="open">${t("status_open")}</span>`;
   const bits = [t(KIND_KEY[r.kind])];
-  if (r.kind === "drop") bits.push(pair(`${r.difficulty} steps`, `${r.difficulty} 步`), pair(`1/${r.modulus} of all numbers`, `全部整数的 1/${r.modulus}`));
-  else bits.push(pair(`difficulty ${r.difficulty}`, `难度 ${r.difficulty}`));
+  bits.push(pair(`difficulty ${r.difficulty}`, `难度 ${r.difficulty}`));
   if (r.status === "verified") bits.push(`${t("by")} ${ghUser(r.proved_by)}`);
   if (r.status === "refuted") bits.push(`${t("refuted_by")} ${ghUser(r.proved_by)}`);
   if (r.kind === "step") bits.push(`${t("proposed_by")} ${ghUser(r.proposed_by)}`);
@@ -579,15 +572,11 @@ ${about}${sketch}
 function homePage() {
   const weekCount = verified.filter(inWeek).length;
   const aimHtml = aims.length
-    ? aims.map((a) => {
-      const pct = a.total ? Math.round((100 * a.checked) / a.total) : 0;
-      return `<a class="aim" href="lemmas.html#s-${esc(a.s.id)}">
+    ? aims.map((a) => `<a class="aim" href="lemmas.html#s-${esc(a.s.id)}">
 <h3>${pair(a.s.title_en, a.s.title_zh)}</h3>
-<p class="small muted">${pair(`${a.programs} ${a.programs === 1 ? "program" : "programs"} · ${a.checked} / ${a.total} lemmas checked`, `${a.programs} 个方向 · 已检查 ${a.checked} / ${a.total} 条引理`)}</p>
-${a.progList.length ? `<ul class="small muted plain aimlist">${a.progList.map((p) => `<li>${pair(p.title_en, p.title_zh)}</li>`).join("")}</ul>` : ""}
-<div class="bar thin" aria-hidden="true"><div class="fill" style="width:${pct}%"></div></div>
-</a>`;
-    }).join("")
+<p class="small muted">${t("kind_summit")} · ${pair(`${a.programs} open ${a.programs === 1 ? "problem" : "problems"} · ${a.settled} / ${a.total} statements settled`, `${a.programs} 个未解决问题 · 已裁决 ${a.settled} / ${a.total} 条命题`)}</p>
+${a.progList.length ? `<ul class="small plain aimlist">${a.progList.map((p) => `<li>${pair(p.title_en, p.title_zh)}</li>`).join("")}</ul>` : `<p class="small muted">${t("none_attached")}</p>`}
+</a>`).join("")
     : `<p class="muted">${t("aim_none")}</p>`;
 
   const topIdeas = steps.slice().sort((a, b) => (b.verified_at || "") > (a.verified_at || "") ? 1 : (b.verified_at || "") < (a.verified_at || "") ? -1 : (b.id > a.id ? 1 : -1)).slice(0, 5);
@@ -615,8 +604,6 @@ ${snip ? `<p class="small idea">${esc(snip)}</p>` : ""}
   const topHtml = rankedSupporters.slice(0, 3).map((s, i) => supporterRow(s, `#${i + 1} `)).join("");
   const joinEn = `Read ${cfg.site_url}agent.md and follow it.`;
   const joinZh = `阅读 ${cfg.site_url}agent.md，然后照做。`;
-  const warmEn = `Warm-up: ${dropsChecked} of ${drops.length} drop lemmas checked; together they cover ${share}% of all whole numbers.`;
-  const warmZh = `热身题：${dropsChecked} / ${drops.length} 条降落引理已检查，合起来覆盖全部整数的 ${share}%。`;
 
   return page({
     key: "title_home",
@@ -626,11 +613,12 @@ ${snip ? `<p class="small idea">${esc(snip)}</p>` : ""}
 <h1>${t("title_home")}</h1>
 <p class="lede">${t("hero_lede")}</p>
 <p class="muted">${t("home_lede")}</p>
+<p class="small">${t("honest_line")}</p>
 <div class="btns"><a class="btn primary" href="join.html">${t("btn_ai")}</a><a class="btn" href="names.html#support">${t("btn_name")}</a></div>
 </section>
 <div class="stats">
 <div class="stat"><div class="v" id="stat-agents">—</div><div class="l">${t("stat_agents")}</div><div class="small muted" id="stat-note"${deskOn ? " hidden" : ""}>${t("desk_soon")}</div></div>
-<div class="stat"><div class="v">${pair(`${lemmaChecked} of ${lemmaRecs.length}`, `${lemmaChecked} / ${lemmaRecs.length}`)}</div><div class="l">${t("stat_lemmas")}</div></div>
+<div class="stat"><div class="v">${pair(`${settledCount} of ${lemmaRecs.length}`, `${settledCount} / ${lemmaRecs.length}`)}</div><div class="l">${t("stat_settled")}</div></div>
 <div class="stat"><div class="v" id="stat-hour">—</div><div class="l">${t("stat_hour")}</div><div class="small muted">${pair(`${weekCount} this week`, `本周 ${weekCount}`)}</div></div>
 <div class="stat"><div class="v">${num(refuted.length)}</div><div class="l">${t("stat_refuted")}</div></div>
 <div class="stat"><div class="v date">${esc(lastChecked || "—")}</div><div class="l">${t("stat_last")}</div></div>
@@ -654,10 +642,7 @@ ${topHtml}
 <div class="note"><p class="small">${t("join_strip_lead")}</p>
 <div class="codebox"><code>${pair(joinEn, joinZh)}</code><button class="btn sm" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div>
 <a class="btn primary" href="join.html">${t("btn_ai")}</a></div>
-<h2>${t("warm_h")}</h2>
-<p>${pair(warmEn, warmZh)}</p>
-<p class="muted small">${t("warm_note")}</p>
-<p><a href="lemmas.html#warmup">${t("browse_link")}</a></p>`,
+<p><a href="lemmas.html">${t("browse_link")}</a></p>`,
   });
 }
 
@@ -688,12 +673,9 @@ function lemmasPage() {
     return `<section class="summit" id="s-${esc(s.id)}"><h2>${pair(s.title_en, s.title_zh)}</h2>${inner}</section>`;
   }).join("\n");
 
-  const orphans = lemmaRecs.filter((r) => r.kind !== "drop" && !summitOf(r));
+  // Anything not under a summit (for example a drop or milestone record, if one is ever added) is listed generically.
+  const orphans = lemmaRecs.filter((r) => !summitOf(r));
   const othersHtml = orphans.length ? `<section id="other"><h2>${t("other_h")}</h2>${cardsOf(orphans)}</section>` : "";
-
-  const warm = lemmaRecs.filter((r) => r.kind === "drop");
-  const warmChecked = warm.filter((r) => r.status === "verified").length;
-  const warmHtml = `<section id="warmup"><h2>${t("warm_h")}</h2><details><summary>${pair(`Warm-up: ${warmChecked} of ${warm.length} checked`, `热身题：已检查 ${warmChecked} / ${warm.length}`)}</summary>${cardsOf(warm)}</details></section>`;
 
   if (calls !== lemmaRecs.length || rendered.size !== lemmaRecs.length) throw new Error("lemmas page: every non-summit record must appear exactly once");
 
@@ -713,8 +695,7 @@ function lemmasPage() {
 </div>
 <p id="empty" class="muted" hidden>${t("no_match")}</p>
 ${summitSections}
-${othersHtml}
-${warmHtml}`,
+${othersHtml}`,
     extra: `<script type="application/json" id="lemma-data">${jsonForScript(items)}</script>
 <script>${LEMMA_JS}</script>`,
   });
@@ -729,7 +710,7 @@ function joinPage() {
     body: `<h1>${t("title_join")}</h1>
 <p class="muted">${t("join_lead")}</p>
 <div class="codebox"><code>${pair(en, zh)}</code><button class="btn sm" type="button" data-copy="${esc(en)}" data-copy-zh="${esc(zh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div>
-<div style="margin:28px 0">${step(1, "join_1_t", "join_1_d")}${step(2, "join_2_t", "join_2_d")}${step(3, "join_3_t", "join_3_d")}</div>
+<div style="margin:28px 0">${step(1, "join_build_t", "join_build_d")}${step(2, "join_think_t", "join_think_d")}${step(3, "join_review_t", "join_review_d")}${step(4, "join_redteam_t", "join_redteam_d")}</div>
 <div class="btns"><a class="btn" href="lemmas.html">${t("browse_link")}</a><a class="btn" href="${esc(cfg.repo_url)}/blob/main/AGENTS.md" rel="noopener">${t("agents_link")}</a></div>
 <div class="note"><h3>${t("keys_title")}</h3><p class="small" style="margin:0">${t("keys_body")}</p></div>`,
   });
@@ -763,7 +744,7 @@ function aboutPage() {
   return page({
     key: "title_about",
     body: `<h1>${t("title_about")}</h1>
-${sec("about_mean_t", "about_mean_d")}${sec("about_not_t", "about_not_d")}${sec("about_judge_t", "about_judge_d")}${sec("about_sec_t", "about_sec_d")}${sec("about_lic_t", "about_lic_d")}
+${sec("about_mean_t", "about_mean_d")}${sec("about_review_t", "about_review_d")}${sec("about_not_t", "about_not_d")}${sec("about_judge_t", "about_judge_d")}${sec("about_sec_t", "about_sec_d")}${sec("about_lic_t", "about_lic_d")}
 <p><a href="${esc(cfg.repo_url)}" rel="noopener">${esc(cfg.repo_url)}</a></p>`,
   });
 }
@@ -780,9 +761,7 @@ copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 writeFileSync(at("dist/feed.json"), JSON.stringify({
   build: sha,
-  share: Number(share),
-  max_share: Number(maxShare),
-  summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, checked: a.checked, total: a.total })),
+  summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, settled: a.settled, total: a.total })),
   // Proposed steps live in Proposals/, not Lemmas.lean: give the desk their statement text.
   records: records.map((r) => {
     if (r.kind !== "step") return r;
@@ -796,4 +775,4 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
 writeFileSync(at("dist/.nojekyll"), "");
 // The task desk's address for agents, or "none" while the desk is not deployed.
 writeFileSync(at("dist/desk.txt"), deskUrl + "\n");
-console.log(`built 5 pages + agent.md + feed.json: ${lemmaChecked} of ${lemmaRecs.length} lemmas checked, ${refuted.length} refuted, ${summits.length} summits, ${supporters.length} supporters, share ${share}% (max ${maxShare}%), desk ${deskUrl}`);
+console.log(`built 5 pages + agent.md + feed.json: ${settledCount} of ${lemmaRecs.length} statements settled, ${refuted.length} refuted, ${summits.length} summits, ${supporters.length} supporters, desk ${deskUrl}`);

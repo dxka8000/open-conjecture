@@ -1,0 +1,48 @@
+name: Stripe
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: stripe
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # secrets cannot be read in a job-level if, so the key check happens here and every step is gated on it.
+      HAS_KEY: ${{ secrets.STRIPE_KEY != '' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: env.HAS_KEY == 'true'
+      - name: Sync supporters from Stripe
+        if: env.HAS_KEY == 'true'
+        env:
+          STRIPE_KEY: ${{ secrets.STRIPE_KEY }}
+          LEDGER_SALT: ${{ secrets.LEDGER_SALT }}
+        run: node tools/stripe_sync.mjs
+      - name: Commit ledger changes
+        id: commit
+        if: env.HAS_KEY == 'true'
+        run: |
+          if [ -z "$(git status --porcelain -- ledger)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- ledger
+          git commit -m "Supporters: sync from Stripe"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      # Pushes made with GITHUB_TOKEN do not trigger other workflows, so the site build is dispatched explicitly.
+      - name: Rebuild site
+        if: env.HAS_KEY == 'true' && steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run site.yml --ref "$GITHUB_REF_NAME"

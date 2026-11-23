@@ -21,7 +21,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const WS = join(tmpdir(), "collatz-sim");
 const KEEP = process.argv.includes("--keep");
 const REPO = "sim/open-conjecture";
-const GH_PORT = 8790, DESK_PORT = 8787, SITE_PORT = 4174, STRIPE_PORT = 8791;
+const GH_PORT = 18790, DESK_PORT = 18787, SITE_PORT = 14174, STRIPE_PORT = 18791;
 const DESK = `http://127.0.0.1:${DESK_PORT}`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.log(...a);
@@ -128,15 +128,24 @@ function buildSite() {
   cpSync(join(WS, "OpenConjecture/Collatz/Lemmas.lean"), join(WS, "dist/Lemmas.lean"));
   return r.stdout.trim();
 }
-function automerge(mode, pr, conclusion) {
+// Child programs that talk to the in-process mocks must run asynchronously (spawnSync would block them).
+function run(args, opts) {
+  return new Promise((resolve) => {
+    const c = spawn(process.execPath, args, { ...opts, stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "", stderr = "";
+    c.stdout.on("data", (d) => (stdout += d)); c.stderr.on("data", (d) => (stderr += d));
+    c.on("close", (status) => resolve({ status, stdout, stderr }));
+  });
+}
+async function automerge(mode, pr, conclusion) {
   const env = { ...process.env, GITHUB_API: `http://127.0.0.1:${GH_PORT}`, GH_TOKEN: "simulated", REPO, MODE: mode,
     HEAD_SHA: pr ? pr.head.sha : "", CONCLUSION: conclusion || "", RUN_URL: "http://sim/run" };
-  const r = spawnSync(process.execPath, ["tools/automerge.mjs"], { cwd: WS, encoding: "utf8", env });
+  const r = await run(["tools/automerge.mjs"], { cwd: WS, env });
   if (r.status !== 0) throw new Error("automerge crashed: " + r.stderr);
   return r.stdout;
 }
 // What GitHub CI does for a pull request: the real gate on the PR's tree, then (simulated) Lean.
-function ciCheck(pr, leanAccepts) {
+async function ciCheck(pr, leanAccepts) {
   const dir = join(tmpdir(), `collatz-sim-pr${pr.number}`);
   rmSync(dir, { recursive: true, force: true });
   for (const d of ["records", "OpenConjecture", "checker"]) cpSync(join(WS, d), join(dir, d), { recursive: true });
@@ -145,7 +154,7 @@ function ciCheck(pr, leanAccepts) {
   rmSync(dir, { recursive: true, force: true });
   const conclusion = g.status !== 0 ? "failure" : leanAccepts ? "success" : "failure";
   gh.runs.set(pr.head.sha, conclusion);
-  automerge("run", pr, conclusion);
+  await automerge("run", pr, conclusion);
   return { conclusion, gateOut: (g.stderr || g.stdout).trim() };
 }
 const lastComment = (pr) => pr.comments[pr.comments.length - 1] || "";
@@ -209,25 +218,25 @@ async function main() {
 
   const pA = openPr({ author: "sim-carol", title: "Propose step-sim-a", files: proposalFiles("sim-carol", "step-sim-a", "Step_SimA", c1.body.gap.id,
     "∀ n : ℕ, n < 2 ^ 10 → 0 < n → Reaches n", "A finite case of the parent, to test the method.") });
-  check("proposal A passes the gate and waits for review", ciCheck(pA, true).conclusion === "success" && /Waiting for review/.test(lastComment(pA)));
+  check("proposal A passes the gate and waits for review", (await ciCheck(pA, true)).conclusion === "success" && /Waiting for review/.test(lastComment(pA)));
   await release("sim-carol", c1.body.lease.id, "submitted");
 
   const pB = openPr({ author: "sim-dave", title: "Propose step-sim-b", files: proposalFiles("sim-dave", "step-sim-b", "Step_SimB", d1.body.gap.id,
     "∀ n : ℕ, 0 < n → n < 7", "Deliberately false, for the red team to refute.") });
-  check("proposal B passes the gate and waits", ciCheck(pB, true).conclusion === "success" && /Waiting for review/.test(lastComment(pB)));
+  check("proposal B passes the gate and waits", (await ciCheck(pB, true)).conclusion === "success" && /Waiting for review/.test(lastComment(pB)));
   await release("sim-dave", d1.body.lease.id, "submitted");
 
   // attacks on the proposal path
   const pX = openPr({ author: "sim-mallory", title: "Propose step-evil", files: proposalFiles("sim-mallory", "step-evil", "Step_Evil", "open-density-one",
     "by run_tac pure ()", "attack") });
-  const rx = ciCheck(pX, true);
+  const rx = (await ciCheck(pX, true));
   check("metaprogramming in a proposal is rejected by the gate", rx.conclusion === "failure" && /REJECTED/.test(lastComment(pX)), rx.gateOut.slice(0, 90));
   const pY = openPr({ author: "sim-mallory", title: "Propose step-sneaky", files: proposalFiles("sim-mallory", "step-sneaky", "Step_Sneaky", "open-density-one",
     "True", "also edits the board", { "OpenConjecture/Collatz/Lemmas.lean": wsRead("OpenConjecture/Collatz/Lemmas.lean") + "\n-- changed\n" }) });
-  ciCheck(pY, true);
+  (await ciCheck(pY, true));
   check("a pull request touching three files is never merged", gh.prs.get(pY.number).state === "open" && /exactly two files/.test(lastComment(pY)));
   const pZ = openPr({ author: "sim-mallory", title: "Propose step-summit-child", files: proposalFiles("sim-mallory", "step-summit-child", "Step_SummitChild", "summit-collatz", "True", "parent is a summit") });
-  check("a step hung directly on a summit is rejected", ciCheck(pZ, true).conclusion === "failure");
+  check("a step hung directly on a summit is rejected", (await ciCheck(pZ, true)).conclusion === "failure");
 
   // ---- 2. Reviewers
   log("\n== Round 2: reviewers");
@@ -238,13 +247,13 @@ async function main() {
   review(pA, "sim-carol", "APPROVED"); // self-approval, must not count
   review(pA, "sim-mallory", "APPROVED"); // account 12 days old, must not count
   review(pA, "sim-erin", "APPROVED");
-  automerge("sweep");
+  await automerge("sweep");
   check("self-approval and a 12-day-old account do not count (1 qualified approval: not merged)", gh.prs.get(pA.number).state === "open");
   review(pA, "sim-frank", "APPROVED");
   review(pB, "sim-trent", "APPROVED");
   review(pB, "sim-erin", "APPROVED");
   review(pB, "sim-sybil", "CHANGES_REQUESTED"); // unqualified, ignored
-  automerge("sweep");
+  await automerge("sweep");
   check("two qualified approvals merge proposal A", gh.prs.get(pA.number).state === "merged" && existsSync(join(WS, "records/collatz/step-sim-a.json")));
   check("proposal B merged too (unqualified change request ignored)", gh.prs.get(pB.number).state === "merged");
   await release("sim-erin", e1.body.lease.id, "submitted");
@@ -276,21 +285,21 @@ async function main() {
 
   // proofs and refutations
   const judy = openPr({ author: "sim-judy", title: "Prove step-sim-a", files: resultFiles("sim-judy", "step-sim-a", "Step_SimA") });
-  check("a proof Lean rejects is REJECTED and not merged", ciCheck(judy, false).conclusion === "failure" && /REJECTED/.test(lastComment(judy)) && gh.prs.get(judy.number).state === "open");
+  check("a proof Lean rejects is REJECTED and not merged", (await ciCheck(judy, false)).conclusion === "failure" && /REJECTED/.test(lastComment(judy)) && gh.prs.get(judy.number).state === "open");
   const ivan = openPr({ author: "sim-ivan", title: "Prove step-sim-a", files: resultFiles("sim-ivan", "step-sim-a", "Step_SimA", false, "  simulated_proof_term", "sim-alice") });
-  ciCheck(ivan, true);
+  (await ciCheck(ivan, true));
   check("claiming someone else's name (proved_by) is refused", gh.prs.get(ivan.number).state === "open" && /proved_by must be your GitHub login/.test(lastComment(ivan)));
   const evil = openPr({ author: "sim-mallory", title: "Prove step-sim-a", files: resultFiles("sim-mallory", "step-sim-a", "Step_SimA", false, "  exact _root_.IO.Process.exit 0") });
-  check("a proof that tries to run code during the check is rejected by the gate", ciCheck(evil, true).conclusion === "failure");
+  check("a proof that tries to run code during the check is rejected by the gate", (await ciCheck(evil, true)).conclusion === "failure");
   const good = openPr({ author: realWho, title: "Prove step-sim-a", files: resultFiles(realWho, "step-sim-a", "Step_SimA") });
-  ciCheck(good, true);
+  (await ciCheck(good, true));
   check("a proof Lean accepts is ACCEPTED and merged", gh.prs.get(good.number).state === "merged" && /ACCEPTED/.test(lastComment(good)) && wsJson("records/collatz/step-sim-a.json").status === "verified");
   await release(realWho, realStep.body.lease.id, "submitted");
   const late = openPr({ author: "sim-heidi", title: "Prove step-sim-a", files: resultFiles("sim-heidi", "step-sim-a", "Step_SimA") });
-  ciCheck(late, true);
+  (await ciCheck(late, true));
   check("a second proof of a settled step is not merged", gh.prs.get(late.number).state === "open" && /record|settled/.test(lastComment(late)));
   const ref = openPr({ author: "sim-grace", title: "Refute step-sim-b", files: resultFiles("sim-grace", "step-sim-b", "Step_SimB", true) });
-  ciCheck(ref, true);
+  (await ciCheck(ref, true));
   check("a refutation is ACCEPTED and the step goes to the graveyard", gh.prs.get(ref.number).state === "merged" && wsJson("records/collatz/step-sim-b.json").status === "refuted");
   await release("sim-grace", g3.body.lease.id, "submitted");
   check("site build after results", /built/.test(buildSite()));
@@ -314,12 +323,12 @@ async function main() {
   pay("cs_4", "nopay@example.org", 50, "Unpaid", "", "", false);
   if (existsSync(join(WS, "tools/stripe_sync.mjs"))) {
     const env = { ...process.env, STRIPE_KEY: "rk_test_simulated", LEDGER_SALT: "simulated-salt", STRIPE_API: `http://127.0.0.1:${STRIPE_PORT}` };
-    const s1 = spawnSync(process.execPath, ["tools/stripe_sync.mjs"], { cwd: WS, encoding: "utf8", env });
+    const s1 = await run(["tools/stripe_sync.mjs"], { cwd: WS, env });
     const led = wsJson("ledger/supporters.json");
     check("sponsor sync runs", s1.status === 0, (s1.stdout + s1.stderr).trim().slice(0, 100));
     check("same email merges and sums ($1,125), unpaid ignored", led.length === 2 && led.some((x) => x.amount === 1125));
     check("no email stored anywhere in ledger/", !readdirSync(join(WS, "ledger")).some((f) => /@/.test(wsRead(`ledger/${f}`))));
-    const s2 = spawnSync(process.execPath, ["tools/stripe_sync.mjs"], { cwd: WS, encoding: "utf8", env });
+    const s2 = await run(["tools/stripe_sync.mjs"], { cwd: WS, env });
     check("sponsor sync is idempotent", s2.status === 0 && JSON.stringify(wsJson("ledger/supporters.json")) === JSON.stringify(led));
   } else check("sponsor sync script exists", false, "tools/stripe_sync.mjs missing");
   log("build:", buildSite());
