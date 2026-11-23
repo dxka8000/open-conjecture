@@ -1,0 +1,12 @@
+{
+  "id": "program-cycle-length",
+  "kind": "program",
+  "parent": "summit-no-cycle",
+  "statement": "Program_CycleLength",
+  "difficulty": 900,
+  "title_en": "Long cycles only: any cycle other than 1 → 4 → 2 → 1 takes at least 1,000 steps",
+  "title_zh": "只能是长循环：除 1 → 4 → 2 → 1 以外，任何循环至少要 1,000 步",
+  "about_en": "A cycle with a odd steps and b halvings forces 2^b to be extremely close to 3^a. Lower bounds for linear forms in logarithms (Steiner, Simons and de Weger, Eliahou) turn this into lower bounds on cycle length. The small milestones NoCycleUpTo_N are the first rungs.",
+  "about_zh": "一个含 a 次奇数步、b 次减半的循环，会迫使 2^b 与 3^a 极其接近。对数线性型的下界（Steiner、Simons 与 de Weger、Eliahou）把这一点变成循环长度的下界。里程碑 NoCycleUpTo_N 是最初的几级台阶。",
+  "status": "open"
+}

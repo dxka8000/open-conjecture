@@ -1,0 +1,12 @@
+{
+  "id": "program-stopping-density",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Program_StoppingDensity",
+  "difficulty": 900,
+  "title_en": "Stopping times (Terras): almost every number eventually falls below itself",
+  "title_zh": "停时（Terras）：几乎所有的数最终都会降到自身以下",
+  "about_en": "Terras (1976) showed that the numbers which eventually drop below their starting value have natural density 1. The warm-up drop lemmas each close one residue class; this program asks for the full density statement. With the bridge lemma, 'every number' instead of 'almost every' would be the conjecture.",
+  "about_zh": "Terras（1976）证明了：最终会降到起点以下的数，其自然密度为 1。热身区的每条下降引理只关掉一个剩余类；这条路线要的是完整的密度命题。若把“几乎所有”换成“所有”，加上桥梁定理就是猜想本身。",
+  "status": "open"
+}

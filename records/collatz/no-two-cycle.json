@@ -1,6 +1,7 @@
 {
   "id": "no-two-cycle",
   "kind": "milestone",
+  "parent": "program-cycle-length",
   "statement": "NoTwoCycle",
   "difficulty": 4,
   "title_en": "No positive number returns to itself after exactly two steps",

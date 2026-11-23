@@ -1,6 +1,7 @@
 {
   "id": "no-cycle-5",
   "kind": "milestone",
+  "parent": "program-cycle-length",
   "statement": "NoCycleUpTo_5",
   "difficulty": 45,
   "title_en": "No positive number other than 1, 2 and 4 returns to itself within 5 steps",

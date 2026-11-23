@@ -1,0 +1,12 @@
+{
+  "id": "program-parity-vectors",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Program_ParityVectors",
+  "difficulty": 900,
+  "title_en": "2-adic parity vectors: every pattern of k odd/even steps is realised by exactly one residue mod 2^k",
+  "title_zh": "2-adic 奇偶向量：长度为 k 的每一种奇偶步模式，恰好对应模 2^k 的一个剩余",
+  "about_en": "Using the shortcut map T(n) = n/2 or (3n+1)/2, the first k parities of n depend only on n mod 2^k, and every parity pattern occurs exactly once (Terras, Everett). This is the 2-adic backbone of most density results.",
+  "about_zh": "用加速映射 T(n) = n/2 或 (3n+1)/2 时，n 的前 k 步奇偶性只取决于 n 模 2^k，并且每一种奇偶模式恰好出现一次（Terras、Everett）。这是大多数密度结果背后的 2-adic 骨架。",
+  "status": "open"
+}

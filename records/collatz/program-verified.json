@@ -1,0 +1,12 @@
+{
+  "id": "program-verified",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Program_VerifiedUpTo",
+  "difficulty": 900,
+  "title_en": "Verification: every number below 2^20 reaches 1",
+  "title_zh": "验证：2^20 以下的每个数都会到 1",
+  "about_en": "Computers have checked the conjecture far beyond 2^68, but a Lean proof must be checked by the kernel, without trusting compiled code (native_decide is not allowed here). Splitting the range into pieces the kernel can handle is the work.",
+  "about_zh": "计算机早已验证到 2^68 以上，但 Lean 证明必须由内核检查，不能信任编译后的代码（这里不允许 native_decide）。要做的是把范围拆成内核能处理的小块。",
+  "status": "open"
+}

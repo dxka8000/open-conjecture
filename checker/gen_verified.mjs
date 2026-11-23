@@ -67,9 +67,10 @@ for (const f of listLean(PROOFS)) {
 }
 
 // ---- records ----
-const KINDS = ["drop", "milestone", "summit", "step"];
+const KINDS = ["drop", "milestone", "summit", "program", "step"];
 const BASE = ["id", "kind", "statement", "difficulty", "title_en", "title_zh", "status"];
-const EXTRA = { drop: ["modulus", "residue"], step: ["parent", "sketch", "proposed_by"], milestone: [], summit: [] };
+const EXTRA = { drop: ["modulus", "residue"], step: ["parent", "sketch", "proposed_by"], milestone: ["parent"], summit: [],
+  program: ["parent", "about_en", "about_zh"] };
 const DONE = ["proved_by", "model", "verified_at"];
 const LOGIN = /^[A-Za-z0-9-]{1,39}$/;
 const records = readdirSync("records/collatz").sort().map((f) => {
@@ -77,6 +78,15 @@ const records = readdirSync("records/collatz").sort().map((f) => {
   try { return { f, where, r: JSON.parse(readFileSync(where, "utf8")) }; } catch { fail(`${where}: invalid JSON`); }
 });
 const ids = new Set(records.map(({ r }) => r.id));
+const byId = new Map(records.map(({ r }) => [r.id, r]));
+// Parent links must end at a summit, with no loops.
+for (const { where, r } of records) {
+  let cur = r, hops = 0;
+  while (cur && cur.parent !== undefined) {
+    if (++hops > 50) fail(`${where}: parent links loop or are too deep`);
+    cur = byId.get(cur.parent);
+  }
+}
 const usedStatements = new Set();
 const imports = [], lines = [];
 let n = 0;
@@ -93,8 +103,14 @@ for (const { f, where, r } of records) {
   for (const k of allowed) if (r[k] === undefined) fail(`${where}: missing field ${k}`);
   if (!Number.isInteger(r.difficulty) || r.difficulty < 1 || r.difficulty > 1000) fail(`${where}: difficulty must be an integer from 1 to 1000`);
   for (const k of ["title_en", "title_zh"]) if (typeof r[k] !== "string" || r[k].length < 1 || r[k].length > 200) fail(`${where}: ${k} must be 1-200 characters`);
+  if (r.kind === "program") {
+    if (byId.get(r.parent)?.kind !== "summit") fail(`${where}: a program's parent must be a summit`);
+    for (const k of ["about_en", "about_zh"]) if (typeof r[k] !== "string" || r[k].length < 1 || r[k].length > 2000) fail(`${where}: ${k} must be 1-2000 characters`);
+  }
+  if (r.kind === "milestone" && !["summit", "program"].includes(byId.get(r.parent)?.kind)) fail(`${where}: a milestone's parent must be a summit or a program`);
   if (r.kind === "step") {
     if (!ids.has(r.parent)) fail(`${where}: parent ${r.parent} is not an existing record id`);
+    if (["drop", "summit"].includes(byId.get(r.parent)?.kind)) fail(`${where}: a step's parent must be a program, a milestone or another step`);
     if (typeof r.sketch !== "string" || r.sketch.length > 2000) fail(`${where}: sketch must be text of at most 2000 characters`);
     if (!LOGIN.test(r.proposed_by)) fail(`${where}: proposed_by must be a GitHub login`);
   }

@@ -1,0 +1,12 @@
+{
+  "id": "program-divergent-high",
+  "kind": "program",
+  "parent": "summit-no-divergence",
+  "statement": "Program_DivergentStaysHigh",
+  "difficulty": 900,
+  "title_en": "Runaway orbits stay high: an unbounded orbit never visits a number below 2^20",
+  "title_zh": "失控轨道始终在高处：无界的轨道永远不会经过 2^20 以下的数",
+  "about_en": "A divergent orbit can never touch a number whose orbit is known to be bounded. Pushing this floor up, and showing a divergent orbit would need an unusually high share of odd steps, are the classical attacks on divergence.",
+  "about_zh": "发散的轨道不可能经过任何已知有界的数。把这条下限不断抬高，并证明发散轨道必须有异常高比例的奇数步，是攻击“发散”的经典思路。",
+  "status": "open"
+}

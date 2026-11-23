@@ -67,7 +67,7 @@ export function parseLemmas(text) {
 const iso = (ms) => new Date(ms).toISOString();
 const pad = (n) => String(n).padStart(10, '0');
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const isHard = (r) => r.kind === 'milestone' || r.hard === true;
+const isHard = (r) => r.kind === 'milestone' || r.kind === 'program' || r.hard === true;
 const capped = (created, t) => Math.min(t, created + LEASE_CAP);
 
 export class Desk {

@@ -33,6 +33,24 @@ def Summit_NoCycle : Prop := ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n �
 /-- Unsolved. -/
 def Summit_NoDivergence : Prop := ∀ n : ℕ, ∃ B : ℕ, ∀ k : ℕ, step^[k] n ≤ B
 
+/-- Attack program under summit-collatz. -/
+def Program_StoppingDensity : Prop := Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ ∃ k : ℕ, step^[k] n < n} : ℝ) / N)) Filter.atTop (nhds 1)
+
+/-- Attack program under summit-collatz. -/
+def Program_ParityVectors : Prop := ∀ k : ℕ, ∀ v : Fin k → Bool, ∃! r : ℕ, r < 2 ^ k ∧ ∀ i : Fin k, Nat.iterate (fun n : ℕ => if n % 2 = 0 then n / 2 else (3 * n + 1) / 2) i.val r % 2 = if v i then 1 else 0
+
+/-- Attack program under summit-collatz. -/
+def Program_VerifiedUpTo : Prop := ∀ n : ℕ, 0 < n → n < 2 ^ 20 → Reaches n
+
+/-- Attack program under summit-no-cycle. -/
+def Program_CycleLength : Prop := ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4 ∨ 1000 ≤ k
+
+/-- Attack program under summit-no-cycle. -/
+def Program_CycleSize : Prop := ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4 ∨ 2 ^ 20 < n
+
+/-- Attack program under summit-no-divergence. -/
+def Program_DivergentStaysHigh : Prop := ∀ n : ℕ, (∀ B : ℕ, ∃ k : ℕ, B < step^[k] n) → ∀ k : ℕ, 2 ^ 20 ≤ step^[k] n
+
 def Drop_2_0 : Prop := ∀ n : ℕ, n % 2 = 0 → 1 < n → step^[1] n < n
 
 def Drop_4_1 : Prop := ∀ n : ℕ, n % 4 = 1 → 1 < n → step^[3] n < n

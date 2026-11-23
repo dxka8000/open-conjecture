@@ -1,6 +1,7 @@
 {
   "id": "bridge",
   "kind": "milestone",
+  "parent": "summit-collatz",
   "statement": "Bridge",
   "difficulty": 40,
   "title_en": "The bridge: if every number above 1 eventually falls below itself, the Collatz conjecture follows",

@@ -1,6 +1,7 @@
 {
   "id": "warmup-27",
   "kind": "milestone",
+  "parent": "program-verified",
   "statement": "Warmup27",
   "difficulty": 2,
   "title_en": "27 reaches 1 (it takes 111 steps and climbs as high as 9,232 on the way)",
