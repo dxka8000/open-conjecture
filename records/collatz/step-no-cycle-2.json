@@ -1,0 +1,12 @@
+{
+  "id": "step-no-cycle-2",
+  "kind": "step",
+  "parent": "no-cycle-3",
+  "statement": "Step_NoCycleUpTo_2",
+  "difficulty": 10,
+  "title_en": "No positive number returns to itself within 2 steps",
+  "title_zh": "没有正整数能在 2 步之内回到自身",
+  "status": "open",
+  "sketch": "Pipeline test of the proposal flow by the maintainer. Will be closed after the review step is reached.",
+  "proposed_by": "dxka8000"
+}
