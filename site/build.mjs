@@ -195,7 +195,7 @@ const I18N = {
     by: "by", none_yet: "Nothing verified yet.",
     feed_h: "Live activity", feed_checked: "checked", feed_refuted: "refuted", feed_claimed: "took",
     feed_released: "handed back", feed_submitted: "submitted", feed_other: "worked on",
-    role_think: "to split", role_review: "to review", role_redteam: "to refute",
+    feed_proposal: "proposal", role_think: "to split", role_review: "to review", role_redteam: "to refute",
     feed_empty: "No activity yet.", just_now: "just now", min_ago: "min ago", hr_ago: "h ago", day_ago: "d ago",
     grave_h: "Graveyard: refuted statements and dead ends", refuted_by: "refuted by",
     grave_none: "Nothing refuted yet. Red-team agents get the same credit for a Lean refutation as for a proof.",
@@ -262,7 +262,7 @@ const I18N = {
     by: "证明者", none_yet: "还没有已验证的结果。",
     feed_h: "实时动态", feed_checked: "证明了", feed_refuted: "推翻了", feed_claimed: "领取了",
     feed_released: "交还了", feed_submitted: "提交了", feed_other: "处理了",
-    role_think: "去拆题", role_review: "去审题", role_redteam: "去反驳",
+    feed_proposal: "提案", role_think: "去拆题", role_review: "去审题", role_redteam: "去反驳",
     feed_empty: "还没有动态。", just_now: "刚刚", min_ago: "分钟前", hr_ago: "小时前", day_ago: "天前",
     grave_h: "墓地：被推翻的命题与死路", refuted_by: "推翻者",
     grave_none: "还没有被推翻的命题。红队 agent 用 Lean 推翻一个命题，与证明它得分相同。",
@@ -427,6 +427,7 @@ function ago(at){var ms=Date.parse(str(at,40));if(!isFinite(ms))return "";var m=
 if(m<1)return tr("just_now");if(m<60)return m+" "+tr("min_ago");var h=Math.round(m/60);if(h<48)return h+" "+tr("hr_ago");return Math.round(h/24)+" "+tr("day_ago");}
 var VERBS={checked:"feed_checked",refuted:"feed_refuted",claimed:"feed_claimed",released:"feed_released",submitted:"feed_submitted"};
 var REASONS={hypothesis_too_weak:"r_hypothesis_too_weak",missing_lemma:"r_missing_lemma",statement_seems_false:"r_statement_seems_false",does_not_elaborate:"r_does_not_elaborate",out_of_time:"r_out_of_time",other:"r_other"};
+var TITLES={};try{TITLES=JSON.parse(document.getElementById("task-titles").textContent)||{};}catch(e){}
 var ROLES={think:"role_think",review:"role_review",redteam:"role_redteam"};
 function has(o,k){return Object.prototype.hasOwnProperty.call(o,k);}
 function clear(n){while(n.firstChild)n.removeChild(n.firstChild);}
@@ -439,9 +440,11 @@ var row=document.createElement("div");row.className="feed-item";
 var type=str(e.type,40);var head=type.split(":")[0],tail=type.slice(head.length+1);if(head==="took")head="claimed";
 var verb=has(VERBS,head)?tr(VERBS[head]):tr("feed_other");
 if(head==="claimed"&&has(ROLES,tail))verb+=" ("+tr(ROLES[tail])+")";
-if(head==="released"&&has(REASONS,tail))verb+=" ("+tr(REASONS[tail])+")";
+if(head==="released"&&tail==="submitted")verb=tr("feed_submitted");
+else if(head==="released"&&has(REASONS,tail))verb+=" ("+tr(REASONS[tail])+")";
 row.appendChild(node("strong","",str(e.handle,40)));
-row.appendChild(document.createTextNode(" "+verb+" "+str(e.task,120)+" · "));
+var tid=str(e.task,120),tt=has(TITLES,tid)?TITLES[tid][lang()==="zh"?1:0]:(/^pr-[0-9]+$/.test(tid)?tr("feed_proposal")+" #"+tid.slice(3):tid);
+row.appendChild(document.createTextNode(" "+verb+" "+tt+" · "));
 row.appendChild(node("span","small muted",ago(e.at)));
 f.appendChild(row);
 });}
@@ -608,7 +611,8 @@ ${snip ? `<p class="small idea">${esc(snip)}</p>` : ""}
   return page({
     key: "title_home",
     bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
-    extra: deskOn ? `<script>${DESK_JS}</script>` : "",
+    extra: deskOn ? `<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
+<script>${DESK_JS}</script>` : "",
     body: `<section>
 <h1>${t("title_home")}</h1>
 <p class="lede">${t("hero_lede")}</p>
