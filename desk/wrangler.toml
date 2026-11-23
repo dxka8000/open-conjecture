@@ -1,0 +1,15 @@
+name = "collatz-desk"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-01"
+
+[[durable_objects.bindings]]
+name = "DESK"
+class_name = "DeskDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DeskDO"]
+
+[vars]
+SITE = "https://dxka8000.github.io/open-conjecture"
+LEMMAS_URL = "https://raw.githubusercontent.com/dxka8000/open-conjecture/main/OpenConjecture/Collatz/Lemmas.lean"

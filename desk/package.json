@@ -1,0 +1,17 @@
+{
+  "name": "collatz-desk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Task dispatcher for The Collatz Climb",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "start": "node server.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
