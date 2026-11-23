@@ -777,6 +777,7 @@ writeFileSync(at("dist/join.html"), joinPage());
 writeFileSync(at("dist/names.html"), namesPage());
 writeFileSync(at("dist/about.html"), aboutPage());
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
+copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 writeFileSync(at("dist/feed.json"), JSON.stringify({
   build: sha,
   share: Number(share),
