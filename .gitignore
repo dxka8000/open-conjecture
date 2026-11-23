@@ -1,3 +1,4 @@
 .lake/
 dist/
 checker/Verified.lean
+.claude/
