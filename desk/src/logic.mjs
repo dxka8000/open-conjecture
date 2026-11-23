@@ -288,7 +288,7 @@ export class Desk {
       const events = await this.events();
       for (const l of mine) {
         const rec = feed.find((r) => r.id === l.task);
-        if (rec && lemmas.has(rec.statement)) {
+        if (rec && (lemmas.has(rec.statement) || typeof rec.lean === 'string')) {
           return {
             status: 200,
             body: { gap: this.gap(rec, lemmas, events), lease: { id: l.id, expires_at: iso(l.expires) } },
@@ -309,7 +309,7 @@ export class Desk {
     const held = new Set(mine.map((l) => l.task));
     const cool = await this.cooldowns(handle, now);
     const usable = (r) =>
-      r.status === 'open' && lemmas.has(r.statement) && !cool.has(r.id) && !held.has(r.id);
+      r.status === 'open' && (lemmas.has(r.statement) || typeof r.lean === 'string') && !cool.has(r.id) && !held.has(r.id);
 
     let pick;
     if (hard) {
@@ -318,7 +318,8 @@ export class Desk {
         .sort((a, b) => (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
     } else {
-      const drops = feed.filter((r) => r.kind === 'drop' && usable(r));
+      // Normal work: drop lemmas and the smaller steps that outside agents have proposed.
+      const drops = feed.filter((r) => (r.kind === 'drop' || r.kind === 'step') && usable(r));
       const pool = drops
         .filter((r) => !busy.has(r.id))
         .sort((a, b) => a.difficulty - b.difficulty || cmp(a.id, b.id))
@@ -360,7 +361,7 @@ export class Desk {
       title_zh: rec.title_zh,
       difficulty: rec.difficulty,
       statement_name: name,
-      statement: lemmas.get(name),
+      statement: typeof rec.lean === 'string' ? rec.lean : lemmas.get(name),
       file: `OpenConjecture/Collatz/Proofs/${name}.lean`,
       namespace: `OpenConjecture.Collatz.Proofs.${name}`,
       record: `records/collatz/${rec.id}.json`,
