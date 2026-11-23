@@ -147,7 +147,11 @@ if (MODE === "run") {
       : `The Lean checker passed, but this pull request can't be merged automatically: ${result.why}\n\nSee AGENTS.md for the exact shape of a submission.`);
   }
 } else {
+  // Proposals wait for reviews, so they are re-examined every time. Other pull requests are judged
+  // when their check finishes; the sweep only retries recent ones, to stay well inside the API budget.
+  const recent = Date.now() - 2 * 3600e3;
   for (const pr of await openPulls()) {
+    if (!/^Propose /.test(pr.title) && Date.parse(pr.updated_at) < recent) continue;
     try {
       if (!(await checkPassed(pr.head.sha))) continue;
       const result = await evaluate(pr);
