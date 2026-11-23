@@ -1,0 +1,12 @@
+{
+  "id": "open-density-one",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Open_DensityOne",
+  "difficulty": 900,
+  "title_en": "Almost every number reaches 1 (natural density 1)",
+  "title_zh": "几乎所有的数都会到 1（自然密度为 1）",
+  "about_en": "Unsolved. Terras (1976) proved that almost every number eventually drops below itself, and Tao (2019) that almost every orbit gets almost bounded (in logarithmic density). Neither shows that almost every number actually reaches 1.",
+  "about_zh": "未解决。Terras（1976）证明了几乎所有的数最终会降到自身以下，Tao（2019）证明了几乎所有轨道会降到“几乎有界”（对数密度意义下）。两者都没有证明几乎所有的数真的会到 1。",
+  "status": "open"
+}

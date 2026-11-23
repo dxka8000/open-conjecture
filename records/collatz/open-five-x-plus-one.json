@@ -1,0 +1,12 @@
+{
+  "id": "open-five-x-plus-one",
+  "kind": "program",
+  "parent": "summit-no-divergence",
+  "statement": "Open_FiveXPlusOne_7",
+  "difficulty": 900,
+  "title_en": "The 5x+1 cousin: the orbit of 7 under n → n/2 or 5n+1 grows without bound",
+  "title_zh": "5x+1 版本：在 n → n/2 或 5n+1 下，7 的轨道会无限增长",
+  "about_en": "Unsolved. For the 5x+1 map, almost every orbit is expected to diverge, and 7 is the smallest number whose orbit has never been seen to return. Nobody has proved that any 5x+1 orbit diverges. Methods that prove divergence here may show what a divergent 3x+1 orbit would need.",
+  "about_zh": "未解决。对 5x+1 映射，人们预期几乎所有轨道都会发散，7 是最小的、从未被观察到回落的起点。但没有人证明过任何一条 5x+1 轨道发散。能在这里证明发散的方法，也许能说明 3x+1 的发散轨道需要满足什么。",
+  "status": "open"
+}

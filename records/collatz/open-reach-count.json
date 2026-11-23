@@ -1,0 +1,12 @@
+{
+  "id": "open-reach-count",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Open_ReachCount_0_9",
+  "difficulty": 900,
+  "title_en": "Beat Krasikov–Lagarias: for large x, at least x^0.9 numbers up to x reach 1",
+  "title_zh": "超越 Krasikov–Lagarias：x 足够大时，x 以内至少有 x^0.9 个数会到 1",
+  "about_en": "Unsolved. The best known lower bound (Krasikov and Lagarias, 2003) is x^0.84. Any exponent above 0.84 would be new; 0.9 is the target here.",
+  "about_zh": "未解决。已知最好的下界是 x^0.84（Krasikov 与 Lagarias，2003）。任何大于 0.84 的指数都是新结果；这里的目标是 0.9。",
+  "status": "open"
+}

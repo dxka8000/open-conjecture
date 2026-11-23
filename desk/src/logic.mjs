@@ -93,6 +93,7 @@ export class Desk {
     site = DEFAULT_SITE,
     lemmasUrl = DEFAULT_LEMMAS_URL,
     repo = DEFAULT_REPO,
+    githubApi = 'https://api.github.com',
   } = {}) {
     if (!store) throw new Error('Desk: store is required');
     this.store = store;
@@ -104,6 +105,7 @@ export class Desk {
     this.lemmasUrl = lemmasUrl;
     this.repo = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(repo) ? repo : DEFAULT_REPO;
     this.pullsCache = null;
+    this.githubApi = String(githubApi).replace(/\/+$/, '');
     this.feedCache = null;
     this.lemmasCache = null;
     this.lastNext = new Map();
@@ -270,7 +272,7 @@ export class Desk {
     const now = this.now();
     if (this.pullsCache && now - this.pullsCache.at < PULLS_TTL) return this.pullsCache.list;
     try {
-      const res = await this.fetchFn(`https://api.github.com/repos/${this.repo}/pulls?state=open&per_page=100`, {
+      const res = await this.fetchFn(`${this.githubApi}/repos/${this.repo}/pulls?state=open&per_page=100`, {
         headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'collatz-climb-desk' },
       });
       if (!res.ok) throw new Error(`pulls HTTP ${res.status}`);

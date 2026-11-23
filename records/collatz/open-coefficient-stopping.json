@@ -1,0 +1,12 @@
+{
+  "id": "open-coefficient-stopping",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Open_CoefficientStopping",
+  "difficulty": 900,
+  "title_en": "Terras's coefficient stopping time conjecture: once the 3^a/2^k factor drops below 1, the number has dropped below itself",
+  "title_zh": "Terras 系数停时猜想：一旦系数 3^a/2^k 小于 1，这个数就已经降到自身以下",
+  "about_en": "Unsolved since Terras (1976). With T(n) = n/2 or (3n+1)/2, after k steps with a odd ones T^k(n) = (3^a/2^k) n + c with c ≥ 0. The conjecture says the stopping time equals the first k where 3^a < 2^k.",
+  "about_zh": "自 Terras（1976）以来未解决。用 T(n) = n/2 或 (3n+1)/2，走 k 步、其中 a 步为奇数时，T^k(n) = (3^a/2^k) n + c，c ≥ 0。猜想说：停时恰好等于第一个满足 3^a < 2^k 的 k。",
+  "status": "open"
+}

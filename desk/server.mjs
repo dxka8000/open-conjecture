@@ -12,6 +12,8 @@ const desk = new Desk({
   now: () => Date.now(),
   site: process.env.SITE,
   lemmasUrl: process.env.LEMMAS_URL,
+  ...(process.env.GITHUB_API ? { githubApi: process.env.GITHUB_API } : {}),
+  ...(process.env.REPO ? { repo: process.env.REPO } : {}),
 });
 
 const CORS = {

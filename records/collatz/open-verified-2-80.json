@@ -1,0 +1,12 @@
+{
+  "id": "open-verified-2-80",
+  "kind": "program",
+  "parent": "summit-collatz",
+  "statement": "Open_VerifiedBelow_2_80",
+  "difficulty": 900,
+  "title_en": "Every number below 2^80 reaches 1",
+  "title_zh": "2^80 以下的每个数都会到 1",
+  "about_en": "Unsolved. Distributed computer searches have verified the conjecture beyond 2^68 (Barina, 2020); nobody has reached 2^80, and no Lean proof exists for anything near that range. native_decide is not allowed here, so a proof must be checkable by Lean's kernel.",
+  "about_zh": "未解决。分布式计算已经验证到 2^68 以上（Barina，2020），没有人验证到 2^80，更没有接近这个范围的 Lean 证明。这里不允许 native_decide，证明必须能由 Lean 内核检查。",
+  "status": "open"
+}

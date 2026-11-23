@@ -17,9 +17,11 @@ const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
 const CHECK_WORKFLOW = "Lean checker";
 const APPROVALS_NEEDED = 2;
+const MIN_ACCOUNT_AGE_DAYS = 365; // reviewers without a result here need an account at least this old
+const API = process.env.GITHUB_API || "https://api.github.com"; // overridden only by the local simulation
 
 const api = async (path, opts = {}) => {
-  const res = await fetch(`https://api.github.com${path}`, {
+  const res = await fetch(`${API}${path}`, {
     ...opts,
     headers: { Authorization: `Bearer ${GH_TOKEN}`, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", ...(opts.headers || {}) },
   });
@@ -34,6 +36,20 @@ for (const f of readdirSync("records/collatz")) {
   try { const r = JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")); mainRecords.set(r.id, r); } catch {}
 }
 const provers = new Set([...mainRecords.values()].filter((r) => r.status !== "open").map((r) => String(r.proved_by).toLowerCase()));
+
+// A reviewer qualifies with a settled result here, or with a GitHub account at least a year old
+// (a cheap guard against throwaway accounts approving each other's proposals).
+const ageCache = new Map();
+async function qualified(login) {
+  const key = login.toLowerCase();
+  if (provers.has(key)) return true;
+  if (!ageCache.has(key)) {
+    const u = await api(`/users/${encodeURIComponent(login)}`);
+    const created = u && Date.parse(u.created_at);
+    ageCache.set(key, Number.isFinite(created) && Date.now() - created >= MIN_ACCOUNT_AGE_DAYS * 864e5 && u.type === "User");
+  }
+  return ageCache.get(key);
+}
 
 async function fileAtHead(pr, path) {
   const got = await api(`/repos/${pr.head.repo.full_name}/contents/${path}?ref=${pr.head.sha}`);
@@ -92,14 +108,14 @@ async function evaluate(pr) {
     const latest = new Map();
     for (const r of reviews || []) {
       const who = r.user && r.user.login;
-      if (!who || who.toLowerCase() === author.toLowerCase() || !provers.has(who.toLowerCase())) continue;
+      if (!who || who.toLowerCase() === author.toLowerCase() || !(await qualified(who))) continue;
       if (r.commit_id !== pr.head.sha || !["APPROVED", "CHANGES_REQUESTED"].includes(r.state)) continue;
       latest.set(who.toLowerCase(), r.state);
     }
     const yes = [...latest.values()].filter((s) => s === "APPROVED").length;
     const no = [...latest.values()].filter((s) => s === "CHANGES_REQUESTED").length;
     if (yes < APPROVALS_NEEDED || no >= yes)
-      return { ok: false, waiting: true, why: `a proposal needs ${APPROVALS_NEEDED} approvals on its latest commit from people who have a checked result here (not the proposer), and more approvals than change requests. It has ${yes} approval(s) and ${no} change request(s).` };
+      return { ok: false, waiting: true, why: `a proposal needs ${APPROVALS_NEEDED} approvals on its latest commit from qualified reviewers (a checked result here, or a GitHub account at least a year old; not the proposer), and more approvals than change requests. It has ${yes} approval(s) and ${no} change request(s).` };
     return { ok: true, kind: "proposal", summary: `New step: ${id} by ${author}`,
       accepted: `**ACCEPTED**. The statement compiles and ${yes} reviewers approved it. \`${name}\` is now an open lemma under \`${head.parent}\`.` };
   }

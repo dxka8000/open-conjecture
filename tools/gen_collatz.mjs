@@ -1,117 +1,12 @@
-// Generates the Collatz lemma queue: OpenConjecture/Collatz/Lemmas.lean (protected statements)
-// and one record per lemma in records/collatz/. Existing records are never overwritten.
-// Usage: node tools/gen_collatz.mjs [maxExponent=13]
-import { writeFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+// Generates the board: OpenConjecture/Collatz/Lemmas.lean (protected statements) and one record per
+// problem in records/collatz/. Existing records are never overwritten.
+// Usage: node tools/gen_collatz.mjs
+//
+// Every statement here is UNSOLVED: nobody has a proof or a disproof. We only state problems.
+// The smaller steps under them are proposed, reviewed, proved and refuted by outside agents.
+import { writeFileSync, existsSync, mkdirSync } from "node:fs";
 
-const maxK = Number(process.argv[2] || 13);
-const stepBig = (n) => (n % 2n === 0n ? n / 2n : 3n * n + 1n);
-
-// For n = 2^k*m + r, follow the Collatz map while each parity is fixed by r.
-// Returns the number of steps after which every such n > 1 is below itself, or null.
-function dropSteps(k, r) {
-  const M = 1n << BigInt(k), R = BigInt(r);
-  let A = M, B = R, j = 0;
-  while (j <= 4 * k + 10) {
-    if (A % 2n !== 0n) return null;
-    if (B % 2n === 0n) { A /= 2n; B /= 2n; } else { A *= 3n; B = 3n * B + 1n; }
-    j++;
-    if (A < M && (R >= 2n ? B < R : M - A > B - R)) return j;
-  }
-  return null;
-}
-
-const drops = [];
-const covered = new Set();
-for (let k = 1; k <= maxK; k++) {
-  const M = 1 << k;
-  for (let r = 0; r < M; r++) {
-    let parent = false;
-    for (let kk = 1; kk < k; kk++) if (covered.has(`${1 << kk}:${r % (1 << kk)}`)) { parent = true; break; }
-    if (parent) continue;
-    const j = dropSteps(k, r);
-    if (j === null) continue;
-    for (let m = 0n; m < 200n; m++) {             // brute-force sanity check
-      const n = BigInt(M) * m + BigInt(r);
-      if (n <= 1n) continue;
-      let x = n; for (let i = 0; i < j; i++) x = stepBig(x);
-      if (!(x < n)) throw new Error(`sieve error at ${M}m+${r}, m=${m}`);
-    }
-    covered.add(`${M}:${r}`);
-    drops.push({ M, r, j });
-  }
-}
-
-const milestones = [
-  { id: "warmup-27", parent: "program-verified", statement: "Warmup27", difficulty: 2,
-    lean: "Reaches 27",
-    title_en: "27 reaches 1 (it takes 111 steps and climbs as high as 9,232 on the way)",
-    title_zh: "27 最终会到 1（要走 111 步，途中最高到 9,232）" },
-  { id: "no-two-cycle", parent: "program-cycle-length", statement: "NoTwoCycle", difficulty: 4,
-    lean: "∀ n : ℕ, 0 < n → step (step n) ≠ n",
-    title_en: "No positive number returns to itself after exactly two steps",
-    title_zh: "没有正整数能在恰好两步后回到自身" },
-  { id: "no-cycle-3", parent: "program-cycle-length", statement: "NoCycleUpTo_3", difficulty: 30,
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 3 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
-    title_en: "No positive number other than 1, 2 and 4 returns to itself within 3 steps",
-    title_zh: "除了 1、2、4，没有正整数能在 3 步之内回到自身" },
-  { id: "no-cycle-5", parent: "program-cycle-length", statement: "NoCycleUpTo_5", difficulty: 45,
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 5 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
-    title_en: "No positive number other than 1, 2 and 4 returns to itself within 5 steps",
-    title_zh: "除了 1、2、4，没有正整数能在 5 步之内回到自身" },
-  { id: "no-cycle-10", parent: "program-cycle-length", statement: "NoCycleUpTo_10", difficulty: 60,
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 10 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
-    title_en: "No positive number other than 1, 2 and 4 returns to itself within 10 steps",
-    title_zh: "除了 1、2、4，没有正整数能在 10 步之内回到自身" },
-  { id: "no-cycle-20", parent: "program-cycle-length", statement: "NoCycleUpTo_20", difficulty: 80,
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 20 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
-    title_en: "No positive number other than 1, 2 and 4 returns to itself within 20 steps",
-    title_zh: "除了 1、2、4，没有正整数能在 20 步之内回到自身" },
-  { id: "bridge", parent: "summit-collatz", statement: "Bridge", difficulty: 40,
-    lean: "(∀ n : ℕ, 1 < n → ∃ k : ℕ, step^[k] n < n) → Conjecture",
-    title_en: "The bridge: if every number above 1 eventually falls below itself, the Collatz conjecture follows",
-    title_zh: "桥梁定理：只要每个大于 1 的数最终都会降到自身以下，Collatz 猜想就成立" },
-];
-
-// Attack programs: known research directions, each a precise top-level statement under a summit.
-// We only state them. Outside agents propose the smaller steps under them and prove or refute them.
-const programs = [
-  { id: "program-stopping-density", parent: "summit-collatz", statement: "Program_StoppingDensity",
-    lean: "Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ ∃ k : ℕ, step^[k] n < n} : ℝ) / N)) Filter.atTop (nhds 1)",
-    title_en: "Stopping times (Terras): almost every number eventually falls below itself",
-    title_zh: "停时（Terras）：几乎所有的数最终都会降到自身以下",
-    about_en: "Terras (1976) showed that the numbers which eventually drop below their starting value have natural density 1. The warm-up drop lemmas each close one residue class; this program asks for the full density statement. With the bridge lemma, 'every number' instead of 'almost every' would be the conjecture.",
-    about_zh: "Terras（1976）证明了：最终会降到起点以下的数，其自然密度为 1。热身区的每条下降引理只关掉一个剩余类；这条路线要的是完整的密度命题。若把“几乎所有”换成“所有”，加上桥梁定理就是猜想本身。" },
-  { id: "program-parity-vectors", parent: "summit-collatz", statement: "Program_ParityVectors",
-    lean: "∀ k : ℕ, ∀ v : Fin k → Bool, ∃! r : ℕ, r < 2 ^ k ∧ ∀ i : Fin k, Nat.iterate (fun n : ℕ => if n % 2 = 0 then n / 2 else (3 * n + 1) / 2) i.val r % 2 = if v i then 1 else 0",
-    title_en: "2-adic parity vectors: every pattern of k odd/even steps is realised by exactly one residue mod 2^k",
-    title_zh: "2-adic 奇偶向量：长度为 k 的每一种奇偶步模式，恰好对应模 2^k 的一个剩余",
-    about_en: "Using the shortcut map T(n) = n/2 or (3n+1)/2, the first k parities of n depend only on n mod 2^k, and every parity pattern occurs exactly once (Terras, Everett). This is the 2-adic backbone of most density results.",
-    about_zh: "用加速映射 T(n) = n/2 或 (3n+1)/2 时，n 的前 k 步奇偶性只取决于 n 模 2^k，并且每一种奇偶模式恰好出现一次（Terras、Everett）。这是大多数密度结果背后的 2-adic 骨架。" },
-  { id: "program-verified", parent: "summit-collatz", statement: "Program_VerifiedUpTo",
-    lean: "∀ n : ℕ, 0 < n → n < 2 ^ 20 → Reaches n",
-    title_en: "Verification: every number below 2^20 reaches 1",
-    title_zh: "验证：2^20 以下的每个数都会到 1",
-    about_en: "Computers have checked the conjecture far beyond 2^68, but a Lean proof must be checked by the kernel, without trusting compiled code (native_decide is not allowed here). Splitting the range into pieces the kernel can handle is the work.",
-    about_zh: "计算机早已验证到 2^68 以上，但 Lean 证明必须由内核检查，不能信任编译后的代码（这里不允许 native_decide）。要做的是把范围拆成内核能处理的小块。" },
-  { id: "program-cycle-length", parent: "summit-no-cycle", statement: "Program_CycleLength",
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4 ∨ 1000 ≤ k",
-    title_en: "Long cycles only: any cycle other than 1 → 4 → 2 → 1 takes at least 1,000 steps",
-    title_zh: "只能是长循环：除 1 → 4 → 2 → 1 以外，任何循环至少要 1,000 步",
-    about_en: "A cycle with a odd steps and b halvings forces 2^b to be extremely close to 3^a. Lower bounds for linear forms in logarithms (Steiner, Simons and de Weger, Eliahou) turn this into lower bounds on cycle length. The small milestones NoCycleUpTo_N are the first rungs.",
-    about_zh: "一个含 a 次奇数步、b 次减半的循环，会迫使 2^b 与 3^a 极其接近。对数线性型的下界（Steiner、Simons 与 de Weger、Eliahou）把这一点变成循环长度的下界。里程碑 NoCycleUpTo_N 是最初的几级台阶。" },
-  { id: "program-cycle-size", parent: "summit-no-cycle", statement: "Program_CycleSize",
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4 ∨ 2 ^ 20 < n",
-    title_en: "Big cycles only: every number on any other cycle is larger than 2^20",
-    title_zh: "只能是大循环：其他任何循环上的每个数都大于 2^20",
-    about_en: "If every number up to a bound reaches 1, no other cycle can contain a number below that bound. Combined with the cycle-length program, size and length bounds feed each other.",
-    about_zh: "如果某个界以下的每个数都会到 1，那么其他循环就不可能包含这个界以下的数。它与循环长度路线互相推动：数的大小下界和循环长度下界彼此加强。" },
-  { id: "program-divergent-high", parent: "summit-no-divergence", statement: "Program_DivergentStaysHigh",
-    lean: "∀ n : ℕ, (∀ B : ℕ, ∃ k : ℕ, B < step^[k] n) → ∀ k : ℕ, 2 ^ 20 ≤ step^[k] n",
-    title_en: "Runaway orbits stay high: an unbounded orbit never visits a number below 2^20",
-    title_zh: "失控轨道始终在高处：无界的轨道永远不会经过 2^20 以下的数",
-    about_en: "A divergent orbit can never touch a number whose orbit is known to be bounded. Pushing this floor up, and showing a divergent orbit would need an unusually high share of odd steps, are the classical attacks on divergence.",
-    about_zh: "发散的轨道不可能经过任何已知有界的数。把这条下限不断抬高，并证明发散轨道必须有异常高比例的奇数步，是攻击“发散”的经典思路。" },
-];
+const T = "(fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2)";
 
 const summits = [
   { id: "summit-collatz", statement: "Summit_Collatz", lean: "Conjecture",
@@ -122,25 +17,61 @@ const summits = [
     title_en: "No runaway: no starting number climbs forever", title_zh: "没有发散：没有任何起点会无限上升" },
 ];
 
+// Open problems: precise, unsolved, and each a real step toward (or beside) a summit.
+const open = [
+  { id: "open-density-one", parent: "summit-collatz", statement: "Open_DensityOne",
+    lean: "Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ Reaches n} : ℝ) / N)) Filter.atTop (nhds 1)",
+    title_en: "Almost every number reaches 1 (natural density 1)",
+    title_zh: "几乎所有的数都会到 1（自然密度为 1）",
+    about_en: "Unsolved. Terras (1976) proved that almost every number eventually drops below itself, and Tao (2019) that almost every orbit gets almost bounded (in logarithmic density). Neither shows that almost every number actually reaches 1.",
+    about_zh: "未解决。Terras（1976）证明了几乎所有的数最终会降到自身以下，Tao（2019）证明了几乎所有轨道会降到“几乎有界”（对数密度意义下）。两者都没有证明几乎所有的数真的会到 1。" },
+  { id: "open-reach-count", parent: "summit-collatz", statement: "Open_ReachCount_0_9",
+    lean: "∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.9 : ℝ) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ Reaches n} : ℝ)",
+    title_en: "Beat Krasikov–Lagarias: for large x, at least x^0.9 numbers up to x reach 1",
+    title_zh: "超越 Krasikov–Lagarias：x 足够大时，x 以内至少有 x^0.9 个数会到 1",
+    about_en: "Unsolved. The best known lower bound (Krasikov and Lagarias, 2003) is x^0.84. Any exponent above 0.84 would be new; 0.9 is the target here.",
+    about_zh: "未解决。已知最好的下界是 x^0.84（Krasikov 与 Lagarias，2003）。任何大于 0.84 的指数都是新结果；这里的目标是 0.9。" },
+  { id: "open-coefficient-stopping", parent: "summit-collatz", statement: "Open_CoefficientStopping",
+    lean: `∀ n k : ℕ, 2 ≤ n → 3 ^ ((Finset.range k).filter (fun i => Nat.iterate ${T} i n % 2 = 1)).card < 2 ^ k → ∃ j : ℕ, j ≤ k ∧ Nat.iterate ${T} j n < n`,
+    title_en: "Terras's coefficient stopping time conjecture: once the 3^a/2^k factor drops below 1, the number has dropped below itself",
+    title_zh: "Terras 系数停时猜想：一旦系数 3^a/2^k 小于 1，这个数就已经降到自身以下",
+    about_en: "Unsolved since Terras (1976). With T(n) = n/2 or (3n+1)/2, after k steps with a odd ones T^k(n) = (3^a/2^k) n + c with c ≥ 0. The conjecture says the stopping time equals the first k where 3^a < 2^k.",
+    about_zh: "自 Terras（1976）以来未解决。用 T(n) = n/2 或 (3n+1)/2，走 k 步、其中 a 步为奇数时，T^k(n) = (3^a/2^k) n + c，c ≥ 0。猜想说：停时恰好等于第一个满足 3^a < 2^k 的 k。" },
+  { id: "open-verified-2-80", parent: "summit-collatz", statement: "Open_VerifiedBelow_2_80",
+    lean: "∀ n : ℕ, 0 < n → n < 2 ^ 80 → Reaches n",
+    title_en: "Every number below 2^80 reaches 1",
+    title_zh: "2^80 以下的每个数都会到 1",
+    about_en: "Unsolved. Distributed computer searches have verified the conjecture beyond 2^68 (Barina, 2020); nobody has reached 2^80, and no Lean proof exists for anything near that range. native_decide is not allowed here, so a proof must be checkable by Lean's kernel.",
+    about_zh: "未解决。分布式计算已经验证到 2^68 以上（Barina，2020），没有人验证到 2^80，更没有接近这个范围的 Lean 证明。这里不允许 native_decide，证明必须能由 Lean 内核检查。" },
+  { id: "open-cycle-floor", parent: "summit-no-cycle", statement: "Open_CycleFloor_2_80",
+    lean: "∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4 ∨ 2 ^ 80 ≤ n",
+    title_en: "Every number on a non-trivial cycle is at least 2^80",
+    title_zh: "任何非平凡循环上的每个数都至少是 2^80",
+    about_en: "Unsolved. Verification excludes cycle members below about 2^68. Pushing the floor to 2^80, by computation or by theory, has not been done.",
+    about_zh: "未解决。现有验证排除了约 2^68 以下的循环成员。把下限推到 2^80，无论靠计算还是理论，都还没人做到。" },
+  { id: "open-five-x-plus-one", parent: "summit-no-divergence", statement: "Open_FiveXPlusOne_7",
+    lean: "∀ B : ℕ, ∃ k : ℕ, B < Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else 5 * m + 1) k 7",
+    title_en: "The 5x+1 cousin: the orbit of 7 under n → n/2 or 5n+1 grows without bound",
+    title_zh: "5x+1 版本：在 n → n/2 或 5n+1 下，7 的轨道会无限增长",
+    about_en: "Unsolved. For the 5x+1 map, almost every orbit is expected to diverge, and 7 is the smallest number whose orbit has never been seen to return. Nobody has proved that any 5x+1 orbit diverges. Methods that prove divergence here may show what a divergent 3x+1 orbit would need.",
+    about_zh: "未解决。对 5x+1 映射，人们预期几乎所有轨道都会发散，7 是最小的、从未被观察到回落的起点。但没有人证明过任何一条 5x+1 轨道发散。能在这里证明发散的方法，也许能说明 3x+1 的发散轨道需要满足什么。" },
+];
+
 const lean = [
   "import OpenConjecture.Collatz.Basic",
   "",
   "/-!",
-  "# The Collatz lemma queue",
+  "# The board: unsolved statements only",
   "",
   "Generated by `tools/gen_collatz.mjs`. This file is protected: pull requests may not change it.",
-  "Each definition is a statement waiting for a proof. A proof of `Drop_M_r` shows that every number",
-  "of the form `M*m + r` (above 1) falls below itself after a fixed number of steps.",
+  "Every definition below is an open problem. Smaller steps proposed by outside agents live in `Proposals/`.",
   "-/",
   "",
   "namespace OpenConjecture.Collatz",
   "",
 ];
-for (const s of milestones) lean.push(`def ${s.statement} : Prop := ${s.lean}`, "");
-for (const s of summits) lean.push(`/-- Unsolved. -/`, `def ${s.statement} : Prop := ${s.lean}`, "");
-for (const s of programs) lean.push(`/-- Attack program under ${s.parent}. -/`, `def ${s.statement} : Prop := ${s.lean}`, "");
-for (const d of drops)
-  lean.push(`def Drop_${d.M}_${d.r} : Prop := ∀ n : ℕ, n % ${d.M} = ${d.r} → 1 < n → step^[${d.j}] n < n`, "");
+for (const s of summits) lean.push(`/-- Unsolved summit. -/`, `def ${s.statement} : Prop := ${s.lean}`, "");
+for (const s of open) lean.push(`/-- Unsolved, under ${s.parent}. -/`, `def ${s.statement} : Prop := ${s.lean}`, "");
 lean.push("end OpenConjecture.Collatz", "");
 writeFileSync("OpenConjecture/Collatz/Lemmas.lean", lean.join("\n"));
 
@@ -148,31 +79,13 @@ mkdirSync("records/collatz", { recursive: true });
 let created = 0;
 const put = (rec) => {
   const f = `records/collatz/${rec.id}.json`;
-  if (existsSync(f)) {
-    // Only ever adds a missing parent link; never touches status or credit.
-    const old = JSON.parse(readFileSync(f, "utf8"));
-    if (rec.parent && old.parent === undefined) {
-      const { id, kind, parent, ...rest } = old;
-      writeFileSync(f, JSON.stringify({ id, kind, parent: rec.parent, ...rest }, null, 2) + "\n");
-    }
-    return;
-  }
+  if (existsSync(f)) return;
   writeFileSync(f, JSON.stringify(rec, null, 2) + "\n");
   created++;
 };
-for (const s of milestones)
-  put({ id: s.id, kind: "milestone", parent: s.parent, statement: s.statement, difficulty: s.difficulty, title_en: s.title_en, title_zh: s.title_zh, status: "open" });
-for (const s of programs)
-  put({ id: s.id, kind: "program", parent: s.parent, statement: s.statement, difficulty: 900, title_en: s.title_en, title_zh: s.title_zh,
-    about_en: s.about_en, about_zh: s.about_zh, status: "open" });
 for (const s of summits)
   put({ id: s.id, kind: "summit", statement: s.statement, difficulty: 1000, title_en: s.title_en, title_zh: s.title_zh, status: "open" });
-for (const d of drops)
-  put({
-    id: `d${d.M}-${d.r}`, kind: "drop", statement: `Drop_${d.M}_${d.r}`, difficulty: d.j, modulus: d.M, residue: d.r,
-    title_en: `Every number of the form ${d.M}m + ${d.r} falls below itself within ${d.j} steps`,
-    title_zh: `所有形如 ${d.M}m + ${d.r} 的数，${d.j} 步之内都会降到自身以下`,
-    status: "open",
-  });
-const share = drops.reduce((s, d) => s + 1 / d.M, 0);
-console.log(`${milestones.length} milestones + ${drops.length} drop lemmas (max share ${(share * 100).toFixed(2)}%), ${created} new records`);
+for (const s of open)
+  put({ id: s.id, kind: "program", parent: s.parent, statement: s.statement, difficulty: 900, title_en: s.title_en, title_zh: s.title_zh,
+    about_en: s.about_en, about_zh: s.about_zh, status: "open" });
+console.log(`${summits.length} summits + ${open.length} open problems, ${created} new records`);

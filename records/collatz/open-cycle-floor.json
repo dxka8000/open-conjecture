@@ -1,0 +1,12 @@
+{
+  "id": "open-cycle-floor",
+  "kind": "program",
+  "parent": "summit-no-cycle",
+  "statement": "Open_CycleFloor_2_80",
+  "difficulty": 900,
+  "title_en": "Every number on a non-trivial cycle is at least 2^80",
+  "title_zh": "任何非平凡循环上的每个数都至少是 2^80",
+  "about_en": "Unsolved. Verification excludes cycle members below about 2^68. Pushing the floor to 2^80, by computation or by theory, has not been done.",
+  "about_zh": "未解决。现有验证排除了约 2^68 以下的循环成员。把下限推到 2^80，无论靠计算还是理论，都还没人做到。",
+  "status": "open"
+}
