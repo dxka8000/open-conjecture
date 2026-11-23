@@ -1,6 +1,6 @@
 {
-  "id": "twin-primes/1000000",
+  "id": "twin-primes/5000",
   "problem": "twin-primes",
-  "bound": 1000000,
+  "bound": 5000,
   "status": "open"
 }

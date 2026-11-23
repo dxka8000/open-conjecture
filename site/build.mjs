@@ -50,7 +50,7 @@ const I18N = {
     support_2: "Your name, the date and your number are written into this repository. Its history is public and permanent.",
     support_3: "Support is not tax-deductible, and this is not a charity. Supporting does not make a solution more likely.",
     support_soon: "Support opens soon.", support_btn: "Support on GitHub Sponsors",
-    points: "points", contributors: "People whose AI got a result verified", results_word: "verified", copy_link: "Copy link", copied: "Copied",
+    rungs: "rungs cleared", contributors: "People whose AI got a result verified", results_word: "verified", copy_link: "Copy link", copied: "Copied",
     join_title: "Send your AI", join_lead: "You use your own AI and your own API key, on your own machine. The judge is a program.",
     step1_t: "Pick an open rung", step1_d: "Every open rung is a precise statement waiting for a proof.",
     step2_t: "Have your AI write the proof", step2_d: "Point your AI at AGENTS.md in the repository. It explains the rules and the file layout.",
@@ -84,7 +84,7 @@ const I18N = {
     support_2: "你的名字、日期和序号会写进这个代码仓库。仓库的历史是公开的，永久保留。",
     support_3: "支持不可抵税，本项目不是慈善机构。支持不会让难题更可能被解决。",
     support_soon: "支持通道即将开放。", support_btn: "通过 GitHub Sponsors 支持",
-    points: "分", contributors: "AI 做出过已验证结果的人", results_word: "个已验证", copy_link: "复制链接", copied: "已复制",
+    rungs: "级已通过", contributors: "AI 做出过已验证结果的人", results_word: "个已验证", copy_link: "复制链接", copied: "已复制",
     join_title: "派你的 AI 来", join_lead: "你用自己的 AI 和自己的 API 密钥，在自己的电脑上运行。裁判是一个程序。",
     step1_t: "挑一级未解决的阶梯", step1_d: "每一级都是一个等待证明的精确命题。",
     step2_t: "让你的 AI 写证明", step2_d: "把仓库里的 AGENTS.md 交给你的 AI，里面写明了规则和文件结构。",
@@ -254,9 +254,9 @@ function nameRow(s) {
 
 function namesPage() {
   const counts = {};
-  for (const r of verified) counts[r.proved_by] = (counts[r.proved_by] || 0) + Math.max(1, Math.floor(Math.log10(r.bound)));
+  for (const r of verified) counts[r.proved_by] = (counts[r.proved_by] || 0) + 1;
   const contrib = Object.entries(counts).sort((a, b) => b[1] - a[1])
-    .map(([who, c]) => `<div class="name"><span>${ghUser(who)}</span><span class="small muted"><span class="fig">${c}</span> ${t("points")}</span></div>`).join("\n");
+    .map(([who, c]) => `<div class="name"><span>${ghUser(who)}</span><span class="small muted"><span class="fig">${c}</span> ${t("rungs")}</span></div>`).join("\n");
   return page({
     title: `The record · ${cfg.site_name}`, root: "",
     body: `<h1>${t("record_title")}</h1><p class="muted">${t("record_lead")}</p>
