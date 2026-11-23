@@ -13,6 +13,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      LEAN_NUM_THREADS: 2
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -22,6 +24,7 @@ jobs:
       - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee # v1
         with:
           leanchecker: true
+          leanchecker-args: OpenConjecture
           use-github-cache: false
       - name: Judge
         run: bash checker/check_axioms.sh
