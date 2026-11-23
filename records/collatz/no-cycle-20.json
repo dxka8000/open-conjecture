@@ -1,0 +1,9 @@
+{
+  "id": "no-cycle-20",
+  "kind": "milestone",
+  "statement": "NoCycleUpTo_20",
+  "difficulty": 80,
+  "title_en": "No positive number other than 1, 2 and 4 returns to itself within 20 steps",
+  "title_zh": "除了 1、2、4，没有正整数能在 20 步之内回到自身",
+  "status": "open"
+}

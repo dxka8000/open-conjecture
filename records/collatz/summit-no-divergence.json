@@ -1,0 +1,9 @@
+{
+  "id": "summit-no-divergence",
+  "kind": "summit",
+  "statement": "Summit_NoDivergence",
+  "difficulty": 1000,
+  "title_en": "No runaway: no starting number climbs forever",
+  "title_zh": "没有发散：没有任何起点会无限上升",
+  "status": "open"
+}

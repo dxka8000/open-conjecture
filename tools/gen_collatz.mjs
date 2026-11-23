@@ -50,10 +50,35 @@ const milestones = [
     lean: "∀ n : ℕ, 0 < n → step (step n) ≠ n",
     title_en: "No positive number returns to itself after exactly two steps",
     title_zh: "没有正整数能在恰好两步后回到自身" },
+  { id: "no-cycle-3", statement: "NoCycleUpTo_3", difficulty: 30,
+    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 3 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
+    title_en: "No positive number other than 1, 2 and 4 returns to itself within 3 steps",
+    title_zh: "除了 1、2、4，没有正整数能在 3 步之内回到自身" },
+  { id: "no-cycle-5", statement: "NoCycleUpTo_5", difficulty: 45,
+    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 5 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
+    title_en: "No positive number other than 1, 2 and 4 returns to itself within 5 steps",
+    title_zh: "除了 1、2、4，没有正整数能在 5 步之内回到自身" },
+  { id: "no-cycle-10", statement: "NoCycleUpTo_10", difficulty: 60,
+    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 10 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
+    title_en: "No positive number other than 1, 2 and 4 returns to itself within 10 steps",
+    title_zh: "除了 1、2、4，没有正整数能在 10 步之内回到自身" },
+  { id: "no-cycle-20", statement: "NoCycleUpTo_20", difficulty: 80,
+    lean: "∀ n k : ℕ, 0 < n → 0 < k → k ≤ 20 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
+    title_en: "No positive number other than 1, 2 and 4 returns to itself within 20 steps",
+    title_zh: "除了 1、2、4，没有正整数能在 20 步之内回到自身" },
   { id: "bridge", statement: "Bridge", difficulty: 40,
     lean: "(∀ n : ℕ, 1 < n → ∃ k : ℕ, step^[k] n < n) → Conjecture",
     title_en: "The bridge: if every number above 1 eventually falls below itself, the Collatz conjecture follows",
     title_zh: "桥梁定理：只要每个大于 1 的数最终都会降到自身以下，Collatz 猜想就成立" },
+];
+
+const summits = [
+  { id: "summit-collatz", statement: "Summit_Collatz", lean: "Conjecture",
+    title_en: "The Collatz conjecture: every positive number reaches 1", title_zh: "Collatz 猜想：每个正整数最终都会到 1" },
+  { id: "summit-no-cycle", statement: "Summit_NoCycle", lean: "∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4",
+    title_en: "No cycles: no positive number other than 1, 2 and 4 ever returns to itself", title_zh: "没有循环：除了 1、2、4，没有正整数会回到自身" },
+  { id: "summit-no-divergence", statement: "Summit_NoDivergence", lean: "∀ n : ℕ, ∃ B : ℕ, ∀ k : ℕ, step^[k] n ≤ B",
+    title_en: "No runaway: no starting number climbs forever", title_zh: "没有发散：没有任何起点会无限上升" },
 ];
 
 const lean = [
@@ -71,6 +96,7 @@ const lean = [
   "",
 ];
 for (const s of milestones) lean.push(`def ${s.statement} : Prop := ${s.lean}`, "");
+for (const s of summits) lean.push(`/-- Unsolved. -/`, `def ${s.statement} : Prop := ${s.lean}`, "");
 for (const d of drops)
   lean.push(`def Drop_${d.M}_${d.r} : Prop := ∀ n : ℕ, n % ${d.M} = ${d.r} → 1 < n → step^[${d.j}] n < n`, "");
 lean.push("end OpenConjecture.Collatz", "");
@@ -86,6 +112,8 @@ const put = (rec) => {
 };
 for (const s of milestones)
   put({ id: s.id, kind: "milestone", statement: s.statement, difficulty: s.difficulty, title_en: s.title_en, title_zh: s.title_zh, status: "open" });
+for (const s of summits)
+  put({ id: s.id, kind: "summit", statement: s.statement, difficulty: 1000, title_en: s.title_en, title_zh: s.title_zh, status: "open" });
 for (const d of drops)
   put({
     id: `d${d.M}-${d.r}`, kind: "drop", statement: `Drop_${d.M}_${d.r}`, difficulty: d.j, modulus: d.M, residue: d.r,

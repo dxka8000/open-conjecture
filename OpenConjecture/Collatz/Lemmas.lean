@@ -14,7 +14,24 @@ def Warmup27 : Prop := Reaches 27
 
 def NoTwoCycle : Prop := ∀ n : ℕ, 0 < n → step (step n) ≠ n
 
+def NoCycleUpTo_3 : Prop := ∀ n k : ℕ, 0 < n → 0 < k → k ≤ 3 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4
+
+def NoCycleUpTo_5 : Prop := ∀ n k : ℕ, 0 < n → 0 < k → k ≤ 5 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4
+
+def NoCycleUpTo_10 : Prop := ∀ n k : ℕ, 0 < n → 0 < k → k ≤ 10 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4
+
+def NoCycleUpTo_20 : Prop := ∀ n k : ℕ, 0 < n → 0 < k → k ≤ 20 → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4
+
 def Bridge : Prop := (∀ n : ℕ, 1 < n → ∃ k : ℕ, step^[k] n < n) → Conjecture
+
+/-- Unsolved. -/
+def Summit_Collatz : Prop := Conjecture
+
+/-- Unsolved. -/
+def Summit_NoCycle : Prop := ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4
+
+/-- Unsolved. -/
+def Summit_NoDivergence : Prop := ∀ n : ℕ, ∃ B : ℕ, ∀ k : ℕ, step^[k] n ≤ B
 
 def Drop_2_0 : Prop := ∀ n : ℕ, n % 2 = 0 → 1 < n → step^[1] n < n
 

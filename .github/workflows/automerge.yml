@@ -3,6 +3,9 @@ on:
   workflow_run:
     workflows: ["Lean checker"]
     types: [completed]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
 permissions:
   contents: write
   pull-requests: write
@@ -12,19 +15,23 @@ concurrency:
   cancel-in-progress: false
 jobs:
   merge:
-    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.conclusion != 'cancelled'
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion != 'skipped' &&
+       github.event.workflow_run.conclusion != 'cancelled')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # Checks out the default branch only. Nothing from the pull request is executed.
+      # Checks out the default branch only. Nothing from any pull request is executed.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Validate and merge
         env:
           GH_TOKEN: ${{ github.token }}
+          MODE: ${{ github.event_name == 'workflow_run' && 'run' || 'sweep' }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
           REPO: ${{ github.repository }}
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}

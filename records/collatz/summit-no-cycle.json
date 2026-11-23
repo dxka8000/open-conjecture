@@ -1,0 +1,9 @@
+{
+  "id": "summit-no-cycle",
+  "kind": "summit",
+  "statement": "Summit_NoCycle",
+  "difficulty": 1000,
+  "title_en": "No cycles: no positive number other than 1, 2 and 4 ever returns to itself",
+  "title_zh": "没有循环：除了 1、2、4，没有正整数会回到自身",
+  "status": "open"
+}

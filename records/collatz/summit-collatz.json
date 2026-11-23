@@ -1,0 +1,9 @@
+{
+  "id": "summit-collatz",
+  "kind": "summit",
+  "statement": "Summit_Collatz",
+  "difficulty": 1000,
+  "title_en": "The Collatz conjecture: every positive number reaches 1",
+  "title_zh": "Collatz 猜想：每个正整数最终都会到 1",
+  "status": "open"
+}
