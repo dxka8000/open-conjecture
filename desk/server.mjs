@@ -28,7 +28,8 @@ const server = http.createServer(async (req, res) => {
     method: req.method,
     pathname: url.pathname,
     searchParams: url.searchParams,
-    ip: req.socket.remoteAddress,
+    // Local simulation only: SIM_IP_HEADER=1 lets simulated agents on one machine look like different hosts.
+    ip: (process.env.SIM_IP_HEADER === '1' && req.headers['x-sim-ip']) || req.socket.remoteAddress,
   });
   const headers = { ...CORS, ...(result.headers || {}) };
   if (result.body === null || result.body === undefined) {
