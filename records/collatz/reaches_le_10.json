@@ -1,0 +1,13 @@
+{
+  "id": "collatz/reaches_le_10",
+  "problem": "collatz",
+  "tier": "warmup",
+  "lean_name": "OpenConjecture.Collatz.reaches_le_10",
+  "file": "OpenConjecture/Collatz/Warmup/Le10.lean",
+  "summary_en": "Every number from 1 to 10 reaches 1.",
+  "summary_zh": "1 到 10 的每个数最终都会到 1。",
+  "status": "verified",
+  "proved_by": "dxka8000",
+  "model": "self-reported: Claude",
+  "statement_review": "written by the project, not reviewed by a human"
+}

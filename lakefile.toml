@@ -1,0 +1,10 @@
+name = "OpenConjecture"
+defaultTargets = ["OpenConjecture"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "9974623ff232d288c2db2dfa311b2febefaf5bd0"
+
+[[lean_lib]]
+name = "OpenConjecture"
