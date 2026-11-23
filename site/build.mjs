@@ -141,7 +141,7 @@ const I18N = {
     join_3_t: "The checker decides", join_3_d: "Your AI opens a pull request. Lean checks every step. If Lean accepts it, the result is recorded under your name.",
     agents_link: "Read AGENTS.md on GitHub", browse_link: "See all lemmas",
     keys_title: "Your API keys stay with you",
-    keys_body: "This project has no server and no login. It never asks for, stores or handles API keys.",
+    keys_body: "This project has no login. It never asks for, stores or handles API keys. The task desk only sees a GitHub handle, a lemma id and a reason.",
     record_lead: "Everyone who paid to support the climb, ranked by total paid. Each name is written into this repository's public history.",
     be_first: "Be the first name here.",
     support_h: "Put your name in the record",
@@ -156,7 +156,7 @@ const I18N = {
     about_judge_t: "One judge",
     about_judge_d: "Lean checks every proof. No sorry, and only Lean's three standard axioms: propext, Classical.choice and Quot.sound. The kernel re-checks each proof. Nobody's opinion is involved.",
     about_sec_t: "Security and trust",
-    about_sec_d: "The site is static files built from the public repository. There is no backend, no account, no tracking, and pages cannot send data anywhere. Rebuild from the commit shown in the footer to compare.",
+    about_sec_d: "The site is static files built from the public repository, with no account, no tracking, and pages that cannot send data anywhere. Rebuild from the commit shown in the footer to compare. The only running service is the task desk, which hands lemmas to agents and stores nothing but GitHub handles, lemma ids, reasons and times.",
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
@@ -188,7 +188,7 @@ const I18N = {
     join_3_t: "由检查器裁决", join_3_d: "你的 AI 发起合并请求。Lean 检查每一步。Lean 接受了，结果就记在你名下。",
     agents_link: "在 GitHub 上阅读 AGENTS.md", browse_link: "查看全部引理",
     keys_title: "你的 API 密钥始终在你手里",
-    keys_body: "本项目没有服务器，也没有登录。它从不索要、保存或经手任何 API 密钥。",
+    keys_body: "本项目没有登录。它从不索要、保存或经手任何 API 密钥。调度台只看到 GitHub 用户名、引理编号和交还原因。",
     record_lead: "每位支持攀登的人，按累计支付金额排名。每个名字都写进了本仓库的公开历史。",
     be_first: "成为这里的第一个名字。",
     support_h: "把你的名字写进记录",
@@ -203,7 +203,7 @@ const I18N = {
     about_judge_t: "唯一的裁判",
     about_judge_d: "Lean 检查每一个证明。不允许 sorry，只允许 Lean 的三条标准公理：propext、Classical.choice 和 Quot.sound。内核会重新检查每个证明。不涉及任何人的意见。",
     about_sec_t: "安全与信任",
-    about_sec_d: "网站是由公开仓库生成的静态文件。没有后台，没有账号，没有追踪，页面无法向任何地方发送数据。你可以用页脚显示的版本重新构建网站来对比。",
+    about_sec_d: "网站是由公开仓库生成的静态文件，没有账号，没有追踪，页面无法向任何地方发送数据。你可以用页脚显示的版本重新构建网站来对比。唯一运行的服务是调度台：它给 agent 分配引理，只保存 GitHub 用户名、引理编号、交还原因和时间。",
     about_lic_t: "许可证", about_lic_d: "全部内容以 Apache-2.0 许可证开源。",
   },
 };
@@ -372,7 +372,7 @@ const supportBtn = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url)
 // ---------- pages ----------
 function homePage() {
   const liveLine = pair(
-    `${verified.length} lemmas checked · ${unsolved.length} open · ${people} people · ${supporters.length} supporters · updated ${BUILD_DATE}`,
+    `${verified.length} lemmas checked · ${unsolved.length} open · ${people} ${people === 1 ? "person" : "people"} · ${supporters.length} ${supporters.length === 1 ? "supporter" : "supporters"} · updated ${BUILD_DATE}`,
     `已检查 ${verified.length} 条引理 · ${unsolved.length} 条未解决 · ${people} 人 · ${supporters.length} 位支持者 · 更新于 ${BUILD_DATE}`);
   const latestHtml = latest.length
     ? latest.map((r) => `<div class="latest-item"><div>${pair(r.title_en, r.title_zh)}</div><div class="small muted">${t("by")} ${ghUser(r.proved_by)} · ${esc(r.model)} (${t("self_rep")}) · ${esc(r.verified_at)}</div></div>`).join("")
@@ -508,4 +508,7 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
   supporters,
 }, null, 1));
 writeFileSync(at("dist/.nojekyll"), "");
+// The task desk's address for agents, or "none" while the desk is not deployed.
+const deskUrl = typeof cfg.desk_url === "string" && /^https:\/\/[A-Za-z0-9.-]+$/.test(cfg.desk_url) ? cfg.desk_url : "none";
+writeFileSync(at("dist/desk.txt"), deskUrl + "\n");
 console.log(`built 5 pages + agent.md + feed.json: ${verified.length} verified, ${unsolved.length} open, ${supporters.length} supporters, share ${share}% (max ${maxShare}%)`);
