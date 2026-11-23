@@ -5,6 +5,7 @@ import { MemStore } from '../src/memstore.mjs';
 
 const SITE = 'https://example.test/site';
 const LEMMAS_URL = 'https://example.test/Lemmas.lean';
+const PULLS_URL = 'https://api.github.com/repos/dxka8000/open-conjecture/pulls?state=open&per_page=100';
 const T0 = Date.UTC(2026, 10, 23, 12, 0, 0);
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -22,6 +23,9 @@ const LEMMAS_TEXT = [
   'def Bridge : Prop := (∀ n : ℕ, 1 < n → ∃ k : ℕ, step^[k] n < n) → Conjecture',
   'def Wrapped_1 : Prop :=',
   '  ∀ n : ℕ, n % 2 = 1 → 1 < n → step^[2] n < n',
+  'def Step_A : Prop := ∀ n : ℕ, n % 8 = 5 → 1 < n → step^[4] n < n',
+  'def Prog_P : Prop := ∀ n : ℕ, 1 < n → ∃ k : ℕ, step^[k] n < n',
+  'def Summit_S : Prop := Conjecture',
   '',
   'end OpenConjecture.Collatz',
   '',
@@ -74,11 +78,20 @@ function seeded(seed) {
 const json = (data) => ({ ok: true, status: 200, json: async () => data, text: async () => JSON.stringify(data) });
 const text = (s) => ({ ok: true, status: 200, json: async () => ({}), text: async () => s });
 
+const PR = (number, title, login) => ({ number, title, user: { login } });
+
 function setup() {
   const feed = makeFeed();
+  // remote.pulls is the GitHub pulls list; pullsStatus != 200 makes the fetch fail.
+  const remote = { pulls: [], pullsStatus: 200, pullsCalls: 0 };
   const fetchFn = async (url) => {
     if (url === `${SITE}/feed.json`) return json({ records: feed.records });
     if (url === LEMMAS_URL) return text(LEMMAS_TEXT);
+    if (url === PULLS_URL) {
+      remote.pullsCalls++;
+      if (remote.pullsStatus !== 200) return { ok: false, status: remote.pullsStatus, json: async () => ({}), text: async () => '' };
+      return json(remote.pulls);
+    }
     return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
   };
   const clock = { t: T0 };
@@ -102,7 +115,7 @@ function setup() {
   };
   const next = (handle, extra = '', opts) => call('GET', `/desk/next?handle=${handle}${extra}`, opts);
   const release = (lease, reason, opts) => call('POST', `/desk/release?lease=${lease}&reason=${reason}`, opts);
-  return { desk, clock, feed, call, next, release };
+  return { desk, clock, feed, remote, call, next, release };
 }
 
 test('parseLemmas extracts exact statements, including wrapped ones', () => {
@@ -346,4 +359,204 @@ test('unknown routes return 404', async () => {
   assert.equal((await call('GET', '/desk/nope')).status, 404);
   assert.equal((await call('GET', '/elsewhere')).status, 404);
   assert.equal((await call('POST', '/desk/status')).status, 404);
+});
+
+const hist = async (call, id) => (await call('GET', `/desk/task/${id}`)).body.history;
+const STEP_A = '∀ n : ℕ, n % 8 = 5 → 1 < n → step^[4] n < n';
+
+test('unknown role returns 400; think, redteam and review are accepted', async () => {
+  const { next } = setup();
+  const bad = await next('alice', '&role=summit');
+  assert.equal(bad.status, 400);
+  assert.match(bad.body.error, /role must be one of: build, think, review, redteam/);
+  for (const role of ['build', 'think', 'redteam', 'review']) {
+    assert.equal((await next(`h-${role}`, `&role=${role}`)).status, 200, role);
+  }
+});
+
+test('think hands out only program, milestone and step records, never drops or summits', async () => {
+  const { next, feed } = setup();
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 30), rec('st-a', 'step', 'Step_A', 4), rec('s-1', 'summit', 'Summit_S', 60));
+  const gaps = [];
+  for (const h of ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']) {
+    const r = await next(h, '&role=think');
+    assert.equal(r.status, 200);
+    gaps.push(r.body.gap);
+  }
+  assert.deepEqual(new Set(gaps.map((g) => g.id)), new Set(['p-1', 'm-bridge', 'st-a']));
+  for (const g of gaps) {
+    assert.equal(g.role, 'think');
+    assert.ok(['program', 'milestone', 'step'].includes(g.kind), g.kind);
+  }
+  // a1 already holds gaps[0], so another=1 must give a different task
+  const again = await next('a1', '&role=think&another=1');
+  assert.notEqual(again.body.gap.id, gaps[0].id);
+});
+
+test('think prefers tasks with past missing_lemma releases, ahead of holder counts', async () => {
+  const { next, release, feed } = setup();
+  feed.records.push(rec('st-a', 'step', 'Step_A', 4));
+  const T = '&role=think';
+  const a = await next('alice', T);
+  assert.equal(a.body.gap.id, 'm-bridge'); // no history: milestone beats step on kind
+  const b = await next('alice', `${T}&another=1`);
+  assert.equal(b.body.gap.id, 'st-a');
+  await release(b.body.lease.id, 'missing_lemma'); // st-a: 0 holders, 1 missing_lemma
+  const c = await next('carol', T); // m-bridge has 1 holder, but st-a has the release
+  assert.equal(c.body.gap.id, 'st-a');
+  await release(a.body.lease.id, 'submitted'); // m-bridge: 0 holders
+  const d = await next('dave', T); // st-a has 1 holder and 1 release; the release wins
+  assert.equal(d.body.gap.id, 'st-a');
+});
+
+test('think breaks ties by fewest holders, then kind (program, milestone, step), then difficulty', async () => {
+  const { next, feed } = setup();
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 30), rec('st-a', 'step', 'Step_A', 1));
+  const T = '&role=think';
+  assert.equal((await next('alice', T)).body.gap.id, 'p-1'); // all 0 holders: program first
+  assert.equal((await next('bob', T)).body.gap.id, 'm-bridge'); // m-bridge and st-a at 0: milestone beats easier step
+  assert.equal((await next('carol', T)).body.gap.id, 'st-a'); // fewest holders beats kind
+});
+
+test('redteam hands out step, milestone, program in that order, with Refute_ file and namespace', async () => {
+  const { next, feed, call } = setup();
+  feed.records.push(rec('st-a', 'step', 'Step_A', 4), rec('p-1', 'program', 'Prog_P', 30));
+  const a = await next('alice', '&role=redteam');
+  assert.equal(a.status, 200);
+  const { gap, lease } = a.body;
+  assert.equal(gap.id, 'st-a');
+  assert.equal(gap.role, 'redteam');
+  assert.equal(gap.statement, STEP_A);
+  assert.equal(gap.file, 'OpenConjecture/Collatz/Proofs/Refute_Step_A.lean');
+  assert.equal(gap.namespace, 'OpenConjecture.Collatz.Proofs.Refute_Step_A');
+  assert.equal((await hist(call, 'st-a'))[0].type, 'took:redteam');
+  for (const h of ['bob', 'carol', 'dave', 'erin']) {
+    const r = await next(h, '&role=redteam');
+    assert.ok(['step', 'milestone', 'program'].includes(r.body.gap.kind), r.body.gap.kind);
+    assert.ok(!r.body.gap.id.startsWith('d-'));
+  }
+  assert.ok(lease.id);
+});
+
+test('redteam ranks by statement_seems_false releases, not missing_lemma', async () => {
+  const { next, release, feed } = setup();
+  feed.records.push(rec('st-a', 'step', 'Step_A', 4));
+  const R = '&role=redteam';
+  const a = await next('alice', R);
+  assert.equal(a.body.gap.id, 'st-a');
+  await release(a.body.lease.id, 'missing_lemma'); // not a refute signal
+  const b = await next('bob', R); // st-a: 0 holders, no refute signal
+  assert.equal(b.body.gap.id, 'st-a');
+  const c = await next('carol', R); // st-a is held, so m-bridge
+  assert.equal(c.body.gap.id, 'm-bridge');
+  await release(c.body.lease.id, 'statement_seems_false'); // m-bridge: 1 refute signal, 0 holders
+  await release(b.body.lease.id, 'submitted'); // st-a: 0 holders, 0 signals
+  const d = await next('dave', R);
+  assert.equal(d.body.gap.id, 'm-bridge');
+});
+
+test('review picks open "Propose" PRs, skipping other titles and the handle\'s own PRs', async () => {
+  const { next, remote, call } = setup();
+  remote.pulls = [
+    PR(10, 'Propose Drop_2_0 split', 'Bob'), // own PR, case-insensitive match
+    PR(11, 'Fix typo in README', 'carol'), // not a proposal
+    PR(12, 'Propose Drop_4_1', 'carol'),
+    PR(13, 'Proposed something else', 'zed'), // "Propose " prefix needed
+    PR(14, 'Propose Drop_16_3 cover', 'zed'),
+  ];
+  const r = await next('bob', '&role=review');
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body.gap, {
+    id: 'pr-12',
+    role: 'review',
+    kind: 'review',
+    pr: 12,
+    url: 'https://github.com/dxka8000/open-conjecture/pull/12',
+    title: 'Propose Drop_4_1',
+  });
+  assert.equal((await hist(call, 'pr-12'))[0].type, 'took:review');
+});
+
+test('review gives the fewest-held PR first, then the lowest number, and skips PRs this handle holds', async () => {
+  const { next, remote } = setup();
+  remote.pulls = [PR(10, 'Propose a', 'zed'), PR(11, 'Propose b', 'zed')];
+  assert.equal((await next('alice', '&role=review')).body.gap.id, 'pr-10');
+  assert.equal((await next('bob', '&role=review')).body.gap.id, 'pr-11'); // pr-10 has a holder
+  assert.equal((await next('alice', '&role=review&another=1')).body.gap.id, 'pr-11'); // alice holds pr-10
+  assert.equal((await next('carol', '&role=review')).body.gap.id, 'pr-10'); // 1 holder each: lowest number
+});
+
+test('review: no proposals gives gap null with a retry, and a held review lease comes back as is', async () => {
+  const { next, remote, clock } = setup();
+  const none = await next('alice', '&role=review');
+  assert.deepEqual(none.body, { gap: null, retry_after_s: 120 });
+  assert.equal(none.headers['Retry-After'], '120');
+
+  clock.t += 6 * MIN; // let the empty pulls cache expire
+  remote.pulls = [PR(10, 'Propose Drop_2_0 split', 'zed')];
+  const a = await next('alice', '&role=review');
+  assert.equal(a.body.gap.id, 'pr-10');
+  const b = await next('alice', '&role=review');
+  assert.equal(b.body.lease.id, a.body.lease.id);
+  assert.deepEqual(b.body.gap, a.body.gap);
+  const c = await next('alice', '&role=review&another=1');
+  assert.equal(c.body.gap, null); // its only PR is already held by alice
+});
+
+test('the GitHub pulls list is cached for 5 minutes', async () => {
+  const { next, remote, clock } = setup();
+  remote.pulls = [PR(10, 'Propose a', 'zed')];
+  await next('alice', '&role=review');
+  await next('bob', '&role=review');
+  assert.equal(remote.pullsCalls, 1);
+  clock.t += 5 * MIN;
+  await next('carol', '&role=review');
+  assert.equal(remote.pullsCalls, 2);
+});
+
+test('pulls fetch failure: 503 with no cache, the last good list when there is one', async () => {
+  const { next, remote, clock } = setup();
+  remote.pullsStatus = 500;
+  const none = await next('alice', '&role=review');
+  assert.equal(none.status, 503);
+
+  remote.pullsStatus = 200;
+  remote.pulls = [PR(10, 'Propose a', 'zed')];
+  const ok = await next('bob', '&role=review');
+  assert.equal(ok.body.gap.id, 'pr-10');
+
+  remote.pullsStatus = 500;
+  clock.t += 6 * MIN; // cache is stale, so the fetch is retried and fails
+  const stale = await next('carol', '&role=review');
+  assert.equal(stale.status, 200);
+  assert.equal(stale.body.gap.id, 'pr-10');
+});
+
+test('beat returns 410 settled when the task is refuted, and deletes the lease', async () => {
+  const { next, call, clock, feed, release: rel } = setup();
+  const a = await next('alice');
+  const task = feed.records.find((r) => r.id === a.body.gap.id);
+  task.status = 'refuted';
+  clock.t += 2 * MIN; // let the 60 s feed cache expire
+  const r = await call('POST', `/desk/beat?lease=${a.body.lease.id}`, { tick: 0 });
+  assert.equal(r.status, 410);
+  assert.equal(r.body.settled, true);
+  assert.equal((await rel(a.body.lease.id, 'submitted', { tick: 0 })).status, 404);
+});
+
+test('a re-served think gap keeps role "think"', async () => {
+  const { next } = setup();
+  const a = await next('alice', '&role=think');
+  const b = await next('alice', '&role=think');
+  assert.equal(b.body.lease.id, a.body.lease.id);
+  assert.equal(b.body.gap.role, 'think');
+});
+
+test('a re-served redteam gap keeps the Refute_ file', async () => {
+  const { next, feed } = setup();
+  feed.records.push(rec('st-a', 'step', 'Step_A', 4));
+  const a = await next('alice', '&role=redteam');
+  const b = await next('alice', '&role=redteam');
+  assert.equal(b.body.gap.id, a.body.gap.id);
+  assert.equal(b.body.gap.file, 'OpenConjecture/Collatz/Proofs/Refute_Step_A.lean');
 });

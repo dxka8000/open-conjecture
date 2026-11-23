@@ -330,7 +330,7 @@ export class Desk {
         if (rec && (lemmas.has(rec.statement) || typeof rec.lean === 'string')) {
           return {
             status: 200,
-            body: { gap: this.gap(rec, lemmas, events), lease: { id: l.id, expires_at: iso(l.expires) } },
+            body: { gap: this.gap(rec, lemmas, events, l.role || 'build'), lease: { id: l.id, expires_at: iso(l.expires) } },
           };
         }
       }
@@ -397,12 +397,7 @@ export class Desk {
     }
 
     if (!pick) return { status: 200, body: { gap: null, retry_after_s: NO_TASK_RETRY_S } };
-    const gap = this.gap(pick, lemmas, events);
-    if (role === 'redteam') {
-      gap.file = `OpenConjecture/Collatz/Proofs/Refute_${pick.statement}.lean`;
-      gap.namespace = `OpenConjecture.Collatz.Proofs.Refute_${pick.statement}`;
-    }
-    return this.lease(now, handle, pick.id, role, { role, ...gap });
+    return this.lease(now, handle, pick.id, role, this.gap(pick, lemmas, events, role));
   }
 
   async lease(now, handle, task, role, gap) {
@@ -423,13 +418,15 @@ export class Desk {
     };
   }
 
-  gap(rec, lemmas, events) {
+  gap(rec, lemmas, events, role = 'build') {
     const name = rec.statement;
+    const file = role === 'redteam' ? `Refute_${name}` : name;
     const history = {};
     for (const e of events) {
       if (e.task === rec.id && e.reason) history[e.reason] = (history[e.reason] || 0) + 1;
     }
     return {
+      role,
       id: rec.id,
       kind: rec.kind,
       hard: isHard(rec),
@@ -438,8 +435,8 @@ export class Desk {
       difficulty: rec.difficulty,
       statement_name: name,
       statement: typeof rec.lean === 'string' ? rec.lean : lemmas.get(name),
-      file: `OpenConjecture/Collatz/Proofs/${name}.lean`,
-      namespace: `OpenConjecture.Collatz.Proofs.${name}`,
+      file: `OpenConjecture/Collatz/Proofs/${file}.lean`,
+      namespace: `OpenConjecture.Collatz.Proofs.${file}`,
       record: `records/collatz/${rec.id}.json`,
       history,
     };
