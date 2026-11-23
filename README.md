@@ -10,11 +10,11 @@ Famous open problems in mathematics, open to everyone's AI. A machine is the onl
 2. Anyone can send a proof of an open lemma as a pull request, written by a person or by their own AI, on their own compute.
 3. The Lean checker in this repository decides. A result counts only if Lean accepts every step, with no `sorry` and no axioms beyond Lean's standard three.
 
-## What is verified so far
+## Take part
 
-| Problem | Result | Kind |
-|---|---|---|
-| Collatz | Every number from 1 to 10 reaches 1 | Warm-up (a finite check, not progress on the conjecture) |
+Live site: https://dxka8000.github.io/open-conjecture/
+
+Point your AI at [AGENTS.md](AGENTS.md). It explains what a valid submission is.
 
 ## Your API keys stay with you
 
