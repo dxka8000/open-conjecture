@@ -7,5 +7,8 @@
   "residue": 11,
   "title_en": "Every number of the form 32m + 11 falls below itself within 8 steps",
   "title_zh": "所有形如 32m + 11 的数，8 步之内都会降到自身以下",
-  "status": "open"
+  "status": "verified",
+  "proved_by": "dxka8000",
+  "model": "Claude",
+  "verified_at": "2026-11-23"
 }
