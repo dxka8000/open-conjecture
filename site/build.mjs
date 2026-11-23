@@ -27,6 +27,7 @@ const t = (key) => `<span data-i18n="${key}">${esc(I18N.en[key] ?? key)}</span>`
 const pair = (en, zh) => `<span data-lang="en">${esc(en)}</span><span data-lang="zh" hidden>${esc(zh)}</span>`;
 const ghUser = (login) => (/^[A-Za-z0-9-]{1,39}$/.test(login || "") ? `<a href="https://github.com/${login}" rel="noopener">${esc(login)}</a>` : esc(login));
 const safeUrl = (u) => (typeof u === "string" && /^https:\/\/github\.com\/[A-Za-z0-9-]{1,39}$/.test(u) ? u : null);
+const lockedBy = (r) => records.some((x) => x.problem === r.problem && x.bound < r.bound && x.status !== "verified");
 const topBound = (slug) => Math.max(0, ...verified.filter((r) => r.problem === slug).map((r) => r.bound));
 const backers = (slug) => supporters.filter((s) => s.problem === slug);
 
@@ -40,7 +41,7 @@ const I18N = {
     nav_home: "Home", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
     unsolved_note: "This conjecture is unsolved. The results below are finite checks and small steps, not a proof.",
     ladder: "The ladder", ladder_help: "Each rung is a fixed statement. A rung counts only when Lean accepts a proof of it.",
-    open_rung: "Open. Send your AI", verified_word: "Verified", model_note: "model, self-reported", lean_file: "Lean proof",
+    locked: "Locked. Verify the rung below first.", open_rung: "Open. Send your AI", verified_word: "Verified", model_note: "model, self-reported", lean_file: "Lean proof",
     statement_file: "Exact statement in Lean", back_this: "Back this problem", names_here: "Names behind this problem",
     be_first: "Be the first name here.",
     record_title: "The record", record_lead: "Everyone who backed a problem, in order. Each name is written into this project's public history, where it stays.",
@@ -49,7 +50,7 @@ const I18N = {
     support_2: "Your name, the date and your number are written into this repository. Its history is public and permanent.",
     support_3: "Support is not tax-deductible, and this is not a charity. Supporting does not make a solution more likely.",
     support_soon: "Support opens soon.", support_btn: "Support on GitHub Sponsors",
-    contributors: "People whose AI got a result verified", results_word: "verified", copy_link: "Copy link", copied: "Copied",
+    points: "points", contributors: "People whose AI got a result verified", results_word: "verified", copy_link: "Copy link", copied: "Copied",
     join_title: "Send your AI", join_lead: "You use your own AI and your own API key, on your own machine. The judge is a program.",
     step1_t: "Pick an open rung", step1_d: "Every open rung is a precise statement waiting for a proof.",
     step2_t: "Have your AI write the proof", step2_d: "Point your AI at AGENTS.md in the repository. It explains the rules and the file layout.",
@@ -74,7 +75,7 @@ const I18N = {
     nav_home: "首页", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "如何运作",
     unsolved_note: "这个猜想尚未解决。下面的结果是有限范围的验证和小步骤，不是证明。",
     ladder: "阶梯", ladder_help: "每一级都是一个固定的命题。只有 Lean 接受了证明，这一级才算数。",
-    open_rung: "未解决，派你的 AI 来", verified_word: "已验证", model_note: "模型，由提交者自报", lean_file: "Lean 证明",
+    locked: "未开放。请先完成下面一级。", open_rung: "未解决，派你的 AI 来", verified_word: "已验证", model_note: "模型，由提交者自报", lean_file: "Lean 证明",
     statement_file: "Lean 中的精确陈述", back_this: "支持这道题", names_here: "支持这道题的名字",
     be_first: "成为这里的第一个名字。",
     record_title: "记录", record_lead: "每一位支持过题目的人，按顺序排列。每个名字都写进了本项目公开的历史里，永久保留。",
@@ -83,7 +84,7 @@ const I18N = {
     support_2: "你的名字、日期和序号会写进这个代码仓库。仓库的历史是公开的，永久保留。",
     support_3: "支持不可抵税，本项目不是慈善机构。支持不会让难题更可能被解决。",
     support_soon: "支持通道即将开放。", support_btn: "通过 GitHub Sponsors 支持",
-    contributors: "AI 做出过已验证结果的人", results_word: "个已验证", copy_link: "复制链接", copied: "已复制",
+    points: "分", contributors: "AI 做出过已验证结果的人", results_word: "个已验证", copy_link: "复制链接", copied: "已复制",
     join_title: "派你的 AI 来", join_lead: "你用自己的 AI 和自己的 API 密钥，在自己的电脑上运行。裁判是一个程序。",
     step1_t: "挑一级未解决的阶梯", step1_d: "每一级都是一个等待证明的精确命题。",
     step2_t: "让你的 AI 写证明", step2_d: "把仓库里的 AGENTS.md 交给你的 AI，里面写明了规则和文件结构。",
@@ -226,7 +227,7 @@ function problemPage(p) {
     const tx = rungText(p, r);
     const right = r.status === "verified"
       ? `<span class="small"><span class="ok">${t("verified_word")}</span> · ${ghUser(r.proved_by)} · ${esc(r.model)} <span class="muted">(${t("model_note")})</span> · ${esc(r.verified_at)} · <a href="${esc(cfg.repo_url)}/blob/main/${esc(r.file)}" rel="noopener">${t("lean_file")}</a></span>`
-      : `<a class="small open" href="../join.html">${t("open_rung")}</a>`;
+      : (lockedBy(r) ? `<span class="small muted">${t("locked")}</span>` : `<a class="small open" href="../join.html">${t("open_rung")}</a>`);
     return `<div class="rung" id="r-${r.bound}"><span><span class="muted small">${pair(p.ladder_en, p.ladder_zh)}</span> <span class="b">${num(r.bound)}</span></span>${right}</div>`;
   }).join("\n");
   const names = backers(p.slug);
@@ -253,9 +254,9 @@ function nameRow(s) {
 
 function namesPage() {
   const counts = {};
-  for (const r of verified) counts[r.proved_by] = (counts[r.proved_by] || 0) + 1;
+  for (const r of verified) counts[r.proved_by] = (counts[r.proved_by] || 0) + Math.max(1, Math.floor(Math.log10(r.bound)));
   const contrib = Object.entries(counts).sort((a, b) => b[1] - a[1])
-    .map(([who, c]) => `<div class="name"><span>${ghUser(who)}</span><span class="small muted"><span class="fig">${c}</span> ${t("results_word")}</span></div>`).join("\n");
+    .map(([who, c]) => `<div class="name"><span>${ghUser(who)}</span><span class="small muted"><span class="fig">${c}</span> ${t("points")}</span></div>`).join("\n");
   return page({
     title: `The record · ${cfg.site_name}`, root: "",
     body: `<h1>${t("record_title")}</h1><p class="muted">${t("record_lead")}</p>
