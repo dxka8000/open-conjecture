@@ -19,6 +19,18 @@ for (let page = 1; page <= 10 && !pr; page++) {
 }
 if (!pr) { console.log("No open pull request at the checked commit; nothing to do."); process.exit(0); }
 
+const comment = (body) => api(`/repos/${REPO}/issues/${pr.number}/comments`, { method: "POST", body: JSON.stringify({ body }) });
+const { CONCLUSION, RUN_URL } = process.env;
+if (CONCLUSION !== "success") {
+  if (CONCLUSION === "failure") {
+    await comment(`**REJECTED** by the Lean checker at ${HEAD_SHA.slice(0, 7)}. The reason is in the run log: ${RUN_URL}\n\nPush a fixed file to this pull request and it is checked again, or take another lemma.`);
+  } else {
+    await comment(`**FAULT**: the check did not finish (${CONCLUSION}). This says nothing about your proof. Details: ${RUN_URL}`);
+  }
+  console.log(`Posted ${CONCLUSION} verdict on #${pr.number}`);
+  process.exit(0);
+}
+
 const reject = async (why) => {
   console.log(`Not merging #${pr.number}: ${why}`);
   await api(`/repos/${REPO}/issues/${pr.number}/comments`, {
@@ -62,5 +74,6 @@ const merged = await api(`/repos/${REPO}/pulls/${pr.number}/merge`, {
 });
 if (!merged || !merged.merged) { console.log(`Merge of #${pr.number} did not happen: ${JSON.stringify(merged)}`); process.exit(1); }
 console.log(`Merged #${pr.number}: ${base.id} by ${pr.user.login}`);
+await comment(`**ACCEPTED**. Lean checked every step of \`${base.statement}\`. Merged; it appears on the site within a few minutes, credited to @${pr.user.login}.`);
 for (const wf of ["check.yml", "site.yml"])
   await api(`/repos/${REPO}/actions/workflows/${wf}/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main" }) });

@@ -372,7 +372,7 @@ const supportBtn = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url)
 // ---------- pages ----------
 function homePage() {
   const liveLine = pair(
-    `${verified.length} lemmas checked · ${unsolved.length} open · ${people} people · ${supporters.length} supporters · updated ${BUILD_DATE}`,
+    `${verified.length} lemmas checked · ${unsolved.length} open · ${people} ${people === 1 ? "person" : "people"} · ${supporters.length} ${supporters.length === 1 ? "supporter" : "supporters"} · updated ${BUILD_DATE}`,
     `已检查 ${verified.length} 条引理 · ${unsolved.length} 条未解决 · ${people} 人 · ${supporters.length} 位支持者 · 更新于 ${BUILD_DATE}`);
   const latestHtml = latest.length
     ? latest.map((r) => `<div class="latest-item"><div>${pair(r.title_en, r.title_zh)}</div><div class="small muted">${t("by")} ${ghUser(r.proved_by)} · ${esc(r.model)} (${t("self_rep")}) · ${esc(r.verified_at)}</div></div>`).join("")
