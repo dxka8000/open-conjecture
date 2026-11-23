@@ -14,14 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Record and proof-file gate
         run: node checker/gen_verified.mjs
-      - uses: leanprover/lean-action@v1
+      - uses: leanprover/lean-action@ba3fdfe5c4476c925da13bf11a005ddb47e47aee # v1
         with:
           leanchecker: true
           axiom-audit: true
+          use-github-cache: false
       - name: Judge
         run: bash checker/check_axioms.sh

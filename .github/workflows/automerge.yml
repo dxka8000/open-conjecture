@@ -1,0 +1,29 @@
+name: Auto-merge checked proofs
+on:
+  workflow_run:
+    workflows: ["Lean checker"]
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: automerge
+  cancel-in-progress: false
+jobs:
+  merge:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Checks out the default branch only. Nothing from the pull request is executed.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate and merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          REPO: ${{ github.repository }}
+        run: node tools/automerge.mjs
