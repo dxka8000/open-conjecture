@@ -1,0 +1,6 @@
+{
+  "id": "goldbach/100",
+  "problem": "goldbach",
+  "bound": 100,
+  "status": "open"
+}

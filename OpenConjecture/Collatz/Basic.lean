@@ -5,6 +5,8 @@ import Mathlib
 
 Take any positive whole number. If it is even, halve it; if it is odd, triple it and add one.
 The conjecture says you always end up at 1. It is open.
+
+This file is protected: pull requests may not change it.
 -/
 
 namespace OpenConjecture.Collatz
@@ -17,5 +19,8 @@ def Reaches (n : ℕ) : Prop := ∃ k : ℕ, step^[k] n = 1
 
 /-- The Collatz conjecture: every positive whole number reaches 1. **Open.** -/
 def Conjecture : Prop := ∀ n : ℕ, 0 < n → Reaches n
+
+/-- Ladder target: every positive whole number up to `B` reaches 1. -/
+def Target (B : ℕ) : Prop := ∀ n : ℕ, 0 < n → n ≤ B → Reaches n
 
 end OpenConjecture.Collatz

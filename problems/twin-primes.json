@@ -1,9 +1,15 @@
 {
-  "slug": "twin-primes", "order": 3, "tier": "legend",
-  "name_en": "Twin prime conjecture", "name_zh": "孪生素数猜想",
+  "slug": "twin-primes",
+  "order": 3,
+  "tier": "legend",
+  "name_en": "Twin prime conjecture",
+  "name_zh": "孪生素数猜想",
   "statement_en": "Are there infinitely many pairs of primes that differ by 2, like 11 and 13?",
   "statement_zh": "相差 2 的素数对（比如 11 和 13）有无穷多对吗？",
-  "status_en": "Open. First stated in 1846.", "status_zh": "1846 年提出，至今未解决。",
-  "ladder_en": "Twin prime pair found in Lean above", "ladder_zh": "已用 Lean 找到大于此数的孪生素数对：",
-  "lean_file": "OpenConjecture/TwinPrimes/Basic.lean"
+  "status_en": "Open. First stated in 1846.",
+  "status_zh": "1846 年提出，至今未解决。",
+  "ladder_en": "Twin prime pair found in Lean above",
+  "ladder_zh": "已用 Lean 找到大于此数的孪生素数对：",
+  "lean_file": "OpenConjecture/TwinPrimes/Basic.lean",
+  "lean_namespace": "TwinPrimes"
 }

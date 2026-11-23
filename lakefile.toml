@@ -8,3 +8,4 @@ rev = "9974623ff232d288c2db2dfa311b2febefaf5bd0"
 
 [[lean_lib]]
 name = "OpenConjecture"
+globs = ["OpenConjecture.+"]

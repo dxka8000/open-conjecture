@@ -1,9 +1,15 @@
 {
-  "slug": "collatz", "order": 1, "tier": "legend",
-  "name_en": "Collatz conjecture", "name_zh": "Collatz 猜想（3n+1）",
+  "slug": "collatz",
+  "order": 1,
+  "tier": "legend",
+  "name_en": "Collatz conjecture",
+  "name_zh": "Collatz 猜想（3n+1）",
   "statement_en": "Take any positive whole number. If it is even, halve it. If it is odd, triple it and add one. Do you always end up at 1?",
   "statement_zh": "任取一个正整数：偶数就除以 2，奇数就乘 3 加 1。一直做下去，最终一定会到 1 吗？",
-  "status_en": "Open since 1937.", "status_zh": "1937 年提出，至今未解决。",
-  "ladder_en": "Checked in Lean for every number up to", "ladder_zh": "已用 Lean 验证到",
-  "lean_file": "OpenConjecture/Collatz/Basic.lean"
+  "status_en": "Open since 1937.",
+  "status_zh": "1937 年提出，至今未解决。",
+  "ladder_en": "Checked in Lean for every number up to",
+  "ladder_zh": "已用 Lean 验证到",
+  "lean_file": "OpenConjecture/Collatz/Basic.lean",
+  "lean_namespace": "Collatz"
 }
