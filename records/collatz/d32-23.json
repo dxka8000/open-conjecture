@@ -1,0 +1,11 @@
+{
+  "id": "d32-23",
+  "kind": "drop",
+  "statement": "Drop_32_23",
+  "difficulty": 8,
+  "modulus": 32,
+  "residue": 23,
+  "title_en": "Every number of the form 32m + 23 falls below itself within 8 steps",
+  "title_zh": "所有形如 32m + 23 的数，8 步之内都会降到自身以下",
+  "status": "open"
+}

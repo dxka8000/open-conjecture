@@ -1,0 +1,11 @@
+{
+  "id": "d4096-1019",
+  "kind": "drop",
+  "statement": "Drop_4096_1019",
+  "difficulty": 19,
+  "modulus": 4096,
+  "residue": 1019,
+  "title_en": "Every number of the form 4096m + 1019 falls below itself within 19 steps",
+  "title_zh": "所有形如 4096m + 1019 的数，19 步之内都会降到自身以下",
+  "status": "open"
+}

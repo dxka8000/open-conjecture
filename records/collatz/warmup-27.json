@@ -1,0 +1,9 @@
+{
+  "id": "warmup-27",
+  "kind": "milestone",
+  "statement": "Warmup27",
+  "difficulty": 2,
+  "title_en": "27 reaches 1 (it takes 111 steps and climbs as high as 9,232 on the way)",
+  "title_zh": "27 最终会到 1（要走 111 步，途中最高到 9,232）",
+  "status": "open"
+}

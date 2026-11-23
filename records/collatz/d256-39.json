@@ -1,0 +1,11 @@
+{
+  "id": "d256-39",
+  "kind": "drop",
+  "statement": "Drop_256_39",
+  "difficulty": 13,
+  "modulus": 256,
+  "residue": 39,
+  "title_en": "Every number of the form 256m + 39 falls below itself within 13 steps",
+  "title_zh": "所有形如 256m + 39 的数，13 步之内都会降到自身以下",
+  "status": "open"
+}

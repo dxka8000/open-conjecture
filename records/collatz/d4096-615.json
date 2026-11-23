@@ -1,0 +1,11 @@
+{
+  "id": "d4096-615",
+  "kind": "drop",
+  "statement": "Drop_4096_615",
+  "difficulty": 19,
+  "modulus": 4096,
+  "residue": 615,
+  "title_en": "Every number of the form 4096m + 615 falls below itself within 19 steps",
+  "title_zh": "所有形如 4096m + 615 的数，19 步之内都会降到自身以下",
+  "status": "open"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "d1024-287",
+  "kind": "drop",
+  "statement": "Drop_1024_287",
+  "difficulty": 16,
+  "modulus": 1024,
+  "residue": 287,
+  "title_en": "Every number of the form 1024m + 287 falls below itself within 16 steps",
+  "title_zh": "所有形如 1024m + 287 的数，16 步之内都会降到自身以下",
+  "status": "open"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "d8192-6983",
+  "kind": "drop",
+  "statement": "Drop_8192_6983",
+  "difficulty": 21,
+  "modulus": 8192,
+  "residue": 6983,
+  "title_en": "Every number of the form 8192m + 6983 falls below itself within 21 steps",
+  "title_zh": "所有形如 8192m + 6983 的数，21 步之内都会降到自身以下",
+  "status": "open"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "no-two-cycle",
+  "kind": "milestone",
+  "statement": "NoTwoCycle",
+  "difficulty": 4,
+  "title_en": "No positive number returns to itself after exactly two steps",
+  "title_zh": "没有正整数能在恰好两步后回到自身",
+  "status": "open"
+}
