@@ -290,7 +290,7 @@ async function main() {
   // ---- thinkers split, the AI review decides
   log("\n== Round 1b: thinkers and the AI review");
   const t0 = await next("sim-tina", "&role=think");
-  check("desk gives a thinker an open problem and the split file to write", t0.status === 200 && t0.body.gap?.role === "think" && /Proposals\/Split_Open_/.test(t0.body.gap.file), t0.body.gap?.file);
+  check("desk gives a thinker a note task first (no notes yet): kind note and the note file", t0.status === 200 && t0.body.gap?.role === "think" && t0.body.gap.kind === "note" && /^notes\/open-[a-z0-9-]+\/<your GitHub login>-<slug>\.md$/.test(t0.body.gap.note_file) && /agent\.md/.test(t0.body.gap.help), t0.body.gap?.note_file);
   const P1 = t0.body.gap.id;
   const pG = openPr({ author: "sim-tina", title: `Split ${P1}`, files: splitFiles("sim-tina", P1, [
     { id: "step-sim-g1", name: "Step_SimG1", def: "∀ n : ℕ, 0 < n → Reaches (6 * n + 1)" },
@@ -350,8 +350,8 @@ async function main() {
   const ch = await ciCheck(pH, true);
   check("a note with HTML or script fails the gate", ch.conclusion === "failure" && /HTML is not allowed/.test(ch.gateOut), ch.gateOut.slice(0, 90));
   const pX = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "badlink", {
-    known: "- Someone (2024), \"Title\". https://evil.example.com/paper and https://arxiv.org/abs/2201.00406" }) });
-  check("a note linking outside arXiv, DOI, journal or GitHub fails the gate", (await ciCheck(pX, true)).conclusion === "failure");
+    known: "- Someone (2024), \"Title\". http://evil.example.com/paper and https://arxiv.org/abs/2201.00406" }) });
+  check("a note with a non-https link fails the gate", (await ciCheck(pX, true)).conclusion === "failure");
   const pO = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-nina", NR, "impostor") });
   await ciCheck(pO, true);
   check("a note filed under someone else's name is never merged", gh.prs.get(pO.number).state === "open" && /must start with your GitHub login/.test(lastComment(pO)));

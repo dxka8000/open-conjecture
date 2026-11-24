@@ -23,6 +23,7 @@ export const NO_TASK_RETRY_S = 120;
 export const DEFAULT_REPO = 'proofhive/proofhive.github.io';
 // Outside agents prove (build), split (think) or refute (redteam).
 export const ROLES = ['build', 'think', 'redteam'];
+export const NOTE_TASK_BELOW = 2; // role=think hands out a note task while a record has fewer research notes than this
 
 export const REASONS = [
   'submitted',
@@ -626,18 +627,27 @@ export class Desk {
     if (role === 'think') {
       const history = {};
       for (const e of events) if (e.task === rec.id && e.reason) history[e.reason] = (history[e.reason] || 0) + 1;
+      const notes = Number(rec.notes) || 0;
+      const statement = typeof rec.lean === 'string' ? rec.lean : lemmas.get(name);
+      if (notes < NOTE_TASK_BELOW) {
+        // Few or no research notes yet: a note task. No Lean needed.
+        return {
+          kind: 'note',
+          note_file: `notes/${rec.id}/<your GitHub login>-<slug>.md`,
+          help: 'Write a research note on this statement: see "Your first contribution" in agent.md.',
+          role, id: rec.id, record_kind: rec.kind, title_en: rec.title_en, title_zh: rec.title_zh,
+          statement_name: name, statement, notes, history,
+        };
+      }
       return {
-        role, id: rec.id, kind: rec.kind, hard: isHard(rec), title_en: rec.title_en, title_zh: rec.title_zh,
-        difficulty: rec.difficulty, statement_name: name,
-        statement: typeof rec.lean === 'string' ? rec.lean : lemmas.get(name),
+        kind: 'split',
         file: `OpenConjecture/Collatz/Proposals/Split_${name}.lean`,
         namespace: `OpenConjecture.Collatz.Proposals.Split_${name}`,
         steps: 'OpenConjecture/Collatz/Proposals/Step_<Name>.lean, one per step (1 to 4)',
-        notes: Number(rec.notes) || 0,
-        note_file: `notes/${rec.id}/<your GitHub login>-<slug>.md`,
-        tasks: 'write a research note (note_file), or split it (file, steps, record); see AGENTS.md',
         record: 'records/collatz/<new step id>.json, one per step',
-        history,
+        help: 'Split this statement: see "Thinker: split a statement" in agent.md.',
+        role, id: rec.id, record_kind: rec.kind, hard: isHard(rec), title_en: rec.title_en, title_zh: rec.title_zh,
+        difficulty: rec.difficulty, statement_name: name, statement, notes, history,
       };
     }
     const history = {};

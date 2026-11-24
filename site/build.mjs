@@ -186,7 +186,7 @@ const I18N = {
     tl_started: "started working on", tl_submitted: "submitted a result for", tl_handed: "handed back",
     tl_role_think: "to split it", tl_role_redteam: "to refute it",
     credit_h: "What contributors get", credit_full: "The full credit & publication pledge",
-    credit_1: "Every accepted proof, split and refutation stays in the public record forever, with your name and date.",
+    credit_1: "Every accepted proof, split, refutation and research note stays in the public record forever, with your name and date.",
     credit_2: "A public profile page with all your work and points.",
     credit_3: "Any publishable result becomes an arXiv paper by “The ProofHive Collaboration”, with every contributor as an author.",
     credit_4: "The Lean proofs are archived on Zenodo with a permanent DOI.",
@@ -291,7 +291,7 @@ const I18N = {
     tl_started: "开始处理", tl_submitted: "提交了结果：", tl_handed: "交还了",
     tl_role_think: "去拆分", tl_role_redteam: "去推翻",
     credit_h: "贡献者能得到什么", credit_full: "完整的署名与发表承诺",
-    credit_1: "每个被接受的证明、拆分和反驳都永久保留在公开记录中，附有你的名字和日期。",
+    credit_1: "每个被接受的证明、拆分、反驳和研究笔记都永久保留在公开记录中，附有你的名字和日期。",
     credit_2: "一个公开的个人页面，列出你的全部工作和积分。",
     credit_3: "任何可发表的结果都会以“The ProofHive Collaboration”的名义发表到 arXiv，每位贡献者都是作者。",
     credit_4: "Lean 证明会存档到 Zenodo，并获得永久 DOI。",
@@ -1098,15 +1098,15 @@ function contributorPage(who) {
 }
 
 // ---------- research note pages: Markdown rendered with everything escaped ----------
-const linkOk = (u) => { try { const x = new URL(u); return x.protocol === "https:" && NOTE_HOSTS.some((h) => x.hostname === h || x.hostname.endsWith("." + h)); } catch { return false; } };
+const linkOk = (u) => { try { return new URL(u).protocol === "https:"; } catch { return false; } };
 function mdInline(text) {
   let out = "", last = 0;
   const re = /`([^`]+)`|\[([^\]]+)\]\((https:\/\/[^\s)]+)\)|(https:\/\/[^\s)\]>]+)|\*\*([^*]+)\*\*/g;
   for (const m of text.matchAll(re)) {
     out += esc(text.slice(last, m.index));
     if (m[1] !== undefined) out += `<code>${esc(m[1])}</code>`;
-    else if (m[3] !== undefined) out += linkOk(m[3]) ? `<a href="${esc(m[3])}" rel="nofollow noopener">${esc(m[2])}</a>` : esc(m[0]);
-    else if (m[4] !== undefined) out += linkOk(m[4]) ? `<a href="${esc(m[4])}" rel="nofollow noopener">${esc(m[4])}</a>` : esc(m[4]);
+    else if (m[3] !== undefined) out += linkOk(m[3]) ? `<a href="${esc(m[3])}" rel="nofollow ugc noopener">${esc(m[2])}</a>` : esc(m[0]);
+    else if (m[4] !== undefined) out += linkOk(m[4]) ? `<a href="${esc(m[4])}" rel="nofollow ugc noopener">${esc(m[4])}</a>` : esc(m[4]);
     else out += `<strong>${esc(m[5])}</strong>`;
     last = m.index + m[0].length;
   }

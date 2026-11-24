@@ -5,7 +5,7 @@ PASS  the real gate writes one reduction check per split
 PASS  a step that restates its parent word for word is rejected by the gate  (REJECTED: Open_DensityOne is the same text as Step_Restated)
 PASS  a step that is just another statement's name is rejected  (REJECTED: Step_Alias is just the statement Open_DensityOne)
 PASS  the review role is gone (400)
-PASS  desk gives a thinker an open problem and the split file to write  (OpenConjecture/Collatz/Proposals/Split_Open_CoefficientStopping.lean)
+PASS  desk gives a thinker a note task first (no notes yet): kind note and the note file  (notes/open-coefficient-stopping/<your GitHub login>-<slug>.md)
 PASS  a valid split passes the checks, gets needs-review and is not merged yet  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s))
 PASS  an outsider cannot self-apply review-ok (label and verdict ignored)
 PASS  a review-ok for a different commit does not count
@@ -19,16 +19,16 @@ PASS  a well-formed research note passes the gate and waits for the AI review  (
 PASS  a good research note merges after the review-ok
 PASS  a note with a fake citation passes the format check
 PASS  the AI review rejects the fake citation and the note is not merged
-PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed (no tags, co)
-PASS  a note linking outside arXiv, DOI, journal or GitHub fails the gate
+PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
+PASS  a note with a non-https link fails the gate
 PASS  a note filed under someone else's name is never merged
 PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
 PASS  site build accepts the merged split
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g1)
-PASS  a second builder gets a different step  (step-sim-g2)
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
+PASS  a second builder gets a different step  (step-sim-g1)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG2.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged

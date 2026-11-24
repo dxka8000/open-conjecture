@@ -152,7 +152,8 @@ async function evaluateNote(pr, files, author) {
   if (text === null) return { ok: false, why: "the note could not be read." };
   const r = checkNote(rid, file, text, Buffer.byteLength(text, "utf8"));
   if (!r.ok) return { ok: false, why: r.why };
-  if (Math.abs(day(r.note.date) - Math.floor(Date.now() / 864e5)) > 2) return { ok: false, why: "the note's Date must be today's date (UTC)." };
+  const age = Math.floor(Date.now() / 864e5) - day(r.note.date);
+  if (age < -1 || age > 7) return { ok: false, why: "the note's Date must be within the last 7 days (UTC), as YYYY-MM-DD." };
   const verdict = await reviewVerdict(pr);
   if (verdict === "ok") return { ok: true, kind: "note", summary: `Research note on ${rid} by ${author}`,
     accepted: `**ACCEPTED**. The AI review found this research note accurate, on topic and new. It is on the site now, credited to @${author}.` };

@@ -379,6 +379,7 @@ test('unknown role returns 400; build, think and redteam are accepted', async ()
 test('think prefers statements handed back with missing_lemma, skips ones already split, and points at Proposals/', async () => {
   const { next, release, feed } = setup();
   feed.records.push(rec('p-1', 'program', 'Prog_P', 900), rec('st-a', 'step', 'Step_A', 4));
+  for (const r of feed.records) r.notes = 2; // enough notes: think hands out split tasks
   const b = await next('bob', '&hard=1');
   const other = b.body.gap.id === 'm-bridge' ? 'p-1' : 'm-bridge';
   feed.records.find((r) => r.id === 'st-a').parent = other; // the other hard statement is already split
@@ -386,6 +387,7 @@ test('think prefers statements handed back with missing_lemma, skips ones alread
   const t1 = await next('tina', '&role=think');
   assert.equal(t1.body.gap.id, b.body.gap.id);
   assert.equal(t1.body.gap.role, 'think');
+  assert.equal(t1.body.gap.kind, 'split');
   assert.match(t1.body.gap.file, /^OpenConjecture\/Collatz\/Proposals\/Split_[A-Za-z0-9_]+\.lean$/);
   const seen = new Set();
   for (const h of ['u1', 'u2', 'u3', 'u4', 'u5']) { const r = await next(h, '&role=think'); if (r.body.gap) seen.add(r.body.gap.id); }
@@ -468,4 +470,9 @@ test('think prefers records with fewer research notes, and offers a note file', 
   assert.equal(a.body.gap.id, 'p-2');
   assert.equal(a.body.gap.notes, 0);
   assert.equal(a.body.gap.note_file, 'notes/p-2/<your GitHub login>-<slug>.md');
+  assert.equal(a.body.gap.kind, 'note');
+  assert.equal(Object.keys(a.body.gap)[0], 'kind');
+  assert.equal(Object.keys(a.body.gap)[1], 'note_file');
+  assert.match(a.body.gap.help, /agent\.md/);
+  assert.equal(a.body.gap.file, undefined, 'no split fields on a note task');
 });
