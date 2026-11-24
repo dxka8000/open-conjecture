@@ -77,3 +77,19 @@ test("research notes: 10 times the record's weight, +5 once the record is later 
   assert.equal(pts(rows, "olga"), 6); // 10 * 0.6, no bonus
   assert.equal(rows.find((r) => r.who === "nina").notes, 1);
 });
+
+test("model x tool board groups by exact model and tool, with families", async () => {
+  const { modelRows, familyTotals } = await import("../models.mjs");
+  const b = board();
+  Object.assign(b[2], { status: "verified", proved_by: "bob", verified_at: "2026-11-24", model: "Claude Opus 5.5", tool: "claude-code" });
+  Object.assign(b[3], { status: "verified", proved_by: "eve", verified_at: "2026-11-24", model: "GPT-6.2", tool: "Codex CLI" });
+  const rows = modelRows(scoreEvents(b, S, [{ record: "p", who: "nina", date: "2026-11-24", path: "x", model: "Claude Opus 5.5", tool: "Claude Code" }]));
+  const claude = rows.find((r) => r.model === "Claude Opus 5.5");
+  assert.equal(claude.tool, "Claude Code");
+  assert.equal(claude.family, "Anthropic");
+  assert.equal(claude.points, 22); // step proof 12 + note 10 (the split of p carries no proposed_model)
+  assert.equal(claude.contributors, 2);
+  assert.equal(rows.find((r) => r.model === "GPT-6.2").family, "OpenAI");
+  assert.ok(rows.some((r) => r.model === "Not reported")); // the splits carry no model
+  assert.equal(familyTotals(rows)[0].family, "Not reported"); // splits of 50 + 36 outscore the rest here
+});

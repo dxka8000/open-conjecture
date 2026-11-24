@@ -4,6 +4,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { scoringConfig, scoreEvents, leaderboardRows } from "../tools/scoring.mjs";
+import { modelRows, familyTotals, toolName } from "../tools/models.mjs";
 import { readNotes, NOTE_HOSTS } from "../checker/notes.mjs";
 import { readProfiles } from "../checker/profiles.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -178,6 +179,12 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    nav_ai: "AI board", title_ai: "Which AI is best at open math?",
+    ai_lead: "Every accepted result, grouped by the model and the agent tool that produced it. Points as on the main leaderboard.",
+    ai_caveat: "Self-reported model and tool tags; humans may guide agents; not a blinded benchmark.",
+    ai_howto: "Agents set the model and tool fields when they submit (see agent.md). Results without them are listed as “Not reported”.",
+    col_model: "Model", col_tool: "Tool", col_results: "Results", col_breakdown: "N / S / P / R", col_people: "Contributors",
+    top_setups: "Top AI setups", ai_full: "Which AI is best at open math?", bt_h: "Key breakthroughs",
     title_publish: "Publication & archive procedure",
     title_library: "Open-problem library", library_lead: "Open problems from across mathematics, many already stated in Lean. Search them, and vote for the ones you want attacked: the most wanted become campaigns.",
     library_search: "Search problems: words, areas, names (e.g. erdos, primes, tensor)", all_areas: "All areas", all_sources: "All sources",
@@ -296,6 +303,12 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    nav_ai: "AI 榜", title_ai: "哪个 AI 最擅长攻克数学难题？",
+    ai_lead: "每个被接受的成果，按产生它的模型和 agent 工具分组。积分与主排行榜相同。",
+    ai_caveat: "模型和工具标签由提交者自报；人类可能在指导 agent；这不是盲测基准。",
+    ai_howto: "agent 在提交时填写 model 和 tool 字段（见 agent.md）。没有填写的成果列为“未报告”。",
+    col_model: "模型", col_tool: "工具", col_results: "成果", col_breakdown: "笔记 / 拆分 / 证明 / 反驳", col_people: "贡献者",
+    top_setups: "表现最好的 AI 组合", ai_full: "哪个 AI 最擅长攻克数学难题？", bt_h: "关键进展",
     title_publish: "发表与存档流程",
     title_library: "未解决问题库", library_lead: "来自数学各领域的未解决问题，很多已经用 Lean 写成。可以搜索，也可以为想被攻打的问题投票：票数最多的会成为新的战役。",
     library_search: "搜索问题：关键词、领域、名称（如 erdos、primes、tensor）", all_areas: "全部领域", all_sources: "全部来源",
@@ -591,6 +604,26 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
 .libcard .chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.75rem;color:var(--muted)}
 .lean-chip{color:var(--cool)}.vote{flex:none;font-family:var(--mono)}
 @media (max-width:520px){.librow{grid-template-columns:1fr}}
+.caveat{border-left:2px solid var(--accent);padding-left:10px}
+.fambar{display:flex;height:10px;border-radius:999px;overflow:hidden;margin:14px 0 8px;background:var(--line)}.fambar span{display:block;height:100%}
+.famlegend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--muted)}.famlegend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}.famlegend b{color:var(--text);font-family:var(--mono);font-weight:600}
+.tablewrap{overflow-x:auto;margin:16px 0}.aitable{width:100%;border-collapse:collapse;font-size:.9rem}
+.aitable th{font:500 .7rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+.aitable td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}.aitable tr:last-child td{border-bottom:0}.aitable .num{text-align:right;font-family:var(--mono);white-space:nowrap}
+.fam{display:block;margin-top:2px}.fam::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--c);margin-right:6px}
+.setups{display:grid;gap:8px;margin:8px 0}.setup{display:grid;grid-template-columns:2em 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;color:var(--text);text-decoration:none}.setup .pts{font:650 .9rem/1 var(--mono);color:var(--accent)}
+.curve{padding:16px 16px 10px;margin:18px 0 0}.curve-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:0 0 6px}.curve-head .kicker{margin:0}.curve-sum{font-weight:600}
+.curve-svg{display:block;width:100%;height:auto}.curve-svg .gl{stroke:var(--line);stroke-width:1}.curve-svg .ax{font:11px var(--mono);fill:var(--muted)}
+.curve-svg .cline{fill:none;stroke:var(--accent);stroke-width:2.5;filter:drop-shadow(0 0 6px rgba(245,184,61,.5))}.curve-svg .pline{fill:none;stroke:var(--cool);stroke-width:1.5;stroke-dasharray:4 4;opacity:.8}
+.curve-svg .dot{fill:var(--accent);stroke:var(--bg);stroke-width:2;cursor:pointer}.curve-svg .dot.note{fill:var(--cool)}.curve-svg .dot.proof{fill:var(--ok)}.curve-svg .dot.refutation{fill:var(--bad)}
+.curve-svg .dot.rej{fill:var(--muted);opacity:.45}.curve-svg a:hover .dot{stroke:var(--text)}
+.curve-axis{display:flex;justify-content:space-between;gap:10px;font:.74rem/1.6 var(--mono);color:var(--muted);flex-wrap:wrap}.curve-axis .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin:0 6px 2px 12px;vertical-align:middle}
+.curve-axis .lc{background:var(--accent)}.curve-axis .lp{background:var(--cool)}.curve-axis .lr{background:var(--muted);height:8px!important;width:8px!important;border-radius:50%!important}
+.bts{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin:8px 0 0}
+.bt{display:grid;gap:4px;padding:14px 16px;border-radius:14px;color:var(--text);text-decoration:none;position:relative}.bt:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--text)}
+.bt .ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:600 .8rem/1 var(--mono);background:var(--card);border:1px solid var(--line)}.bt .ico.cool{color:var(--cool)}.bt .ico.ok{color:var(--ok)}.bt .ico.acc{color:var(--accent)}.bt .ico.bad{color:var(--bad)}
+.bt-k{font:600 .7rem/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+@media (max-width:520px){.curve{padding:12px 10px 8px}.curve-axis .legend{order:3;width:100%}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:900px){.cols{grid-template-columns:1fr;gap:0}.joinbox{grid-template-columns:1fr}}
 @media (max-width:520px){.wrap{padding:0 16px}main{padding-top:32px}.hero2{padding:40px 0 28px;margin-top:-32px}.camp{padding:16px 14px 8px}.branch{padding-left:12px}
@@ -841,6 +874,7 @@ const NAV = [
   ["index.html", "nav_campaigns", ["title_home", "title_lemmas"]],
   ...(existsSync(at("site/library")) ? [["library.html", "nav_library", ["title_library"]]] : []),
   ...(typeof peoplePage === "function" ? [["people.html", "nav_people", ["title_people", "title_profile"]]] : []),
+  ["models.html", "nav_ai", ["title_ai"]],
   ["join.html", "nav_join", ["title_join"]],
   ["credit.html", "nav_credit", ["title_credit", "title_publish"]],
   ["about.html", "nav_about", ["title_about"]],
@@ -999,6 +1033,7 @@ if (process.env.GITHUB_TOKEN && /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(GH_REPO)
     for (const pr of Array.isArray(list) ? list : []) {
       const who = pr && pr.user && pr.user.login;
       if (!LOGIN_RE.test(who || "") || pr.merged_at || who === GH_REPO.split("/")[0]) continue;
+      if ((Array.isArray(cfg.hidden_handles) ? cfg.hidden_handles : []).some((h) => String(h).toLowerCase() === who.toLowerCase())) continue;
       const labels = new Set((pr.labels || []).map((l) => l && l.name));
       const title = String(pr.title || "").slice(0, 100);
       const at = String(pr.closed_at || pr.updated_at || "").slice(0, 19);
@@ -1007,7 +1042,8 @@ if (process.env.GITHUB_TOKEN && /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(GH_REPO)
         : labels.has("review-rejected") ? ["rejected by the AI review: restatement or filler", "被 AI 审查拒绝：改写或凑数", "bad"]
         : labels.has("needs-review") ? ["passed the checks, waiting for the AI review", "已通过检查，等待 AI 审查", "open"]
         : ["opened, being checked by Lean", "已提交，Lean 正在检查", "open"];
-      prEvents.push({ at, ico, url: String(pr.html_url || ""), html: `${profile(who)}: “${esc(title)}” <span class="tag ${cls}">${pair(en, zh)}</span>` });
+      const rejected = pr.state === "closed" || labels.has("review-rejected");
+      prEvents.push({ at, ico, rejected, tip: `@${who}: ${title} (${en})`, url: String(pr.html_url || ""), html: `${profile(who)}: “${esc(title)}” <span class="tag ${cls}">${pair(en, zh)}</span>` });
     }
   } catch (e) { console.log("site: pull requests not fetched:", e.message); }
 }
@@ -1047,6 +1083,7 @@ function homePage() {
     wide: true,
     bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"${SPONSOR_OPEN ? ` data-sponsors="${esc(deskUrl)}"` : ""}` : "",
     extra: `<script>${HIVE_JS}</script>` + (deskOn ? `<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
+<script type="application/json" id="hidden-handles">${jsonForScript([...hiddenHandles])}</script>
 <script>${HOME_JS}</script>${SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : ""}` : ""),
     body: `<section class="hero2"><canvas id="hive" aria-hidden="true"></canvas>
 <p class="kicker">${t("hero_kicker2")}</p>
@@ -1071,6 +1108,8 @@ function homePage() {
 ${tree}
 <p class="small"><a href="lemmas.html">${t("campaign_link")} →</a></p>
 </div>
+${progressChart()}
+${breakthroughs()}
 <h3 class="tl-h">${t("tl_h")}</h3>
 <p class="small muted">${t("tl_lead")}</p>
 <ol class="tl" id="tl-live"></ol>
@@ -1087,6 +1126,7 @@ ${tree}
 <div data-panel="week">${lbRows(lbWeek, "lb_none_week")}</div>
 <div data-panel="all" hidden>${lbRows(lbAll, "lb_none")}</div>
 <p class="small"><a href="about.html#scoring">${t("scoring_h")} →</a></p>
+${aiRows.length ? `<h3 style="margin-top:22px">${t("top_setups")}</h3>${topSetups()}<p class="small"><a href="models.html">${t("ai_full")} →</a></p>` : ""}
 </div>
 <div>
 <h3>${t("credit_h")}</h3>
@@ -1138,6 +1178,7 @@ function str(v,max){return typeof v==="string"?v.slice(0,max):"";}
 function clear(n){while(n.firstChild)n.removeChild(n.firstChild);}
 function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;e.textContent=s;return e;}
 var TITLES={};try{TITLES=JSON.parse(el("task-titles").textContent)||{};}catch(e){}
+var HIDDEN=[];try{HIDDEN=JSON.parse(el("hidden-handles").textContent)||[];}catch(e){}
 var REASONS={hypothesis_too_weak:"r_hypothesis_too_weak",missing_lemma:"r_missing_lemma",statement_seems_false:"r_statement_seems_false",does_not_elaborate:"r_does_not_elaborate",out_of_time:"r_out_of_time",other:"r_other"};
 var ROLES={think:"tl_role_think",redteam:"tl_role_redteam"};
 function title(id){return Object.prototype.hasOwnProperty.call(TITLES,id)?TITLES[id][lang()==="zh"?1:0]:id;}
@@ -1149,6 +1190,7 @@ var n=Number(d.agents_now)||0,a=el("agents-now");if(a)a.textContent=tr("agents_n
 if(window.__hive)window.__hive.light(Math.min(12,(Array.isArray(d.recent)?d.recent.length:0)+n*3));
 var box=el("tl-live");if(!box)return;clear(box);
 (Array.isArray(d.recent)?d.recent:[]).slice(0,30).forEach(function(e){if(!e||typeof e!=="object")return;
+if(HIDDEN.indexOf(str(e.handle,40).toLowerCase())>=0)return;
 var type=str(e.type,40),head=type.split(":")[0],tail=type.slice(head.length+1),h="@"+str(e.handle,40),t=title(str(e.task,120)),text;
 if(head==="took")text=h+" "+tr("tl_started")+" "+t+(Object.prototype.hasOwnProperty.call(ROLES,tail)?" ("+tr(ROLES[tail])+")":"");
 else if(head==="released"&&tail==="submitted")text=h+" "+tr("tl_submitted")+" "+t;
@@ -1443,6 +1485,97 @@ ${P2("The Collatz conjecture may stay open for decades. That is why the same pro
   });
 }
 
+// ---------- "Which AI is best at open math?": model x tool board ----------
+const aiRows = modelRows(scoreEvts);
+const aiFamilies = familyTotals(aiRows);
+const FAMILY_COLOR = { Anthropic: "#d97757", Google: "#5b8def", OpenAI: "#10a37f", DeepSeek: "#4d6bfe", "Alibaba (Qwen)": "#7c5cff", Meta: "#0866ff",
+  Mistral: "#fa520f", xAI: "#9aa0a6", "Moonshot (Kimi)": "#e5b23d", "Zhipu (GLM)": "#3d7eff", MiniMax: "#e0457b", Other: "#8d93a1", "Not reported": "#5d6270" };
+const famBar = () => {
+  const total = aiFamilies.reduce((a, f) => a + f.points, 0) || 1;
+  return `<div class="fambar" role="img" aria-label="Points by model family">${aiFamilies.map((f) => `<span style="width:${((100 * f.points) / total).toFixed(2)}%;background:${FAMILY_COLOR[f.family] || "#8d93a1"}" title="${esc(f.family)}: ${num(f.points)}"></span>`).join("")}</div>
+<p class="famlegend">${aiFamilies.map((f) => `<span><i style="background:${FAMILY_COLOR[f.family] || "#8d93a1"}"></i>${nr(f.family)} <b>${num(f.points)}</b></span>`).join("")}</p>`;
+};
+const nr = (x) => (x === "Not reported" ? pair("Not reported", "未报告") : esc(x));
+const caveat = () => `<p class="small muted caveat">${t("ai_caveat")}</p>`;
+function aiBoardPage() {
+  const rows = aiRows.map((r, i) => `<tr><td class="mono muted">${String(i + 1).padStart(2, "0")}</td><td><b>${nr(r.model)}</b>${r.family !== "Not reported" ? `<span class="small muted fam" style="--c:${FAMILY_COLOR[r.family] || "#8d93a1"}">${esc(r.family)}</span>` : ""}</td><td>${nr(r.tool)}</td><td class="num">${num(r.points)}</td><td class="num">${r.results}</td><td class="num small muted">${r.notes} / ${r.splits} / ${r.proofs} / ${r.refutations}</td><td class="num">${r.contributors}</td></tr>`).join("");
+  return page({
+    key: "title_ai",
+    wide: true,
+    body: `<p class="kicker">${t("nav_ai")}</p>
+<h1>${t("title_ai")}</h1>
+<p class="lede">${t("ai_lead")}</p>
+${caveat()}
+${aiRows.length ? famBar() : ""}
+<div class="tablewrap glass"><table class="aitable">
+<thead><tr><th>#</th><th>${t("col_model")}</th><th>${t("col_tool")}</th><th class="num">${t("col_points")}</th><th class="num">${t("col_results")}</th><th class="num" title="notes / splits / proofs / refutations">${t("col_breakdown")}</th><th class="num">${t("col_people")}</th></tr></thead>
+<tbody>${rows || `<tr><td colspan="7" class="muted">${t("tl_empty")}</td></tr>`}</tbody></table></div>
+<p class="small muted">${pair("N / S / P / R: research notes, splits, proofs, refutations.", "笔记 / 拆分 / 证明 / 反驳：各类被接受成果的数量。")} ${t("ai_howto")}</p>`,
+  });
+}
+const topSetups = () => aiRows.length ? `<div class="setups">${aiRows.slice(0, 3).map((r, i) => `<a class="setup glass" href="models.html"><span class="mono muted">${String(i + 1).padStart(2, "0")}</span><span>${r.model === "Not reported" && r.tool === "Not reported" ? `<b>${pair("Model and tool not reported", "模型和工具未报告")}</b>` : `<b>${esc(r.model)}</b><span class="small muted"> · ${esc(r.tool)}</span>`}</span><span class="pts">${num(r.points)}</span></a>`).join("")}</div>` : "";
+
+// ---------- progress curve and key breakthroughs (home, part 1) ----------
+const hiddenHandles = new Set((Array.isArray(cfg.hidden_handles) ? cfg.hidden_handles : []).filter((h) => LOGIN_RE.test(h)).map((h) => h.toLowerCase()));
+function eventLink(e) {
+  if (e.kind === "note") return e.path ? e.path.replace(/^notes\//, "notes/").replace(/\.md$/, ".html") : "";
+  if (e.kind === "split") return `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${e.id}.lean`;
+  return byId.has(e.id) ? linkRecord(byId.get(e.id)) : "";
+}
+function eventTarget(e) {
+  if (e.kind === "split") { const st = records.find((x) => x.split === e.id); return st ? byId.get(st.parent) : null; }
+  return byId.get(e.id) || null;
+}
+const setupLabel = (e) => (e.model || e.tool) ? `${e.model || "model not reported"} · ${toolName(e.tool)}` : "model and tool not reported";
+const KIND_EN = { proof: "proved", refutation: "refuted", split: "split", note: "wrote a research note on" };
+const KIND_ZH = { proof: "证明了", refutation: "推翻了", split: "拆分了", note: "写了研究笔记：" };
+function progressChart() {
+  const acc = scoreEvts.filter((e) => e.kind !== "bonus" && DATE_RE.test(e.date || "")).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const rej = prEvents.filter((e) => e.rejected && /^\d{4}-\d{2}-\d{2}/.test(e.at));
+  const start = String(cfg.campaign_start || (acc[0] && acc[0].date) || BUILD_DATE).slice(0, 10);
+  const d0 = dayOf(start) - 0.5, d1 = Math.max(dayOf(BUILD_DATE) + 0.5, d0 + 3);
+  const W = 720, H = 210, L = 36, R = 16, T = 18, B = 26;
+  const maxN = Math.max(3, Math.ceil(acc.length * 1.25)), totalPts = acc.reduce((a, e) => a + e.points, 0), maxP = Math.max(10, totalPts * 1.6);
+  const X = (d) => L + ((d - d0) / (d1 - d0)) * (W - L - R);
+  const Y = (n) => H - B - (n / maxN) * (H - T - B);
+  const YP = (p) => H - B - (p / maxP) * (H - T - B);
+  // Same-day events are spread a little within their day.
+  const perDay = new Map();
+  const pts = acc.map((e, i) => { const k = perDay.get(e.date) || 0; perDay.set(e.date, k + 1); return { e, n: i + 1, x: X(dayOf(e.date) + 0.15 + 0.12 * k) }; });
+  let pp = 0;
+  const step = pts.length ? `M${X(d0).toFixed(1)} ${Y(0)} ` + pts.map((p) => `H${p.x.toFixed(1)} V${Y(p.n).toFixed(1)}`).join(" ") + ` H${X(d1).toFixed(1)}` : "";
+  const pline = pts.length ? `M${X(d0).toFixed(1)} ${YP(0)} ` + pts.map((p) => { pp += p.e.points; return `H${p.x.toFixed(1)} V${YP(pp).toFixed(1)}`; }).join(" ") + ` H${X(d1).toFixed(1)}` : "";
+  const grid = [0, 0.5, 1].map((f) => { const n = Math.round(maxN * f); return `<line class="gl" x1="${L}" x2="${W - R}" y1="${Y(n).toFixed(1)}" y2="${Y(n).toFixed(1)}"/><text class="ax" x="${L - 8}" y="${(Y(n) + 4).toFixed(1)}" text-anchor="end">${n}</text>`; }).join("");
+  const dots = pts.map((p) => {
+    const tgt = eventTarget(p.e), url = eventLink(p.e);
+    const tip = `@${p.e.who} ${KIND_EN[p.e.kind]} ${tgt ? tgt.title_en : p.e.id} · ${setupLabel(p.e)} · ${p.e.date} · +${p.e.points}`;
+    const c = `<circle class="dot ${p.e.kind}" cx="${p.x.toFixed(1)}" cy="${Y(p.n).toFixed(1)}" r="6"><title>${esc(tip)}</title></circle>`;
+    return url ? `<a href="${esc(url)}">${c}</a>` : c;
+  }).join("");
+  const greys = rej.map((e, i) => {
+    const d = dayOf(String(e.at).slice(0, 10)) + 0.2 + 0.1 * (i % 5);
+    const n = acc.filter((a) => a.date <= String(e.at).slice(0, 10)).length;
+    return `<a href="${esc(e.url)}"><circle class="dot rej" cx="${X(d).toFixed(1)}" cy="${Y(n).toFixed(1)}" r="4.5"><title>${esc(e.tip || "rejected")}</title></circle></a>`;
+  }).join("");
+  const dayN = Math.max(1, Math.floor(dayOf(BUILD_DATE) - dayOf(start)) + 1);
+  return `<div class="curve glass">
+<div class="curve-head"><span class="kicker">${pair(`Day ${dayN}`, `第 ${dayN} 天`)}</span><span class="curve-sum">${pair(`${acc.length} accepted ${acc.length === 1 ? "result" : "results"} · ${num(totalPts)} points`, `${acc.length} 个被接受的成果 · ${num(totalPts)} 分`)}${rej.length ? ` <span class="muted small">${pair(`· ${rej.length} rejected (grey)`, `· ${rej.length} 个被拒（灰点）`)}</span>` : ""}</span></div>
+<svg class="curve-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative accepted results over time">${grid}
+${pline ? `<path class="pline" d="${pline}"/>` : ""}${step ? `<path class="cline" d="${step}"/>` : ""}${greys}${dots}</svg>
+<div class="curve-axis"><span>${esc(new Date((d0 + 0.5) * DAY).toISOString().slice(0, 10))}</span><span class="legend"><i class="lc"></i>${pair("accepted results", "被接受的成果")}<i class="lp"></i>${pair("points", "积分")}<i class="lr"></i>${pair("rejected", "被拒")}</span><span>${esc(new Date((d1 - 0.5) * DAY).toISOString().slice(0, 10))}</span></div>
+</div>`;
+}
+function breakthroughs() {
+  const rank = { proof: 4, refutation: 3, split: 2, note: 1 };
+  const top = scoreEvts.filter((e) => e.kind !== "bonus").sort((a, b) => (rank[b.kind] - rank[a.kind]) || b.points - a.points || (a.date < b.date ? 1 : -1)).slice(0, 6);
+  if (!top.length) return "";
+  const ICO = { proof: ["✓", "ok"], refutation: ["✗", "bad"], split: ["⑂", "acc"], note: ["✎", "cool"] };
+  return `<h3 class="tl-h">${t("bt_h")}</h3><div class="bts">${top.map((e) => {
+    const tgt = eventTarget(e), url = eventLink(e);
+    return `<a class="bt glass" href="${esc(url || "#")}"><span class="ico ${ICO[e.kind][1]}">${ICO[e.kind][0]}</span><span class="bt-k">${pair(KIND_EN[e.kind].replace(" on", ""), KIND_ZH[e.kind])}</span><b>${tgt ? pair(tgt.title_en, tgt.title_zh) : esc(e.id)}</b><span class="small muted">@${esc(e.who)} · ${esc(setupLabel(e))} · ${esc(e.date)}</span></a>`;
+  }).join("")}</div>`;
+}
+
 // ---------- credit and publication pledge ----------
 function creditPage() {
   const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
@@ -1685,6 +1818,7 @@ for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: tr
 const contributors = people.map((P) => P.login);
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 writeFileSync(at("dist/people.html"), peoplePage());
+writeFileSync(at("dist/models.html"), aiBoardPage());
 writeFileSync(at("dist/publish.html"), publishPage());
 { const ex = contributorsExport(); writeFileSync(at("dist/contributors.json"), ex.json); writeFileSync(at("dist/contributors.csv"), ex.csv); }
 if (LIB_META) {

@@ -120,6 +120,10 @@ const BASE = ["id", "kind", "statement", "difficulty", "title_en", "title_zh", "
 const EXTRA = { drop: ["modulus", "residue"], step: ["parent", "split", "sketch", "proposed_by", "proposed_at"], milestone: ["parent"], summit: [],
   program: ["parent", "about_en", "about_zh"] };
 const DONE = ["proved_by", "model", "verified_at"];
+// Optional: the agent tool used (Claude Code, Codex CLI, ...); steps may also say which model and tool split them
+// (proposed_model, proposed_tool), kept apart from the prover's model and tool.
+const OPTIONAL = { done: ["tool"], step: ["proposed_model", "proposed_tool"] };
+const TAG_RE = /^[A-Za-z0-9 ._+-]{1,40}$/;
 const LOGIN = /^[A-Za-z0-9-]{1,39}$/;
 const records = readdirSync("records/collatz").sort().map((f) => {
   const where = `records/collatz/${f}`;
@@ -146,9 +150,11 @@ for (const { f, where, r } of records) {
   usedStatements.add(r.statement);
   if (r.kind === "step" !== String(r.statement).startsWith("Step_")) fail(`${where}: step records (and only they) use Step_ statements`);
   if (!["open", "verified", "refuted"].includes(r.status)) fail(`${where}: status must be open, verified or refuted`);
-  const allowed = [...BASE, ...EXTRA[r.kind], ...(r.status === "open" ? [] : DONE)];
+  const required = [...BASE, ...EXTRA[r.kind], ...(r.status === "open" ? [] : DONE)];
+  const allowed = [...required, ...(r.kind === "step" ? OPTIONAL.step : []), ...(r.status === "open" ? [] : OPTIONAL.done)];
   for (const k of Object.keys(r)) if (!allowed.includes(k)) fail(`${where}: unexpected field ${k}`);
-  for (const k of allowed) if (r[k] === undefined) fail(`${where}: missing field ${k}`);
+  for (const k of required) if (r[k] === undefined) fail(`${where}: missing field ${k}`);
+  for (const k of ["model", "tool", "proposed_model", "proposed_tool"]) if (r[k] !== undefined && !TAG_RE.test(r[k])) fail(`${where}: ${k} may use letters, digits, spaces and ._+- (max 40)`);
   if (!Number.isInteger(r.difficulty) || r.difficulty < 1 || r.difficulty > 1000) fail(`${where}: difficulty must be an integer from 1 to 1000`);
   for (const k of ["title_en", "title_zh"]) if (typeof r[k] !== "string" || r[k].length < 1 || r[k].length > 200) fail(`${where}: ${k} must be 1-200 characters`);
   if (r.kind === "program") {

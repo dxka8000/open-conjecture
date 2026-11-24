@@ -30,7 +30,7 @@ export function checkNote(recordId, fileName, text, bytes) {
   if (/javascript:|data:|vbscript:/i.test(text)) return bad('"javascript:", "data:" and "vbscript:" may not appear anywhere');
   const lines = text.split(/\r?\n/);
   if (!/^# \S/.test(lines[0] || "")) return bad('the first line must be the title, "# ..."');
-  const head = lines.slice(1, 8).join("\n");
+  const head = lines.slice(1, 10).join("\n");
   const rec = /^Record: ([a-z0-9-]+)\s*$/m.exec(head), au = /^Author: @([A-Za-z0-9-]{1,39})\s*$/m.exec(head), da = /^Date: (\d{4}-\d{2}-\d{2})\s*$/m.exec(head);
   if (!rec || rec[1] !== recordId) return bad(`a line "Record: ${recordId}" must follow the title`);
   if (!au) return bad('a line "Author: @<your GitHub login>" must follow the title');
@@ -61,7 +61,10 @@ export function checkNote(recordId, fileName, text, bytes) {
   }
   const known = section("Known results");
   if (!/https:\/\/(arxiv\.org|(dx\.)?doi\.org)\//.test(known)) return bad('"## Known results" needs at least one arXiv or DOI link');
-  return { ok: true, note: { record: recordId, who: login, date: da[1], title: lines[0].slice(2).trim().slice(0, 160), file: fileName, path: where } };
+  const md = /^Model: ([A-Za-z0-9 ._+-]{1,40})\s*$/m.exec(head), tl = /^Tool: ([A-Za-z0-9 ._+-]{1,40})\s*$/m.exec(head);
+  if (/^Model: /m.test(head) && !md) return bad('the "Model:" line may use letters, digits, spaces and ._+- (max 40)');
+  if (/^Tool: /m.test(head) && !tl) return bad('the "Tool:" line may use letters, digits, spaces and ._+- (max 40)');
+  return { ok: true, note: { record: recordId, who: login, model: md ? md[1].trim() : "", tool: tl ? tl[1].trim() : "", date: da[1], title: lines[0].slice(2).trim().slice(0, 160), file: fileName, path: where } };
 }
 
 /** All notes in the repository (throws on the first bad one when strict). */

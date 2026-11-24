@@ -43,26 +43,26 @@ export function scoreEvents(records, S, notes = []) {
   for (const r of records) {
     if (r.status !== "verified" && r.status !== "refuted") continue;
     const pts = r.kind === "step" ? S.step_proof * weightOf(r, byId, S) : S.problem_proof;
-    out.push({ who: r.proved_by, kind: r.status === "verified" ? "proof" : "refutation", points: round1(pts), date: r.verified_at, id: r.id });
+    out.push({ who: r.proved_by, kind: r.status === "verified" ? "proof" : "refutation", points: round1(pts), date: r.verified_at, id: r.id, model: r.model || "", tool: r.tool || "" });
     if (r.status === "verified" && r.kind === "step" && r.proposed_by)
       out.push({ who: r.proposed_by, kind: "bonus", points: S.split_bonus, date: r.verified_at, id: r.id });
   }
   const splits = new Map();
   for (const r of records) {
     if (r.kind !== "step" || !r.split || !r.proposed_by) continue;
-    const g = splits.get(r.split) || { who: r.proposed_by, parent: r.parent, steps: 0, date: r.proposed_at };
+    const g = splits.get(r.split) || { who: r.proposed_by, parent: r.parent, steps: 0, date: r.proposed_at, model: r.proposed_model || "", tool: r.proposed_tool || "" };
     g.steps += 1;
     if (r.proposed_at && (!g.date || r.proposed_at < g.date)) g.date = r.proposed_at;
     splits.set(r.split, g);
   }
   for (const [name, g] of splits) {
     const pts = (S.split_base + S.split_per_step * g.steps) * weightOf(byId.get(g.parent), byId, S);
-    out.push({ who: g.who, kind: "split", points: round1(pts), date: g.date, id: name });
+    out.push({ who: g.who, kind: "split", points: round1(pts), date: g.date, id: name, model: g.model, tool: g.tool });
   }
   for (const n of notes) {
     const r = byId.get(n.record);
     if (!r) continue;
-    out.push({ who: n.who, kind: "note", points: round1(S.note_points * weightOf(r, byId, S)), date: n.date, id: n.record, path: n.path });
+    out.push({ who: n.who, kind: "note", points: round1(S.note_points * weightOf(r, byId, S)), date: n.date, id: n.record, path: n.path, model: n.model || "", tool: n.tool || "" });
     const later = [...splits.values()].find((g) => g.parent === n.record && g.date && g.date >= n.date);
     if (later) out.push({ who: n.who, kind: "bonus", points: S.note_bonus, date: later.date, id: n.record, path: n.path });
   }

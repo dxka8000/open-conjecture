@@ -39,3 +39,12 @@ test("HTML is rejected with a rule that explains what to write instead", () => {
   assert.match(check("alice-a.md", note("alice", { extra: "x <n" })).why, /write "x < n" with spaces/);
   assert.equal(check("alice-a.md", note("alice", { extra: "x < n and 3 <= 4" })).ok, true);
 });
+
+test("optional Model and Tool lines are read and checked", () => {
+  const withTags = note("alice").replace("Date: 2026-11-24", "Date: 2026-11-24\nModel: Claude Opus 5.5\nTool: Claude Code");
+  const r = check("alice-a.md", withTags);
+  assert.equal(r.ok, true, r.why);
+  assert.equal(r.note.model, "Claude Opus 5.5");
+  assert.equal(r.note.tool, "Claude Code");
+  assert.match(check("alice-a.md", note("alice").replace("Date: 2026-11-24", "Date: 2026-11-24\nModel: x;rm -rf")).why, /Model/);
+});

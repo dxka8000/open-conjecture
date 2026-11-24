@@ -86,7 +86,7 @@ async function evaluate(pr) {
     const want = refute ? `Refute_${base.statement}` : base.statement;
     if (fileName !== want) return { ok: false, why: `the file must be named ${want}.lean for lemma ${id}.` };
     const newStatus = refute ? "refuted" : "verified";
-    const changeable = new Set(["status", "proved_by", "model", "verified_at"]);
+    const changeable = new Set(["status", "proved_by", "model", "tool", "verified_at"]);
     for (const k of new Set([...Object.keys(base), ...Object.keys(head)]))
       if (!changeable.has(k) && JSON.stringify(base[k]) !== JSON.stringify(head[k])) return { ok: false, why: `field "${k}" of the record must not change.` };
     if (head.status !== newStatus) return { ok: false, why: `the record's status must be "${newStatus}".` };

@@ -24,5 +24,10 @@
     "dxka8000"
   ],
   "alipay_qr": "",
-  "custom_domain": ""
+  "custom_domain": "",
+  "hidden_handles": [
+    "audit-check",
+    "proofhive-probe",
+    "probe2"
+  ]
 }
