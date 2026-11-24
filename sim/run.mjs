@@ -224,7 +224,7 @@ function noteFile(author, rid, slug, { known, body } = {}) {
   const text = body || [
     `# Simulated note on ${rid}`, `Record: ${rid}`, `Author: @${author}`, `Date: ${today}`, "",
     "## Problem in plain words", "SIMULATION. What the statement says, in plain words, for a non-specialist reader.", "",
-    "## Known results", known || "- C. Hercher (2023), \"There are no Collatz m-cycles with m <= 91\", J. Integer Sequences. https://arxiv.org/abs/2201.00406 Proves m >= 92.", "",
+    "## Known results", known || "- C. Hercher (2023), \"There are no Collatz m-cycles with m <= 91\", J. Integer Sequences. https://arxiv.org/abs/2201.00406\n  Claim: every Collatz cycle has at least 92 local minima (m >= 92).\n  Where: main theorem.", "",
     "## Attack routes", "- Linear forms in logarithms bound the number of odd steps in a cycle from below.", "",
     "## Where each route is stuck", "- The bounds need verification up to a large range, and the constants grow quickly.", "",
     "## Candidate splits", "- `Step_A : ∀ n k, ... → card ≤ 95 → ...` and the range 96 to 100, if a real ingredient separates them.", "",
@@ -341,17 +341,36 @@ async function main() {
   check("a good research note merges after the review-ok", gh.prs.get(pN.number).state === "merged" && existsSync(join(WS, `notes/${NR}/sim-nina-survey.md`)));
   // A second note that builds on Nina's and cites it by its permalink: Nina gets the citation bonus.
   const pC = openPr({ author: "sim-omar", title: `Note ${NR}`, files: noteFile("sim-omar", NR, "followup", {
-    known: `- Builds on https://proofhive.github.io/notes/${NR}/sim-nina-survey.html (Nina's survey). C. Hercher (2023), J. Integer Sequences. https://arxiv.org/abs/2201.00406` }) });
+    known: `- Builds on https://proofhive.github.io/notes/${NR}/sim-nina-survey.html (Nina's survey). C. Hercher (2023), J. Integer Sequences. https://arxiv.org/abs/2201.00406\n  Claim: Nina's note surveys the cycle bounds; Hercher proves m >= 92 for m-cycles.` }) });
   await ciCheck(pC, true);
   aiReview(pC, "review-ok");
   await automerge("sweep");
   check("a note citing another note by its permalink merges", gh.prs.get(pC.number).state === "merged");
   const pF = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "fake", {
-    known: "- A. Nonexistent (2025), \"A proof of the Collatz conjecture\", Annals. https://arxiv.org/abs/2599.99999 Proves the full conjecture." }) });
+    known: "- A. Nonexistent (2025), \"A proof of the Collatz conjecture\", Annals. https://arxiv.org/abs/2599.99999\n  Claim: proves the full conjecture." }) });
   check("a note with a fake citation passes the format check", (await ciCheck(pF, true)).conclusion === "success");
   aiReview(pF, "review-rejected");
   await automerge("sweep");
   check("the AI review rejects the fake citation and the note is not merged", gh.prs.get(pF.number).state === "open" && hasLabel(pF, "review-rejected"));
+  // Every citation must pin the exact claim relied on; subtle misstatements of well-known results are rejected.
+  const pQ = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "noclaim", {
+    known: "- C. Hercher (2023), J. Integer Sequences. https://arxiv.org/abs/2201.00406 Proves m >= 92." }) });
+  const cq = await ciCheck(pQ, true);
+  check("a note whose citation has no Claim line fails the gate", cq.conclusion === "failure" && /needs a "Claim:" line/.test(cq.gateOut), cq.gateOut.slice(0, 120));
+  const planted = [
+    ["kl-exponent", "- I. Krasikov, J. C. Lagarias (2003), \"Bounds for the 3x+1 problem using difference inequalities\", Acta Arith. 109. https://arxiv.org/abs/math/0205002\n  Claim: #{n <= x : n reaches 1} >= x^0.9 for all large x.\n  Where: Theorem 1.1.",
+      /they prove at least x\^0\.84/, "Krasikov-Lagarias cited as x^0.9 (true: x^0.84)"],
+    ["tao-density", "- T. Tao (2019), \"Almost all orbits of the Collatz map attain almost bounded values\". https://arxiv.org/abs/1909.03562\n  Claim: almost all orbits attain almost bounded values, in natural density.",
+      /logarithmic density, not natural density/, "Tao 2019 cited as natural density (true: logarithmic density)"],
+    ["terras-year", "- R. Terras (1978), \"A stopping time problem on the positive integers\", Acta Arith. 30. https://doi.org/10.4064/aa-30-3-241-252\n  Claim: finite stopping time holds on a set of natural density one.",
+      /gives the year 1978; the source is from 1976/, "Terras cited with the wrong year (1978; true: 1976)"],
+  ];
+  for (const [slug, known, why, label] of planted) {
+    const pr = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, slug, { known }) });
+    const c = await ciCheck(pr, true);
+    await automerge("sweep");
+    check(`planted error rejected: ${label}`, c.conclusion === "failure" && why.test(c.gateOut) && gh.prs.get(pr.number).state === "open", c.gateOut.slice(0, 140));
+  }
   const pH = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "html", {
     body: `# x\nRecord: ${NR}\nAuthor: @sim-mallory\nDate: ${today}\n\n<script>alert(1)</script>\n<img src=x onerror=alert(1)>\n` }) });
   const ch = await ciCheck(pH, true);
@@ -445,6 +464,7 @@ async function main() {
       /1 surveyed/.test(home) && /\+10 <span data-lang="en">pts/.test(home) && /c\/sim-nina\.html#ledger/.test(home));
     check("the desk feed carries the note permalinks for each record", (wsJson("dist/feed.json").records.find((r) => r.id === NR)?.note_links || []).length === 2);
     check("the site renders the merged note escaped, and lists it on the timeline", existsSync(join(WS, `dist/notes/${NR}/sim-nina-survey.html`)) && /wrote a research note on/.test(wsRead("dist/index.html")) && !/<script>alert/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)), ninaRec.id);
+    check("the note page shows each citation's Claim and Where on their own lines", /<br><span class="claimk">Claim:<\/span> every Collatz cycle has at least 92/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)) && /<span class="claimk">Where:<\/span> main theorem/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)));
     check("points: split 50 (+5 when its step is proven), step proof 12, step refutation 12",
       pts("sim-tina") === tinaWant && pts(realWho) === (proven.kind === "step" ? 12 : 1000) && pts("sim-grace") === (refutedRec.kind === "step" ? 12 : 1000),
       `tina ${pts("sim-tina")}, ${realWho} ${pts(realWho)}, grace ${pts("sim-grace")}`);

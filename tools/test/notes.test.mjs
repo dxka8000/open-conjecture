@@ -5,7 +5,7 @@ import { checkNote } from "../../checker/notes.mjs";
 const note = (login, { date = "2026-11-24", known, extra = "" } = {}) => [
   "# A note", "Record: open-density-one", `Author: @${login}`, `Date: ${date}`, "",
   "## Problem in plain words", "Almost every number reaches 1, in natural density.", "",
-  "## Known results", known || "- T. Tao (2022), \"Almost all orbits of the Collatz map attain almost bounded values\", Forum Math Pi. https://arxiv.org/abs/1909.03562", "",
+  "## Known results", known || "- T. Tao (2022), \"Almost all orbits of the Collatz map attain almost bounded values\", Forum Math Pi. https://arxiv.org/abs/1909.03562\n  Claim: for any f tending to infinity, min of the orbit of N is below f(N) for almost all N in logarithmic density.", "",
   "## Attack routes", "- Syracuse random variables and 3-adic equidistribution.", "",
   "## Where each route is stuck", "- Logarithmic density only; natural density needs more.", "",
   "## Candidate splits", "- A natural-density version for a fixed slowly growing f.", "",
@@ -47,4 +47,35 @@ test("optional Model and Tool lines are read and checked", () => {
   assert.equal(r.note.model, "Claude Opus 5.5");
   assert.equal(r.note.tool, "Claude Code");
   assert.match(check("alice-a.md", note("alice").replace("Date: 2026-11-24", "Date: 2026-11-24\nModel: x;rm -rf")).why, /Model/);
+});
+
+test("every citation needs a Claim line stating what the source proves; Where is optional", () => {
+  const noClaim = note("alice", { known: "- T. Tao (2022), \"Almost all orbits\", Forum Math Pi. https://arxiv.org/abs/1909.03562 Strong result." });
+  assert.match(check("alice-x.md", noClaim).why, /needs a "Claim:" line under it/);
+  const ok = note("alice", { known: "- T. Tao (2022), \"Almost all orbits\". https://arxiv.org/abs/1909.03562\n  Claim: almost all orbits attain almost bounded values, in logarithmic density.\n  Where: Theorem 1.3.\n- J. Lagarias (2003), bibliography. https://arxiv.org/abs/math/0309224\n  - Claim: an annotated bibliography of the 3x+1 problem up to 1999." });
+  assert.equal(check("alice-x.md", ok).ok, true, check("alice-x.md", ok).why);
+  const oneMissing = note("alice", { known: "- T. Tao (2022). https://arxiv.org/abs/1909.03562\n  Claim: logarithmic density version of almost bounded orbits.\n- Lagarias (2003). https://arxiv.org/abs/math/0309224" });
+  assert.match(check("alice-x.md", oneMissing).why, /missing for "Lagarias \(2003\)/);
+  assert.match(check("alice-x.md", note("alice", { known: "- Tao (2019). https://arxiv.org/abs/1909.03562\n  Claim: yes" })).why, /at least 10 characters/);
+});
+
+test("planted errors on well-known results are rejected: wrong exponent, wrong density, wrong year", () => {
+  const kl = (exp) => note("alice", { known: `- I. Krasikov, J. C. Lagarias (2003), "Bounds for the 3x+1 problem using difference inequalities", Acta Arith. 109. https://arxiv.org/abs/math/0205002\n  Claim: #{n <= x : n reaches 1} >= x^${exp} for all large x.` });
+  assert.equal(check("alice-x.md", kl("0.84")).ok, true);
+  assert.equal(check("alice-x.md", kl("{0.84}")).ok, true);
+  assert.match(check("alice-x.md", kl("0.9")).why, /does not match the source: they prove at least x\^0\.84 .*not x\^0\.9/);
+  const tao = (d) => note("alice", { known: `- T. Tao (2019), "Almost all orbits of the Collatz map attain almost bounded values". https://arxiv.org/abs/1909.03562\n  Claim: almost all orbits attain almost bounded values, in ${d} density.` });
+  assert.equal(check("alice-x.md", tao("logarithmic")).ok, true);
+  assert.match(check("alice-x.md", tao("natural")).why, /logarithmic density, not natural density/);
+  const terras = (y) => note("alice", { known: `- R. Terras (${y}), "A stopping time problem on the positive integers", Acta Arith. 30. https://doi.org/10.4064/aa-30-3-241-252\n  Claim: finite stopping time holds on a set of natural density one.` });
+  assert.equal(check("alice-x.md", terras(1976)).ok, true);
+  assert.match(check("alice-x.md", terras(1978)).why, /gives the year 1978; the source is from 1976/);
+});
+
+test("the note merged before the Claim rule is grandfathered; the rule applies to new notes", async () => {
+  const { readFileSync } = await import("node:fs");
+  const f = "notes/open-coefficient-stopping/dxka8000-coefficientstopping.md";
+  const text = readFileSync(new URL(`../../${f}`, import.meta.url), "utf8");
+  assert.equal(checkNote("open-coefficient-stopping", "dxka8000-coefficientstopping.md", text, Buffer.byteLength(text)).ok, true);
+  assert.match(checkNote("open-coefficient-stopping", "dxka8000-copy.md", text, Buffer.byteLength(text)).why, /needs a "Claim:" line/);
 });

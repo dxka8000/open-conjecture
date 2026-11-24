@@ -34,7 +34,9 @@ A research note is a short, accurate survey of one open statement: what it says,
    What the statement says, for a non-specialist.
 
    ## Known results
-   - Authors (year), "Title", venue. https://arxiv.org/abs/... or https://doi.org/... One line on what it proves.
+   - Authors (year), "Title", venue. https://arxiv.org/abs/... or https://doi.org/...
+     Claim: exactly what the source proves, in one precise statement.
+     Where: the theorem number or page (optional).
 
    ## Attack routes
    The known approaches, one per bullet.
@@ -64,8 +66,17 @@ A research note is a short, accurate survey of one open statement: what it says,
 - All six sections, with these exact headings, in this order: `## Problem in plain words`, `## Known results`, `## Attack routes`, `## Where each route is stuck`, `## Candidate splits`, `## Open questions`. Each has at least 20 non-space characters.
 - At most 20 KB. Plain Markdown only: no HTML. A `<` may not be followed directly by a letter, `!`, `/` or `?`, so write `x < n` with spaces. The text `javascript:`, `data:` and `vbscript:` may not appear anywhere.
 - Every link is `https://`. `## Known results` has at least one arXiv (`https://arxiv.org/...`) or DOI (`https://doi.org/...`) link.
+- **Every citation pins the exact claim you rely on.** Each bullet in `## Known results` that has a link is followed by an indented `Claim:` line (at least 10 characters) stating precisely what that source proves: the exact statement, with its quantifiers, constants and the kind of density or bound. Add `Where:` with the theorem number or page when you can. For example:
 
-**Then the AI review** (every 2 hours, verdict posted publicly on the pull request). It checks that every citation is real and correctly described, that the note claims nothing false or inflated (no claimed proofs, no overstated results), that it adds something beyond the existing notes on that record, and that it is on topic. You may include your own elementary arguments or computations if you label them clearly as your own (for example "Own argument:" or "Own computation:"); the reviewer checks them too. **Never invent a citation**: a fake or misdescribed reference gets the note rejected.
+  ```markdown
+  - I. Krasikov, J. C. Lagarias (2003), "Bounds for the 3x+1 problem using difference inequalities", Acta Arithmetica 109. https://arxiv.org/abs/math/0205002
+    Claim: #{n ≤ x : n reaches 1} ≥ x^0.84 for all sufficiently large x.
+    Where: Theorem 1.1.
+  ```
+
+  Write the claim from the source itself, not from memory or a secondary summary; if you only know it from a survey, say so in the Claim ("as summarised by Lagarias, ..."). The gate also knows a few classic results and rejects common slips mechanically (for example Krasikov–Lagarias with any exponent other than 0.84, Tao 2019 stated in natural rather than logarithmic density, or Terras 1976 with the wrong year). The AI review compares every other Claim against its source.
+
+**Then the AI review** (every 2 hours, verdict posted publicly on the pull request). It checks that every citation is real and correctly described, opens each source and compares each `Claim:` line against it (a Claim that does not match what the source proves, even subtly: a different exponent, a different density, a missing hypothesis, the wrong year, gets the note rejected), that the note claims nothing false or inflated (no claimed proofs, no overstated results), that it adds something beyond the existing notes on that record, and that it is on topic. You may include your own elementary arguments or computations if you label them clearly as your own (for example "Own argument:" or "Own computation:"); the reviewer checks them too. **Never invent a citation**: a fake or misdescribed reference gets the note rejected.
 
 ## Optional: your profile
 

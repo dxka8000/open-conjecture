@@ -17,6 +17,67 @@ const FILE_RULE = "the file name must be <your GitHub login>-<slug>.md: the logi
 export const NOTE_DATE_SLACK_DAYS = 7;
 const ID_RE = /^[a-z0-9-]{1,60}$/;
 
+// Notes merged before the Claim rule (2026-11-24) keep their old format. The rule applies to every new note.
+export const GRANDFATHERED_NOTES = new Set(["notes/open-coefficient-stopping/dxka8000-coefficientstopping.md"]);
+
+// A few well-known results, keyed by their arXiv or DOI links. The gate checks a Claim or year that names one of
+// these against what the source actually proves. This list is small on purpose: it catches the classic mix-ups
+// mechanically, and the AI review compares every other Claim against its source.
+export const KNOWN_CLAIMS = [
+  {
+    name: "Krasikov and Lagarias, \"Bounds for the 3x+1 problem using difference inequalities\"",
+    links: ["arxiv.org/abs/math/0205002", "doi.org/10.4064/aa109-3-4"], years: [2002, 2003],
+    claim: (c) => {
+      const exps = [...c.matchAll(/\^\s*\{?\s*\(?\s*(0?\.\d+)/g)].map((m) => Number(m[1]));
+      return exps.length && !exps.includes(0.84) ? `they prove at least x^0.84 integers up to x reach 1 (for large x), not x^${exps[0]}` : "";
+    },
+  },
+  {
+    name: "Tao, \"Almost all orbits of the Collatz map attain almost bounded values\"",
+    links: ["arxiv.org/abs/1909.03562", "doi.org/10.1017/fmp.2022.8"], years: [2019, 2020, 2022],
+    claim: (c) => (/\b(natural|asymptotic)\s+density\b/i.test(c) && !/\blogarithmic\s+density\b/i.test(c)
+      ? "the result holds in logarithmic density, not natural density" : ""),
+  },
+  {
+    name: "Terras, \"A stopping time problem on the positive integers\"",
+    links: ["doi.org/10.4064/aa-30-3-241-252"], years: [1976],
+  },
+];
+
+/** The citations in a Known results section: each top-level bullet with an https link, and its Claim/Where lines. */
+export function noteCitations(known) {
+  const out = [];
+  let cur = null;
+  for (const line of known.split(/\r?\n/)) {
+    if (/^[-*] /.test(line)) { cur = /https:\/\//.test(line) ? { line, claims: [], where: [] } : null; if (cur) out.push(cur); continue; }
+    if (!cur) continue;
+    if (!line.trim()) { cur = null; continue; }
+    const m = /^\s*(?:[-*] )?(Claim|Where):\s*(.*)$/.exec(line);
+    if (m) (m[1] === "Claim" ? cur.claims : cur.where).push(m[2].trim());
+    else if (/^\S/.test(line)) cur = null;
+  }
+  return out;
+}
+
+/** "" when every citation pins its claim (and the known ones match their sources); otherwise the reason. */
+export function checkClaims(known) {
+  const cites = noteCitations(known);
+  for (const c of cites) {
+    const label = c.line.slice(2, 70).trim();
+    if (!c.claims.length || c.claims.every((x) => x.replace(/\s+/g, "").length < 10))
+      return `every citation in "## Known results" needs a "Claim:" line under it stating exactly what the source proves (at least 10 characters); missing for "${label}"`;
+    for (const k of KNOWN_CLAIMS) {
+      if (!k.links.some((l) => c.line.includes(`https://${l}`) || c.line.includes(`https://dx.${l}`))) continue;
+      const yr = /\((\d{4})/.exec(c.line);
+      if (yr && !k.years.includes(Number(yr[1]))) return `the citation of ${k.name} gives the year ${yr[1]}; the source is from ${k.years.join(" or ")}`;
+      for (const cl of c.claims) {
+        const why = k.claim ? k.claim(cl) : "";
+        if (why) return `the Claim for ${k.name} does not match the source: ${why}`;
+      }
+    }
+  }
+  return "";
+}
 
 /** Checks one note. Returns {ok: true, note} or {ok: false, why}. */
 export function checkNote(recordId, fileName, text, bytes) {
@@ -61,7 +122,11 @@ export function checkNote(recordId, fileName, text, bytes) {
   }
   const known = section("Known results");
   if (!/https:\/\/(arxiv\.org|(dx\.)?doi\.org)\//.test(known)) return bad('"## Known results" needs at least one arXiv or DOI link');
-  const md = /^Model: ([A-Za-z0-9 ._+-]{1,40})\s*$/m.exec(head), tl = /^Tool: ([A-Za-z0-9 ._+-]{1,40})\s*$/m.exec(head);
+  if (!GRANDFATHERED_NOTES.has(where)) {
+    const why = checkClaims(known);
+    if (why) return bad(why);
+  }
+  const md = /^Model:([A-Za-z0-9 ._+-]{1,40})\s*$/m.exec(head), tl = /^Tool: ([A-Za-z0-9 ._+-]{1,40})\s*$/m.exec(head);
   if (/^Model: /m.test(head) && !md) return bad('the "Model:" line may use letters, digits, spaces and ._+- (max 40)');
   if (/^Tool: /m.test(head) && !tl) return bad('the "Tool:" line may use letters, digits, spaces and ._+- (max 40)');
   return { ok: true, note: { record: recordId, who: login, model: md ? md[1].trim() : "", tool: tl ? tl[1].trim() : "", date: da[1], title: lines[0].slice(2).trim().slice(0, 160), file: fileName, path: where } };

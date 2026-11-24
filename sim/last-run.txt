@@ -20,6 +20,10 @@ PASS  a good research note merges after the review-ok
 PASS  a note citing another note by its permalink merges
 PASS  a note with a fake citation passes the format check
 PASS  the AI review rejects the fake citation and the note is not merged
+PASS  a note whose citation has no Claim line fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-noclaim.md: every citation in "## Known results" needs a "Claim:" line )
+PASS  planted error rejected: Krasikov-Lagarias cited as x^0.9 (true: x^0.84)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-kl-exponent.md: the Claim for Krasikov and Lagarias, "Bounds for the 3x+1 problem using dif)
+PASS  planted error rejected: Tao 2019 cited as natural density (true: logarithmic density)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-tao-density.md: the Claim for Tao, "Almost all orbits of the Collatz map attain almost boun)
+PASS  planted error rejected: Terras cited with the wrong year (1978; true: 1976)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-terras-year.md: the citation of Terras, "A stopping time problem on the positive integers" )
 PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
 PASS  a note with a non-https link fails the gate
 PASS  a note filed under someone else's name is never merged
@@ -48,6 +52,7 @@ PASS  the problem page lists both notes with a citation line; Nina's ledger show
 PASS  the homepage counts the noted problem as surveyed, shows +10 pts on the timeline, and the leaderboard links to the ledger
 PASS  the desk feed carries the note permalinks for each record
 PASS  the site renders the merged note escaped, and lists it on the timeline  (open-five-x-plus-one)
+PASS  the note page shows each citation's Claim and Where on their own lines
 PASS  points: split 50 (+5 when its step is proven), step proof 12, step refutation 12  (tina 55, sim-alice 12, grace 12)
 PASS  desk has nothing left for builders once steps are settled, or ends the lease
 PASS  one /next per 2 s per handle (rapid calls get 429)  (200,429,429,429)
@@ -70,4 +75,4 @@ PASS  home page escapes hostile sponsor text
 PASS  the homepage has a Join ProofHive button and the RSS feed lists accepted results
 PASS  home page CSP connects only to itself and the desk
 
-71 of 71 passed
+76 of 76 passed

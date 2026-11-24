@@ -622,7 +622,7 @@ pre.lean .k{color:#c792ea}pre.lean .o{color:var(--cool)}pre.lean .n{color:#f78c6
 .pledge{display:grid;gap:12px;max-width:520px;margin:0 0 18px}.pledge label{display:grid;gap:5px;font-size:.88rem;color:var(--muted)}.pledge .btn{justify-self:start}
 #pledge-out .btn{margin-top:6px}img.qr{display:block;border:1px solid var(--line);border-radius:12px;background:#fff;padding:8px;margin:6px 0}
 .statchart{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}.statchart rect.v,.key.v{fill:var(--accent);background:var(--accent)}.statchart rect.u,.key.u{fill:var(--cool);background:var(--cool)}.statchart text{font:11px var(--mono);fill:var(--muted)}.key{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 10px}
-.note-md{line-height:1.75}.note-md h1{font-size:clamp(1.6rem,5vw,2.3rem)}.note-md pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}.note-md pre code{font-size:13px;overflow-wrap:normal}
+.note-md{line-height:1.75}.note-md .claimk{font-weight:600;color:var(--accent,inherit)}.note-md h1{font-size:clamp(1.6rem,5vw,2.3rem)}.note-md pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}.note-md pre code{font-size:13px;overflow-wrap:normal}
 footer{border-top:1px solid var(--line);padding:26px 0 44px;color:var(--muted);font-size:.84rem}
 footer .wrap{display:grid;grid-template-columns:1fr auto;gap:var(--s3) var(--s5);align-items:start}footer .flinks{grid-column:1/-1;order:-1;display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3)}footer .flinks a{white-space:nowrap}footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 .avatar{position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 35%,var(--card-solid)),color-mix(in srgb,var(--cool) 30%,var(--card-solid)));border:1px solid var(--rule);vertical-align:middle}
@@ -1494,12 +1494,13 @@ function mdInline(text) {
 function mdRender(src) {
   const out = [];
   let para = [], list = null, code = null;
-  const flush = () => { if (para.length) out.push(`<p>${mdInline(para.join(" "))}</p>`); para = []; if (list) { out.push(`<${list.tag}>${list.items.map((i) => `<li>${mdInline(i)}</li>`).join("")}</${list.tag}>`); list = null; } };
+  const flush = () => { if (para.length) out.push(`<p>${mdInline(para.join(" "))}</p>`); para = []; if (list) { out.push(`<${list.tag}>${list.items.map((i) => `<li>${i.split("\n").map((x, k) => { const c = k ? /^(Claim|Where): (.*)$/.exec(x) : null; return c ? `<span class="claimk">${c[1]}:</span> ${mdInline(c[2])}` : mdInline(x); }).join("<br>")}</li>`).join("")}</${list.tag}>`); list = null; } };
   for (const line of src.split(/\r?\n/)) {
     if (code) { if (/^```/.test(line)) { out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); code = null; } else code.push(line); continue; }
     if (/^```/.test(line)) { flush(); code = []; continue; }
     const h = /^(#{1,4}) (.*)$/.exec(line);
     if (h) { flush(); const lv = Math.min(4, h[1].length + 1); out.push(`<h${lv}>${mdInline(h[2])}</h${lv}>`); continue; }
+    if (list && /^\s*(?:[-*] )?(?:Claim|Where): /.test(line)) { list.items[list.items.length - 1] += "\n" + line.replace(/^\s*(?:[-*] )?/, "").trim(); continue; }
     const li = /^\s*(?:[-*]|(\d+)\.) (.*)$/.exec(line);
     if (li) { const tag = li[1] ? "ol" : "ul"; if (para.length || (list && list.tag !== tag)) flush(); if (!list) list = { tag, items: [] }; list.items.push(li[2]); continue; }
     if (!line.trim()) { flush(); continue; }
