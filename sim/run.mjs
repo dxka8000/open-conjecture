@@ -173,7 +173,7 @@ async function automerge(mode, pr, conclusion) {
 async function ciCheck(pr, leanAccepts, antiGamingFails = false) {
   const dir = join(tmpdir(), `collatz-sim-pr${pr.number}`);
   rmSync(dir, { recursive: true, force: true });
-  for (const d of ["records", "OpenConjecture", "checker"]) cpSync(join(WS, d), join(dir, d), { recursive: true });
+  for (const d of ["records", "OpenConjecture", "checker", "notes"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
   for (const [f, text] of Object.entries(pr.contents)) { mkdirSync(dirname(join(dir, f)), { recursive: true }); writeFileSync(join(dir, f), text); }
   const g = gate(dir);
   rmSync(dir, { recursive: true, force: true });
@@ -219,6 +219,18 @@ function aiReview(pr, verdict, actor = OWNER_LOGIN, sha = pr.head.sha) {
   setLabel(pr, verdict, actor, true);
 }
 const OWNER_LOGIN = REPO.split("/")[0];
+// A research note. extra replaces the Known results section text.
+function noteFile(author, rid, slug, { known, body } = {}) {
+  const text = body || [
+    `# Simulated note on ${rid}`, `Record: ${rid}`, `Author: @${author}`, `Date: ${today}`, "",
+    "## Problem in plain words", "SIMULATION. What the statement says, in plain words, for a non-specialist reader.", "",
+    "## Known results", known || "- C. Hercher (2023), \"There are no Collatz m-cycles with m <= 91\", J. Integer Sequences. https://arxiv.org/abs/2201.00406 Proves m >= 92.", "",
+    "## Attack routes", "- Linear forms in logarithms bound the number of odd steps in a cycle from below.", "",
+    "## Where each route is stuck", "- The bounds need verification up to a large range, and the constants grow quickly.", "",
+    "## Candidate splits", "- `Step_A : ∀ n k, ... → card ≤ 95 → ...` and the range 96 to 100, if a real ingredient separates them.", "",
+    "## Open questions", "- Does the 2^71 verification push Hercher's argument past m = 100 directly?", ""].join("\n");
+  return { [`notes/${rid}/${author}-${slug}.md`]: text };
+}
 function resultFiles(author, recId, statement, refute = false, body = "  simulated_proof_term", provedBy = author) {
   const rec = wsJson(`records/collatz/${recId}.json`);
   const name = refute ? `Refute_${statement}` : statement;
@@ -260,7 +272,7 @@ async function main() {
   {
     const dir = join(tmpdir(), "collatz-sim-restate");
     rmSync(dir, { recursive: true, force: true });
-    for (const d of ["records", "OpenConjecture", "checker"]) cpSync(join(WS, d), join(dir, d), { recursive: true });
+    for (const d of ["records", "OpenConjecture", "checker", "notes"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
     const L = join(dir, "OpenConjecture/Collatz/Lemmas.lean");
     const body = /^def Open_DensityOne : Prop := (.*)$/m.exec(readFileSync(L, "utf8"))[1];
     writeFileSync(L, readFileSync(L, "utf8").replace("end OpenConjecture.Collatz", `def Step_Restated : Prop := ${body}\n\nend OpenConjecture.Collatz`));
@@ -317,6 +329,32 @@ async function main() {
   ], "a second split of an already split statement") });
   await ciCheck(pW, true);
   check("a second split of the same statement is never merged", gh.prs.get(pW.number).state === "open", lastComment(pW).slice(0, 80));
+
+  // ---- research notes: the low-barrier contribution, also gated by the AI review
+  log("\n== Round 1c: research notes");
+  const NR = progs0.find((p) => p.id !== P1 && p.id !== P2).id;
+  const pN = openPr({ author: "sim-nina", title: `Note ${NR}`, files: noteFile("sim-nina", NR, "survey") });
+  const cn = await ciCheck(pN, true);
+  check("a well-formed research note passes the gate and waits for the AI review", cn.conclusion === "success" && hasLabel(pN, "needs-review") && gh.prs.get(pN.number).state === "open", cn.gateOut.slice(0, 80));
+  aiReview(pN, "review-ok");
+  await automerge("sweep");
+  check("a good research note merges after the review-ok", gh.prs.get(pN.number).state === "merged" && existsSync(join(WS, `notes/${NR}/sim-nina-survey.md`)));
+  const pF = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "fake", {
+    known: "- A. Nonexistent (2025), \"A proof of the Collatz conjecture\", Annals. https://arxiv.org/abs/2599.99999 Proves the full conjecture." }) });
+  check("a note with a fake citation passes the format check", (await ciCheck(pF, true)).conclusion === "success");
+  aiReview(pF, "review-rejected");
+  await automerge("sweep");
+  check("the AI review rejects the fake citation and the note is not merged", gh.prs.get(pF.number).state === "open" && hasLabel(pF, "review-rejected"));
+  const pH = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "html", {
+    body: `# x\nRecord: ${NR}\nAuthor: @sim-mallory\nDate: ${today}\n\n<script>alert(1)</script>\n<img src=x onerror=alert(1)>\n` }) });
+  const ch = await ciCheck(pH, true);
+  check("a note with HTML or script fails the gate", ch.conclusion === "failure" && /HTML is not allowed/.test(ch.gateOut), ch.gateOut.slice(0, 90));
+  const pX = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "badlink", {
+    known: "- Someone (2024), \"Title\". https://evil.example.com/paper and https://arxiv.org/abs/2201.00406" }) });
+  check("a note linking outside arXiv, DOI, journal or GitHub fails the gate", (await ciCheck(pX, true)).conclusion === "failure");
+  const pO = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-nina", NR, "impostor") });
+  await ciCheck(pO, true);
+  check("a note filed under someone else's name is never merged", gh.prs.get(pO.number).state === "open" && /must start with your GitHub login/.test(lastComment(pO)));
 
   // outsiders cannot change fixed statements or in-house split files
   const pS = openPr({ author: "sim-mallory", title: "Prove open-density-one", files: {
@@ -378,6 +416,9 @@ async function main() {
     const pts = (who) => lb.find((r) => r.who === who)?.points ?? 0;
     const proven = wsJson(`records/collatz/${realId}.json`), refutedRec = wsJson(`records/collatz/${falseId}.json`);
     const tinaWant = 50 + (proven.proposed_by === "sim-tina" ? 5 : 0);
+    const ninaRec = wsJson(`records/collatz/${NR}.json`);
+    check("points: a research note on an open problem scores 10", pts("sim-nina") === 10, `nina ${pts("sim-nina")}`);
+    check("the site renders the merged note escaped, and lists it on the timeline", existsSync(join(WS, `dist/notes/${NR}/sim-nina-survey.html`)) && /wrote a research note on/.test(wsRead("dist/index.html")) && !/<script>alert/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)), ninaRec.id);
     check("points: split 50 (+5 when its step is proven), step proof 12, step refutation 12",
       pts("sim-tina") === tinaWant && pts(realWho) === (proven.kind === "step" ? 12 : 1000) && pts("sim-grace") === (refutedRec.kind === "step" ? 12 : 1000),
       `tina ${pts("sim-tina")}, ${realWho} ${pts(realWho)}, grace ${pts("sim-grace")}`);

@@ -4,6 +4,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { scoringConfig, scoreEvents, leaderboardRows } from "../tools/scoring.mjs";
+import { readNotes, NOTE_HOSTS } from "../checker/notes.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const at = (p) => join(ROOT, p);
 const readJson = (p) => JSON.parse(readFileSync(at(p), "utf8"));
@@ -148,7 +149,10 @@ const latestSupporters = supporters.slice().sort((a, b) => b.n - a.n);
 // Checked and refuted results count for the prover or refuter.
 // Points come from tools/scoring.mjs, with the constants in site/config.json ("scoring").
 const SCORING = scoringConfig(cfg);
-const scoreEvts = scoreEvents(records, SCORING).filter((e) => LOGIN_RE.test(e.who || "") && DATE_RE.test(e.date || ""));
+// Research notes (already checked by the gate; anything malformed is skipped here).
+const notes = readNotes(ROOT, { strict: false }).filter((n) => byId.has(n.record) && LOGIN_RE.test(n.who));
+const notePage = (n) => `notes/${n.record}/${n.file.replace(/\.md$/, "")}.html`;
+const scoreEvts = scoreEvents(records, SCORING, notes).filter((e) => LOGIN_RE.test(e.who || "") && DATE_RE.test(e.date || ""));
 const weekStart = new Date((dayOf(BUILD_DATE) - 6) * DAY).toISOString().slice(0, 10);
 const lbAll = leaderboardRows(scoreEvts);
 const lbWeek = leaderboardRows(scoreEvts, weekStart);
@@ -168,6 +172,8 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    title_note: "Research note", note_disclaimer: "Written by an outside agent and checked by an AI review for accurate citations and claims. It is not a proof; only Lean decides results.",
+    join_note_t: "Researcher: write a research note", join_note_d: "The easiest place to start. Survey what is known about one open statement, with real citations, where each attack is stuck, and candidate splits. An AI review checks it.",
     nav_credit: "Credit", title_credit: "Credit & publication pledge", title_profile: "Contributor",
     credit_line: "Every contributor is credited: permanent record, author on the paper, public announcement",
     p1_h: "How far along is it?", p2_h: "Who contributed, and what they get",
@@ -270,6 +276,8 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    title_note: "研究笔记", note_disclaimer: "由外部 agent 撰写，并经 AI 审查核对引用和说法是否准确。它不是证明；结果只由 Lean 裁决。",
+    join_note_t: "研究者：写一篇研究笔记", join_note_d: "最容易的起点。综述某个未解决命题的已知结果（附真实引用）、每条攻击路线卡在哪里，以及候选拆分。由 AI 审查。",
     nav_credit: "署名", title_credit: "署名与发表承诺", title_profile: "贡献者",
     credit_line: "每位贡献者都会被署名：永久记录、论文作者、公开宣布",
     p1_h: "进展到哪一步了？", p2_h: "谁做了贡献，能得到什么",
@@ -499,7 +507,8 @@ svg .agent circle{fill:var(--live)}svg .agent text{font:10px var(--mono);fill:va
 .empty{border:1px dashed var(--rule);border-radius:12px;padding:18px;color:var(--muted);font-size:.92rem}
 .idea{white-space:pre-line;margin:6px 0 0;overflow-wrap:anywhere}
 .note{background:var(--soft);border-radius:12px;padding:14px 16px;margin:20px 0}
-.note.scoring h3{font-family:var(--serif)}.note.scoring ul{margin:6px 0 0}
+.note.scoring h3{font-family:var(--serif)}
+.note-md{line-height:1.7}.note-md h1{font-size:clamp(1.6rem,5vw,2.3rem)}.note-md pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}.note-md pre code{font-size:13px;overflow-wrap:normal}.note.scoring ul{margin:6px 0 0}
 .joinbox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;background:var(--strip);color:var(--strip-ink);border-radius:14px;padding:26px 28px;margin:56px 0 0}
 .joinbox h2{color:var(--strip-ink);margin:0 0 6px}
 .joinbox p{color:var(--strip-muted);margin:0 0 14px}
@@ -796,6 +805,7 @@ const scoringBox = () => `<div class="note scoring" id="scoring"><h3>${t("scorin
 <li>${pair(`Accepted split: ${S_.split_base} + ${S_.split_per_step} per step, times the parent's weight.`, `被接受的拆分：${S_.split_base} 分，每个步骤再加 ${S_.split_per_step} 分，乘以上级命题的权重。`)}</li>
 <li>${pair(`Proof of a step: ${S_.step_proof} times the step's weight. Proof of an open problem: ${S_.problem_proof}.`, `证明一个步骤：${S_.step_proof} 分乘以该步骤的权重。证明一个未解决问题：${S_.problem_proof} 分。`)}</li>
 <li>${pair("A refutation scores the same as a proof of that statement.", "推翻一个命题，得分与证明它相同。")}</li>
+<li>${pair(`Research note: ${S_.note_points} times the record's weight, plus ${S_.note_bonus} once that record is later split.`, `研究笔记：${S_.note_points} 分乘以该命题的权重；该命题之后被拆分时再加 ${S_.note_bonus} 分。`)}</li>
 <li>${pair(`When a step of your split is later proven, you get ${S_.split_bonus} more.`, `你的拆分中的某个步骤后来被证明时，你再得 ${S_.split_bonus} 分。`)}</li>
 <li>${pair(`Weight: open problems 1. A step has its parent's weight times ${S_.step_weight_factor}, never below ${S_.min_weight}, so deep tiny splits are worth little.`, `权重：未解决问题为 1。步骤的权重是上级权重乘以 ${S_.step_weight_factor}，最低 ${S_.min_weight}，所以层层细拆的小步骤分值很低。`)}</li>
 <li>${pair("Only merged results count. Rejected or reverted work scores 0.", "只有已合并的结果计分。被拒绝或被撤回的内容得 0 分。")}</li>
@@ -830,11 +840,13 @@ function lemmaCard(r) {
   const splitDir = r.kind === "step" && existsSync(at(`OpenConjecture/Collatz/Splits/${r.split}.lean`)) ? "Splits" : "Proposals";
   const split = r.kind === "step" && r.split ? `<p class="small"><a href="${esc(cfg.repo_url)}/blob/main/OpenConjecture/Collatz/${splitDir}/${esc(r.split)}.lean" rel="noopener">${t("split_note")}</a></p>` : "";
   if (r.kind === "step" && r.proposed_by) bits.push(`${t("proposed_by")} ${ghUser(r.proposed_by)}`);
+  const myNotes = notes.filter((n) => n.record === r.id);
+  const notesHtml = myNotes.length ? `<p class="small">${pair("Research notes:", "研究笔记：")} ${myNotes.map((n) => `<a href="${notePage(n)}">${esc(n.title)}</a> (@${esc(n.who)}, ${esc(n.date)})`).join(" · ")}</p>` : "";
   const about = r.kind === "program" && (r.about_en || r.about_zh) ? `<p class="small idea">${pair(r.about_en || "", r.about_zh || "")}</p>` : "";
   return `<article class="lem" id="l-${esc(r.id)}">
 <div class="lem-top"><h3>${pair(r.title_en, r.title_zh)}</h3>${status}</div>
 <p class="small muted">${bits.join(" · ")}</p>
-${about}${sketch}${split}
+${about}${sketch}${split}${notesHtml}
 <code>${esc(r.statement)}</code>
 </article>`;
 }
@@ -864,6 +876,10 @@ function recordEvents() {
       ev.push({ at: r.verified_at, url: linkRecord(r),
         html: `${profile(r.proved_by)} ${pair(v ? "proved" : "refuted", v ? "证明了" : "推翻了")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("Lean checked", "Lean 已检查")}</span>` });
     }
+  }
+  for (const n of notes) {
+    const r = byId.get(n.record);
+    ev.push({ at: n.date, url: notePage(n), html: `${profile(n.who)} ${pair("wrote a research note on", "写了一篇研究笔记，关于")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("reviewed", "已审查")}</span>` });
   }
   for (const g of splits.values()) {
     if (!g.parent) continue;
@@ -921,7 +937,7 @@ function homePage() {
   const events = [...recordEvents(), ...prEvents].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 80);
   const tlStatic = events.map((e) => `<li><span class="when">${esc(String(e.at).slice(0, 10))}</span><span class="what">${e.html}${e.url ? ` <a class="src" href="${esc(e.url)}" rel="noopener">↗</a>` : ""}</span></li>`).join("");
 
-  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${profile(e.who)}</span><span class="pts">${num(e.points)} ${pair("pts", "分")}</span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
+  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${profile(e.who)}</span><span class="pts">${num(e.points)} ${pair("pts", "分")}</span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations · ${e.notes} notes`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations} · 笔记 ${e.notes}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
   const logos = rankedSupporters.slice(0, 8).map((s) => `<span class="logo"><span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span></span>`).join("");
 
   return page({
@@ -1011,21 +1027,66 @@ load();setInterval(load,30000);
 // ---------- contributor profiles: c/<handle>.html ----------
 function contributorPage(who) {
   const mine = scoreEvts.filter((e) => String(e.who).toLowerCase() === who.toLowerCase()).sort((a, b) => (a.date < b.date ? 1 : -1));
-  const row = lbAll.find((r) => String(r.who).toLowerCase() === who.toLowerCase()) || { points: 0, proofs: 0, splits: 0, refutations: 0 };
-  const KIND = { proof: ["proved", "证明了"], refutation: ["refuted", "推翻了"], split: ["split", "拆分了"], bonus: ["bonus: a step of their split was proven", "奖励：其拆分中的步骤被证明"] };
+  const row = lbAll.find((r) => String(r.who).toLowerCase() === who.toLowerCase()) || { points: 0, proofs: 0, splits: 0, refutations: 0, notes: 0 };
+  const KIND = { proof: ["proved", "证明了"], refutation: ["refuted", "推翻了"], split: ["split", "拆分了"], note: ["wrote a research note on", "写了研究笔记："], bonus: ["bonus for", "奖励："] };
   const items = mine.map((e) => {
     const r = byId.get(e.id);
-    const target = e.kind === "split" ? (records.find((x) => x.split === e.id) ? byId.get(records.find((x) => x.split === e.id).parent) : null) : r;
+    const target = e.kind === "note" ? byId.get(e.id) : e.kind === "split" ? (records.find((x) => x.split === e.id) ? byId.get(records.find((x) => x.split === e.id).parent) : null) : r;
     return `<li><span class="when">${esc(e.date)}</span><span class="what">${pair(KIND[e.kind][0], KIND[e.kind][1])} ${target ? pair(target.title_en, target.title_zh) : esc(e.id)} <span class="tag ok">+${num(e.points)}</span></span></li>`;
   }).join("");
   return page({
     key: "title_profile", prefix: "../", title: `@${who}`,
     body: `<h1>@${esc(who)}</h1>
-<p class="lede">${pair(`${num(row.points)} points: ${row.proofs} proofs, ${row.splits} splits, ${row.refutations} refutations.`, `${num(row.points)} 分：证明 ${row.proofs} 个，拆分 ${row.splits} 个，推翻 ${row.refutations} 个。`)}</p>
+<p class="lede">${pair(`${num(row.points)} points: ${row.proofs} proofs, ${row.splits} splits, ${row.refutations} refutations, ${row.notes} research notes.`, `${num(row.points)} 分：证明 ${row.proofs} 个，拆分 ${row.splits} 个，推翻 ${row.refutations} 个，研究笔记 ${row.notes} 篇。`)}</p>
 <p class="small"><a href="https://github.com/${esc(who)}" rel="noopener">github.com/${esc(who)}</a></p>
 <h2>${pair("Contributions", "贡献")}</h2>
 <ol class="tl">${items || `<li class="empty-li">${t("tl_empty")}</li>`}</ol>
 <p class="small muted">${t("profile_note")}</p>`,
+  });
+}
+
+// ---------- research note pages: Markdown rendered with everything escaped ----------
+const linkOk = (u) => { try { const x = new URL(u); return x.protocol === "https:" && NOTE_HOSTS.some((h) => x.hostname === h || x.hostname.endsWith("." + h)); } catch { return false; } };
+function mdInline(text) {
+  let out = "", last = 0;
+  const re = /`([^`]+)`|\[([^\]]+)\]\((https:\/\/[^\s)]+)\)|(https:\/\/[^\s)\]>]+)|\*\*([^*]+)\*\*/g;
+  for (const m of text.matchAll(re)) {
+    out += esc(text.slice(last, m.index));
+    if (m[1] !== undefined) out += `<code>${esc(m[1])}</code>`;
+    else if (m[3] !== undefined) out += linkOk(m[3]) ? `<a href="${esc(m[3])}" rel="nofollow noopener">${esc(m[2])}</a>` : esc(m[0]);
+    else if (m[4] !== undefined) out += linkOk(m[4]) ? `<a href="${esc(m[4])}" rel="nofollow noopener">${esc(m[4])}</a>` : esc(m[4]);
+    else out += `<strong>${esc(m[5])}</strong>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+function mdRender(src) {
+  const out = [];
+  let para = [], list = null, code = null;
+  const flush = () => { if (para.length) out.push(`<p>${mdInline(para.join(" "))}</p>`); para = []; if (list) { out.push(`<${list.tag}>${list.items.map((i) => `<li>${mdInline(i)}</li>`).join("")}</${list.tag}>`); list = null; } };
+  for (const line of src.split(/\r?\n/)) {
+    if (code) { if (/^```/.test(line)) { out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`); code = null; } else code.push(line); continue; }
+    if (/^```/.test(line)) { flush(); code = []; continue; }
+    const h = /^(#{1,4}) (.*)$/.exec(line);
+    if (h) { flush(); const lv = Math.min(4, h[1].length + 1); out.push(`<h${lv}>${mdInline(h[2])}</h${lv}>`); continue; }
+    const li = /^\s*(?:[-*]|(\d+)\.) (.*)$/.exec(line);
+    if (li) { const tag = li[1] ? "ol" : "ul"; if (para.length || (list && list.tag !== tag)) flush(); if (!list) list = { tag, items: [] }; list.items.push(li[2]); continue; }
+    if (!line.trim()) { flush(); continue; }
+    if (list && /^\s+\S/.test(line)) { list.items[list.items.length - 1] += " " + line.trim(); continue; }
+    if (list) flush();
+    para.push(line.trim());
+  }
+  if (code) out.push(`<pre><code>${esc(code.join("\n"))}</code></pre>`);
+  flush();
+  return out.join("\n");
+}
+function notePageHtml(n) {
+  const r = byId.get(n.record);
+  return page({
+    key: "title_note", prefix: "../../", title: n.title,
+    body: `<p class="small muted">${pair("Research note", "研究笔记")} · ${profile(n.who, "../../")} · ${esc(n.date)} · ${pair(`on: ${r.title_en}`, `关于：${r.title_zh}`)}</p>
+<article class="note-md">${mdRender(n.text.split(/\r?\n/).slice(1).filter((l) => !/^(Record|Author|Date): /.test(l)).join("\n")).replace(/^/, `<h1>${esc(n.title)}</h1>\n`)}</article>
+<p class="small muted">${t("note_disclaimer")} <a href="${esc(cfg.repo_url)}/blob/main/${esc(n.path)}" rel="noopener">${pair("Source", "源文件")}</a></p>`,
   });
 }
 
@@ -1118,7 +1179,7 @@ function joinPage() {
     body: `<h1>${t("title_join")}</h1>
 <p class="muted">${t("join_lead")}</p>
 <div class="codebox"><code>${pair(en, zh)}</code><button class="btn sm" type="button" data-copy="${esc(en)}" data-copy-zh="${esc(zh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div>
-<div style="margin:28px 0">${step(1, "join_build_t", "join_build_d")}${step(2, "join_think_t", "join_think_d")}${step(3, "join_redteam_t", "join_redteam_d")}</div>
+<div style="margin:28px 0">${step(1, "join_note_t", "join_note_d")}${step(2, "join_build_t", "join_build_d")}${step(3, "join_think_t", "join_think_d")}${step(4, "join_redteam_t", "join_redteam_d")}</div>
 <div class="btns"><a class="btn" href="lemmas.html">${t("browse_link")}</a><a class="btn" href="${esc(cfg.repo_url)}/blob/main/AGENTS.md" rel="noopener">${t("agents_link")}</a></div>
 <div class="note"><h3>${t("keys_title")}</h3><p class="small" style="margin:0">${t("keys_body")}</p></div>`,
   });
@@ -1265,6 +1326,7 @@ writeFileSync(at("dist/refunds.html"), refundsPage());
 writeFileSync(at("dist/privacy.html"), privacyPage());
 writeFileSync(at("dist/credit.html"), creditPage());
 mkdirSync(at("dist/c"), { recursive: true });
+for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: true }); writeFileSync(at(`dist/${notePage(n)}`), notePageHtml(n)); }
 const contributors = [...new Set(scoreEvts.map((e) => String(e.who)))].filter((w) => LOGIN_RE.test(w));
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
@@ -1273,8 +1335,10 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
   build: sha,
   summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, settled: a.settled, total: a.total })),
   leaderboard: { all: lbAll, week: lbWeek, scoring: SCORING },
+  notes: notes.map(({ text, ...n }) => n),
   // Steps live in Proposals/, not Lemmas.lean: give the desk (and agents) their statement text.
-  records: records.map((r) => {
+  records: records.map((r0) => {
+    const r = { ...r0, notes: notes.filter((n) => n.record === r0.id).length };
     if (r.kind !== "step") return r;
     const f = at(`OpenConjecture/Collatz/Proposals/${r.statement}.lean`);
     if (!existsSync(f)) return r;

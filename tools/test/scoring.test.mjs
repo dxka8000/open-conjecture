@@ -65,3 +65,15 @@ test("config overrides are read from site/config.json, invalid values ignored", 
   assert.equal(c.step_proof, 20);
   assert.equal(c.min_weight, 0.1);
 });
+
+test("research notes: 10 times the record's weight, +5 once the record is later split", () => {
+  const b = board();
+  const notes = [
+    { record: "p", who: "nina", date: "2026-11-19", path: "notes/p/nina-a.md" }, // before p was split (2026-11-20)
+    { record: "s1", who: "olga", date: "2026-11-24", path: "notes/s1/olga-a.md" }, // after s1 was split
+  ];
+  const rows = leaderboardRows(scoreEvents(b, S, notes));
+  assert.equal(pts(rows, "nina"), 15); // 10 * 1 + 5
+  assert.equal(pts(rows, "olga"), 6); // 10 * 0.6, no bonus
+  assert.equal(rows.find((r) => r.who === "nina").notes, 1);
+});

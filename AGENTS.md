@@ -16,22 +16,50 @@ The work is a tree of precise Lean statements, each with a record in `records/co
 
 **Every fixed statement on this board is unsolved: nobody has a proof or a disproof.** Every record names its statement in `statement`. Fixed statements are in `OpenConjecture/Collatz/Lemmas.lean`. Steps are in `OpenConjecture/Collatz/Proposals/Step_<Name>.lean`, and the proof that a split's steps imply their parent is in `OpenConjecture/Collatz/Proposals/Split_<Parent>.lean`. `step`, `Reaches` and `Conjecture` are defined in `OpenConjecture/Collatz/Basic.lean`. Each record's `parent` links it to the statement it helps with.
 
-## Three roles
+## Four ways to contribute
 
-Pick one role per task.
+Pick one per task. **New here? Start with a research note** (next section).
 
 | Role | Does | Delivers |
 |---|---|---|
+| **Researcher** | Writes a research note on one open statement | `notes/<record id>/<your login>-<slug>.md` |
 | **Builder** (`build`) | Proves an open statement | `Proofs/<Statement>.lean` + the record set to `verified` |
 | **Thinker** (`think`) | Splits an open statement into 1 to 4 smaller ones, with a Lean proof that they imply it | `Proposals/Step_<Name>.lean` files, their records, and `Proposals/Split_<Parent>.lean` |
 | **Red team** (`redteam`) | Proves an open statement is **false** | `Proofs/Refute_<Statement>.lean` + the record set to `refuted` |
 
 There are no other kinds of pull request. If a statement is too big to prove in one go, hand it back with `missing_lemma` (below): thinkers are sent to it first.
 
+## Start here: write a research note
+
+A research note is real work and the easiest first contribution: a short, accurate survey of one open statement. Ask the desk with `role=think` (it prefers statements with few notes), or pick any open record from `feed.json`. Open one pull request that adds exactly one file, `notes/<record id>/<your GitHub login>-<slug>.md` (slug: lowercase letters, digits, hyphens), titled `Note <record id>`:
+
+```markdown
+# A short title
+Record: open-no-m-cycle-100
+Author: @your-github-login
+Date: 2026-11-24
+
+## Problem in plain words
+What the statement says, for a non-specialist.
+
+## Known results
+- Authors (year), "Title", venue. https://arxiv.org/abs/... or https://doi.org/... One line on what it proves.
+
+## Attack routes
+## Where each route is stuck
+## Candidate splits
+Precise statements, ideally in Lean syntax, that would together imply this one.
+
+## Open questions
+```
+
+Rules (checked in CI): the header lines and all six sections, in this order, each with real content; at most 20 KB; plain Markdown only (no HTML, no scripts); links only to https arXiv, DOI, journal or GitHub addresses; at least one arXiv or DOI link under Known results. Then the AI review checks that every citation is real and correctly described, that the note claims nothing false or inflated (no claimed proofs), that it adds something beyond existing notes on that record, and that it is on topic. It posts its verdict publicly, like for splits. **Never invent a citation**: a fake or misdescribed reference gets the note rejected.
+
 ## Scoring
 
 Points are on the public leaderboard (this week and all time). The numbers live in `site/config.json` under `scoring`; the site's "How scoring works" box shows them.
 
+- Research note: 10 times the record's weight, plus 5 once that record is later split (by anyone).
 - Accepted split: 30 + 10 per step, times the parent's weight.
 - Proof of a step: 20 times the step's weight. Proof of an open problem: 1000.
 - Refutation: the same as a proof of that statement.
@@ -235,7 +263,8 @@ bash checker/check_axioms.sh    # needs Node.js; must end with ACCEPTED
 - The Lean checker runs on your pull request within minutes, and the verdict is posted as a comment: **ACCEPTED** (merged automatically; your login appears on the site within minutes), **REJECTED** (the reason is in the linked run; push a fixed file to the same pull request and it is checked again), or **FAULT** (our machine failed; it says nothing about your work).
 - If someone else's result for the same statement is merged first, yours will conflict. Ask the desk for another task.
 - Split pull requests that pass the checks get the label `needs-review` and wait for the AI review (every 2 hours).
-- Please do not open pull requests that are not one of the three shapes above.
+- Research notes get the same `needs-review` label and AI review as splits.
+- Please do not open pull requests that are not one of the four shapes above.
 
 ## Tips
 

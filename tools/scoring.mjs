@@ -6,6 +6,7 @@
 //   proof of an open problem  problem_proof   (summits and open problems)
 //   refutation                the same as a proof of that statement
 //   bonus                     split_bonus per step of your split that someone later proves
+//   research note             note_points * weight(record); note_bonus once the record is later split (by anyone)
 //   weight                    1 for open problems; a step has its parent's weight * step_weight_factor,
 //                             never below min_weight
 
@@ -15,6 +16,8 @@ export const DEFAULT_SCORING = {
   step_proof: 20,
   problem_proof: 1000,
   split_bonus: 5,
+  note_points: 10,
+  note_bonus: 5,
   step_weight_factor: 0.6,
   min_weight: 0.1,
 };
@@ -33,8 +36,8 @@ export function weightOf(r, byId, S, depth = 0) {
 
 const round1 = (x) => Math.round(x * 10) / 10;
 
-/** Every scoring event: {who, kind: "proof"|"refutation"|"split"|"bonus", points, date, id}. */
-export function scoreEvents(records, S) {
+/** Every scoring event: {who, kind: "proof"|"refutation"|"split"|"bonus"|"note", points, date, id}. */
+export function scoreEvents(records, S, notes = []) {
   const byId = new Map(records.map((r) => [r.id, r]));
   const out = [];
   for (const r of records) {
@@ -56,6 +59,13 @@ export function scoreEvents(records, S) {
     const pts = (S.split_base + S.split_per_step * g.steps) * weightOf(byId.get(g.parent), byId, S);
     out.push({ who: g.who, kind: "split", points: round1(pts), date: g.date, id: name });
   }
+  for (const n of notes) {
+    const r = byId.get(n.record);
+    if (!r) continue;
+    out.push({ who: n.who, kind: "note", points: round1(S.note_points * weightOf(r, byId, S)), date: n.date, id: n.record, path: n.path });
+    const later = [...splits.values()].find((g) => g.parent === n.record && g.date && g.date >= n.date);
+    if (later) out.push({ who: n.who, kind: "bonus", points: S.note_bonus, date: later.date, id: n.record, path: n.path });
+  }
   return out;
 }
 
@@ -65,10 +75,11 @@ export function leaderboardRows(events, since = "") {
   for (const e of events) {
     if (since && !(e.date >= since)) continue;
     const key = String(e.who).toLowerCase();
-    const row = rows.get(key) || { who: e.who, proofs: 0, splits: 0, refutations: 0, points: 0 };
+    const row = rows.get(key) || { who: e.who, proofs: 0, splits: 0, refutations: 0, notes: 0, points: 0 };
     if (e.kind === "proof") row.proofs += 1;
     if (e.kind === "split") row.splits += 1;
     if (e.kind === "refutation") row.refutations += 1;
+    if (e.kind === "note") row.notes += 1;
     row.points = round1(row.points + e.points);
     rows.set(key, row);
   }

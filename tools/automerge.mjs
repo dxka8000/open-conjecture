@@ -16,7 +16,10 @@
 //               when the repository owner's account has applied review-ok AND posted the verdict comment
 //               "AI review: review-ok for <head sha>" for the exact commit. Labels applied by anyone else,
 //               or a verdict for an older commit, do not count.
+//   note      : exactly one file: adds notes/<record id>/<your handle>-<slug>.md (a research note). Format checked
+//               here and in CI; then the same AI review as a split.
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { checkNote } from "../checker/notes.mjs";
 
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
@@ -61,6 +64,7 @@ async function evaluate(pr) {
   const author = pr.user.login;
   const files = await api(`/repos/${REPO}/pulls/${pr.number}/files?per_page=100`);
   if (files && files.some((f) => /^OpenConjecture\/Collatz\/Proposals\//.test(f.filename))) return evaluateSplit(pr, files, author);
+  if (files && files.some((f) => /^notes\//.test(f.filename))) return evaluateNote(pr, files, author);
   if (!files || files.length !== 2) return { ok: false, why: `it must change exactly two files, but it changes ${files ? files.length : "?"}.` };
   const proof = files.find((f) => /^OpenConjecture\/Collatz\/Proofs\/[A-Za-z0-9_]+\.lean$/.test(f.filename));
   const rec = files.find((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
@@ -134,6 +138,32 @@ async function reviewVerdict(pr) {
   if (labels.has(REVIEW.ok) && isOwner(lastLabelBy(REVIEW.ok)) && verdictFor(REVIEW.ok)) return "ok";
   if (labels.has(REVIEW.rejected) && isOwner(lastLabelBy(REVIEW.rejected)) && verdictFor(REVIEW.rejected)) return "rejected";
   return null;
+}
+
+// A research note: one new Markdown file, then the AI review.
+async function evaluateNote(pr, files, author) {
+  const m = files.length === 1 && files[0].status === "added" && /^notes\/([a-z0-9-]{1,60})\/([A-Za-z0-9-]{1,39}-[a-z0-9-]{1,60}\.md)$/.exec(files[0].filename);
+  if (!m) return { ok: false, why: "a research note adds exactly one file, notes/<record id>/<your handle>-<slug>.md, and changes nothing else." };
+  const [, rid, file] = m;
+  const base = mainRecords.get(rid);
+  if (!base) return { ok: false, why: `record ${rid} does not exist on main.` };
+  if (!file.toLowerCase().startsWith(author.toLowerCase() + "-")) return { ok: false, why: `the file name must start with your GitHub login (${author}-).` };
+  const text = await fileAtHead(pr, files[0].filename);
+  if (text === null) return { ok: false, why: "the note could not be read." };
+  const r = checkNote(rid, file, text, Buffer.byteLength(text, "utf8"));
+  if (!r.ok) return { ok: false, why: r.why };
+  if (Math.abs(day(r.note.date) - Math.floor(Date.now() / 864e5)) > 2) return { ok: false, why: "the note's Date must be today's date (UTC)." };
+  const verdict = await reviewVerdict(pr);
+  if (verdict === "ok") return { ok: true, kind: "note", summary: `Research note on ${rid} by ${author}`,
+    accepted: `**ACCEPTED**. The AI review found this research note accurate, on topic and new. It is on the site now, credited to @${author}.` };
+  if (verdict === "rejected") {
+    await removeLabel(pr, REVIEW.need);
+    return { ok: false, rejected: true, why: "the AI review found a problem with this note (see its comment). Push a revised note to be reviewed again." };
+  }
+  await removeLabel(pr, REVIEW.ok);
+  await removeLabel(pr, REVIEW.rejected);
+  await addLabel(pr, REVIEW.need);
+  return { ok: false, waiting: true, why: "the format check passed. Waiting for the AI review, which runs every 2 hours and checks the citations, the claims, and that the note adds something new." };
 }
 
 // A split: 1-4 new steps under one parent, plus the Lean file proving that together they imply it.

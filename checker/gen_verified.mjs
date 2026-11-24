@@ -4,6 +4,7 @@
 // 3. Writes checker/Verified.lean, which ties every verified record to its statement
 //    and every refuted record to the negation of its statement.
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
+import { readNotes } from "./notes.mjs";
 
 const fail = (m) => { console.error("REJECTED: " + m); process.exit(1); };
 const PROOFS = "OpenConjecture/Collatz/Proofs";
@@ -176,6 +177,10 @@ for (const { f, where, r } of records) {
   lines.push(`#print axioms OpenConjectureCheck.c${n}`);
   n++;
 }
+// Research notes: format, sections, links, and a record that exists.
+let notes = [];
+try { notes = readNotes("."); } catch (e) { fail(e.message); }
+for (const nt of notes) if (!ids.has(nt.record)) fail(`${nt.path}: no record ${nt.record}`);
 // Every split: its steps together must imply its parent. The type is written here, never taken from the file.
 let m = 0;
 for (const s of splitFiles) {
@@ -188,4 +193,4 @@ for (const s of splitFiles) {
   m++;
 }
 writeFileSync("checker/Verified.lean", imports.join("\n") + "\n\n" + lines.join("\n") + "\n");
-console.log(`records ok; ${n} settled result(s) and ${m} split(s) to check`);
+console.log(`records ok; ${n} settled result(s), ${m} split(s) to check, ${notes.length} research note(s)`);

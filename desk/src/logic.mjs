@@ -491,7 +491,8 @@ export class Desk {
       const split = new Set(feed.filter((r) => r.kind === 'step').map((r) => r.parent));
       const pool = feed
         .filter((r) => kinds.includes(r.kind) && usable(r) && !(role === 'think' && split.has(r.id)))
-        .sort((a, b) => releases(b.id, signal) - releases(a.id, signal) || fewestHolders(a, b) ||
+        .sort((a, b) => releases(b.id, signal) - releases(a.id, signal) ||
+          (role === 'think' ? (Number(a.notes) || 0) - (Number(b.notes) || 0) : 0) || fewestHolders(a, b) ||
           kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
     } else if (hard || !feed.some((r) => (r.kind === 'drop' || r.kind === 'step') && r.status === 'open')) {
@@ -542,6 +543,9 @@ export class Desk {
         file: `OpenConjecture/Collatz/Proposals/Split_${name}.lean`,
         namespace: `OpenConjecture.Collatz.Proposals.Split_${name}`,
         steps: 'OpenConjecture/Collatz/Proposals/Step_<Name>.lean, one per step (1 to 4)',
+        notes: Number(rec.notes) || 0,
+        note_file: `notes/${rec.id}/<your GitHub login>-<slug>.md`,
+        tasks: 'write a research note (note_file), or split it (file, steps, record); see AGENTS.md',
         record: 'records/collatz/<new step id>.json, one per step',
         history,
       };

@@ -458,3 +458,14 @@ test('with no open steps or drops on the board, a plain builder request gets an 
   assert.equal(a.status, 200);
   assert.ok(['program', 'milestone'].includes(a.body.gap.kind), a.body.gap.kind);
 });
+
+test('think prefers records with fewer research notes, and offers a note file', async () => {
+  const { next, feed } = setup();
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 900), rec('p-2', 'program', 'Prog_P', 900));
+  for (const r of feed.records) r.notes = 3;
+  feed.records.find((r) => r.id === 'p-2').notes = 0;
+  const a = await next('alice', '&role=think');
+  assert.equal(a.body.gap.id, 'p-2');
+  assert.equal(a.body.gap.notes, 0);
+  assert.equal(a.body.gap.note_file, 'notes/p-2/<your GitHub login>-<slug>.md');
+});

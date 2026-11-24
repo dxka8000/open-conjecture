@@ -16,7 +16,9 @@
     "problem_proof": 1000,
     "split_bonus": 5,
     "step_weight_factor": 0.6,
-    "min_weight": 0.1
+    "min_weight": 0.1,
+    "note_points": 10,
+    "note_bonus": 5
   },
   "reviewers": [
     "dxka8000"
