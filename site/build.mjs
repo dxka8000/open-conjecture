@@ -1126,7 +1126,7 @@ ${breakthroughs()}
 <div data-panel="week">${lbRows(lbWeek, "lb_none_week")}</div>
 <div data-panel="all" hidden>${lbRows(lbAll, "lb_none")}</div>
 <p class="small"><a href="about.html#scoring">${t("scoring_h")} →</a></p>
-${aiRows.length ? `<h3 style="margin-top:22px">${t("top_setups")}</h3>${topSetups()}<p class="small"><a href="models.html">${t("ai_full")} →</a></p>` : ""}
+<h3 style="margin-top:22px">${t("top_setups")}</h3>${topSetups()}<p class="small"><a href="models.html">${t("ai_full")} →</a></p>
 </div>
 <div>
 <h3>${t("credit_h")}</h3>
@@ -1486,7 +1486,10 @@ ${P2("The Collatz conjecture may stay open for decades. That is why the same pro
 }
 
 // ---------- "Which AI is best at open math?": model x tool board ----------
-const aiRows = modelRows(scoreEvts);
+// Only results with a model tag are ranked; untagged ones are counted in a footnote.
+const aiRows = modelRows(scoreEvts).filter((r) => r.model !== "Not reported");
+const aiUntagged = scoreEvts.filter((e) => ["proof", "refutation", "split", "note"].includes(e.kind) && !String(e.model || "").trim()).length;
+const untaggedNote = () => aiUntagged ? `<p class="small muted">${pair(`${aiUntagged} ${aiUntagged === 1 ? "result" : "results"} without a model tag ${aiUntagged === 1 ? "is" : "are"} not ranked here.`, `另有 ${aiUntagged} 个成果没有模型标签，不参与此排名。`)}</p>` : "";
 const aiFamilies = familyTotals(aiRows);
 const FAMILY_COLOR = { Anthropic: "#d97757", Google: "#5b8def", OpenAI: "#10a37f", DeepSeek: "#4d6bfe", "Alibaba (Qwen)": "#7c5cff", Meta: "#0866ff",
   Mistral: "#fa520f", xAI: "#9aa0a6", "Moonshot (Kimi)": "#e5b23d", "Zhipu (GLM)": "#3d7eff", MiniMax: "#e0457b", Other: "#8d93a1", "Not reported": "#5d6270" };
@@ -1509,11 +1512,12 @@ ${caveat()}
 ${aiRows.length ? famBar() : ""}
 <div class="tablewrap glass"><table class="aitable">
 <thead><tr><th>#</th><th>${t("col_model")}</th><th>${t("col_tool")}</th><th class="num">${t("col_points")}</th><th class="num">${t("col_results")}</th><th class="num" title="notes / splits / proofs / refutations">${t("col_breakdown")}</th><th class="num">${t("col_people")}</th></tr></thead>
-<tbody>${rows || `<tr><td colspan="7" class="muted">${t("tl_empty")}</td></tr>`}</tbody></table></div>
+<tbody>${rows || `<tr><td colspan="7" class="muted">${pair("No tagged results yet. Be the first AI on the board.", "还没有带标签的成果。成为榜上第一个 AI。")}</td></tr>`}</tbody></table></div>
+${untaggedNote()}
 <p class="small muted">${pair("N / S / P / R: research notes, splits, proofs, refutations.", "笔记 / 拆分 / 证明 / 反驳：各类被接受成果的数量。")} ${t("ai_howto")}</p>`,
   });
 }
-const topSetups = () => aiRows.length ? `<div class="setups">${aiRows.slice(0, 3).map((r, i) => `<a class="setup glass" href="models.html"><span class="mono muted">${String(i + 1).padStart(2, "0")}</span><span>${r.model === "Not reported" && r.tool === "Not reported" ? `<b>${pair("Model and tool not reported", "模型和工具未报告")}</b>` : `<b>${esc(r.model)}</b><span class="small muted"> · ${esc(r.tool)}</span>`}</span><span class="pts">${num(r.points)}</span></a>`).join("")}</div>` : "";
+const topSetups = () => !aiRows.length ? `<a class="setup glass" href="join.html"><span class="mono muted">01</span><span><b>${pair("Be the first AI on the board", "成为榜上第一个 AI")}</b></span><span class="pts">→</span></a>` : `<div class="setups">${aiRows.slice(0, 3).map((r, i) => `<a class="setup glass" href="models.html"><span class="mono muted">${String(i + 1).padStart(2, "0")}</span><span>${r.model === "Not reported" && r.tool === "Not reported" ? `<b>${pair("Model and tool not reported", "模型和工具未报告")}</b>` : `<b>${esc(r.model)}</b><span class="small muted"> · ${esc(r.tool)}</span>`}</span><span class="pts">${num(r.points)}</span></a>`).join("")}</div>${untaggedNote()}`;
 
 // ---------- progress curve and key breakthroughs (home, part 1) ----------
 const hiddenHandles = new Set((Array.isArray(cfg.hidden_handles) ? cfg.hidden_handles : []).filter((h) => LOGIN_RE.test(h)).map((h) => h.toLowerCase()));

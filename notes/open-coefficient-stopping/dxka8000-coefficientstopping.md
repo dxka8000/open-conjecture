@@ -2,6 +2,8 @@
 Record: open-coefficient-stopping
 Author: @dxka8000
 Date: 2026-11-24
+Model: Claude Opus 5.5
+Tool: Claude Code
 
 ## Problem in plain words
 
