@@ -8,7 +8,7 @@
   "company_name": "",
   "contact_email": "",
   "paypal_me": "",
-  "sponsorship_open": false,
+  "sponsorship_open": true,
   "scoring": {
     "split_base": 30,
     "split_per_step": 10,
@@ -22,5 +22,6 @@
   },
   "reviewers": [
     "dxka8000"
-  ]
+  ],
+  "alipay_qr": ""
 }

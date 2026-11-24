@@ -31,6 +31,7 @@ const COMPANY = typeof cfg.company_name === "string" ? cfg.company_name.trim().s
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 // Sponsorship (pledge form and desk-fed wall) stays closed until the owner sets sponsorship_open: true.
 const SPONSOR_OPEN = cfg.sponsorship_open === true && deskOn;
+const ALIPAY_QR = typeof cfg.alipay_qr === "string" && /^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(png|jpg|jpeg|webp)$/.test(cfg.alipay_qr) && existsSync(at(`site/${cfg.alipay_qr}`)) ? cfg.alipay_qr : "";
 const PAYPAL = typeof cfg.paypal_me === "string" && /^[A-Za-z0-9]{1,20}$/.test(cfg.paypal_me) ? cfg.paypal_me : "";
 const CONTACT = typeof cfg.contact_email === "string" && EMAIL_RE.test(cfg.contact_email.trim()) ? cfg.contact_email.trim() : "";
 
@@ -196,11 +197,11 @@ const I18N = {
     proposed_by: "split by",
     sponsor_soon_d: "Sponsorship opens in a few days. Sponsors will be listed here and on the home page, ranked by total.",
     pledged: "pledged", paid_lbl: "paid", wall_empty: "No sponsors yet. The first pledge takes the top spot.",
-    wall_off: "The sponsor wall loads from the task desk, which cannot be reached right now.",
-    pledge_h: "Pledge a sponsorship", pledge_lead: "Payments open in a few days. Pledge now and we will email you a one-click payment link the moment they do. Nothing is charged today.",
+    wall_off: "The sponsor wall opens shortly.", pledge_soon: "Pledges open shortly. Please try again in a little while.", pay_alipay: "Pay with Alipay: scan this code",
+    pledge_h: "Pledge a sponsorship", pledge_lead: "Payment opens in a few days. We'll email you a payment link. Nothing is charged today.",
     f_name: "Display name", f_tagline: "Tagline (optional, up to 80 characters)", f_link: "Link (optional, https://...)",
     f_amount: "Amount in US$ (from 5)", f_email: "Email (only to send you the payment link; never shown)", f_submit: "Pledge",
-    pledge_ok: "Pledged {amount}. Your total is {total}, and you are on the wall now.", pledge_next: "We will email you a payment link when payments open.",
+    pledge_ok: "Pledged {amount}. Your total is {total}, and you are on the wall now.", pledge_next: "Payment opens in a few days. We'll email you a payment link. Nothing is charged today.",
     pay_paypal: "Pay now with PayPal", pledge_err: "The pledge was not saved:", pledge_net: "Could not reach the desk. Try again in a minute.",
     pledge_off: "Pledges open as soon as the task desk is online.",
     title_sponsor: "Sponsor", title_terms: "Terms", title_refunds: "Refund policy", title_privacy: "Privacy",
@@ -301,11 +302,11 @@ const I18N = {
     proposed_by: "拆分者",
     sponsor_soon_d: "赞助将在几天后开放。赞助者会按累计金额排名，列在这里和首页上。",
     pledged: "已认购", paid_lbl: "已付款", wall_empty: "还没有赞助者。第一笔认购将位居榜首。",
-    wall_off: "赞助墙从调度台读取，目前无法连接。",
-    pledge_h: "认购赞助", pledge_lead: "几天后开放付款。现在认购，付款开放时我们会立即给你发一封一键付款链接的邮件。今天不会收取任何费用。",
+    wall_off: "赞助墙即将开放。", pledge_soon: "认购即将开放，请稍后再试。", pay_alipay: "支付宝付款：扫描此二维码",
+    pledge_h: "认购赞助", pledge_lead: "付款通道几天后开放。我们会通过邮件给你发付款链接。今天不收取任何费用。",
     f_name: "显示名称", f_tagline: "一句话简介（可选，最多 80 个字符）", f_link: "链接（可选，https://...）",
     f_amount: "金额（美元，5 起）", f_email: "邮箱（只用于给你发付款链接，从不公开）", f_submit: "认购",
-    pledge_ok: "已认购 {amount}。你的累计金额是 {total}，你的名字已经上墙。", pledge_next: "付款开放时，我们会给你发付款链接。",
+    pledge_ok: "已认购 {amount}。你的累计金额是 {total}，你的名字已经上墙。", pledge_next: "付款通道几天后开放。我们会通过邮件给你发付款链接。今天不收取任何费用。",
     pay_paypal: "用 PayPal 立即付款", pledge_err: "认购没有保存：", pledge_net: "无法连接调度台，请过一分钟再试。",
     pledge_off: "调度台上线后即可认购。",
     title_sponsor: "赞助", title_terms: "服务条款", title_refunds: "退款政策", title_privacy: "隐私",
@@ -576,7 +577,8 @@ footer a{color:var(--muted)}
 .lb2 li{display:grid;grid-template-columns:2em 1fr auto;gap:2px 10px;padding:9px 0;border-bottom:1px solid var(--line);counter-increment:r}
 .lb2 li::before{content:counter(r);color:var(--muted);font:.85rem/1.7 var(--mono);grid-row:span 2}
 .lb2 .pts{font:600 .9rem/1.6 var(--mono)}.lb2 .small{grid-column:2/4}
-.backers2{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 0}
+.backers2{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 10px}.backers2 .logos{display:contents}
+img.qr{display:block;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px;margin:6px 0}
 @media (max-width:520px){.tl li{grid-template-columns:1fr;gap:2px}.camp{padding:16px 14px 8px}}footer a:hover{color:var(--text)}
 @media (max-width:900px){.hero{grid-template-columns:1fr;gap:28px}.aimpanel{border-left:0;padding-left:0;border-top:1px solid var(--rule);padding-top:8px}
 .fleet{grid-template-columns:1fr}.fleet .graph{border-right:0;border-bottom:1px solid var(--line)}.cols{grid-template-columns:1fr;gap:0}
@@ -733,15 +735,18 @@ if(f)f.addEventListener("submit",function(ev){ev.preventDefault();
 var out=el("pledge-out"),btn=f.querySelector("button[type=submit]");btn.disabled=true;clear(out);
 var body={name:f.elements.name.value,tagline:f.elements.tagline.value,link:f.elements.link.value,amount:Number(f.elements.amount.value),email:f.elements.email.value};
 fetch(desk+"/desk/pledge",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
-.then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j||{}};});})
+.then(function(r){return r.json().catch(function(){return {};}).then(function(j){return {ok:r.ok,status:r.status,j:j||{}};});})
 .then(function(x){
 if(x.ok){out.appendChild(node("p","ok",tr("pledge_ok").replace("{amount}",money(x.j.amount)).replace("{total}",money(x.j.total_pledged))));
 var pp=f.getAttribute("data-paypal");
 if(pp&&/^[A-Za-z0-9]{1,20}$/.test(pp)){var a=node("a","btn primary",tr("pay_paypal"));a.rel="noopener";a.href="https://paypal.me/"+pp+"/"+Number(x.j.amount).toFixed(2)+"USD";out.appendChild(a);}
-else out.appendChild(node("p","small muted",tr("pledge_next")));
+out.appendChild(node("p","small muted",tr("pledge_next")));
+var aq=f.getAttribute("data-alipay");
+if(aq&&/^[A-Za-z0-9_\\/-]+\\.(png|jpg|jpeg|webp)$/.test(aq)){out.appendChild(node("p","small",tr("pay_alipay")));var im=document.createElement("img");im.src=aq;im.alt="Alipay";im.width=220;im.height=220;im.className="qr";out.appendChild(im);}
 f.reset();load();}
+else if(x.status===404||x.status>=500)out.appendChild(node("p","muted",tr("pledge_soon")));
 else out.appendChild(node("p","bad",tr("pledge_err")+" "+str(x.j.error,200)));})
-.catch(function(){out.appendChild(node("p","bad",tr("pledge_net")));})
+.catch(function(){out.appendChild(node("p","muted",tr("pledge_soon")));})
 .then(function(){btn.disabled=false;});});
 })();`;
 
@@ -988,9 +993,9 @@ function homePage() {
 
   return page({
     key: "title_home",
-    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
+    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"${SPONSOR_OPEN ? ` data-sponsors="${esc(deskUrl)}"` : ""}` : "",
     extra: deskOn ? `<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
-<script>${HOME_JS}</script>` : "",
+<script>${HOME_JS}</script>${SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : ""}` : "",
     body: `<section class="hero2">
 <h1><svg class="hex big" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>${esc(cfg.site_name)}</h1>
 <p class="lede">${t("hero_lede")}</p>
@@ -1030,7 +1035,8 @@ ${tree}
 </div>
 </div>
 <h3>${t("backed_h")}</h3>
-<div class="backers2">${logos}<a class="logo slot" href="sponsor.html">${t(SPONSOR_OPEN ? "logo_slot" : "support_soon")}</a></div>
+<div class="backers2"><span id="backer-logos" class="logos">${logos}</span><a class="logo slot" href="sponsor.html">${t(SPONSOR_OPEN ? "logo_slot" : "support_soon")}</a></div>
+${SPONSOR_OPEN ? `<p class="small muted">${t("pledge_lead")}</p><div class="btns"><a class="btn primary" href="sponsor.html">${t("become_backer")}</a></div>` : ""}
 <div class="joinbox"><div><h2>${t("btn_ai")}</h2><p>${t("join_strip_lead")}</p><code>${pair(joinEn, joinZh)}</code></div>
 <div class="btns" style="margin:0"><button class="btn primary" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div></div>
 </section>`,
@@ -1288,7 +1294,7 @@ const backerHrefAll = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.
 function sponsorPage() {
   const L = (name, key, attrs) => `<label>${t(key)}<input name="${name}" ${attrs}></label>`;
   const form = SPONSOR_OPEN
-    ? `<form id="pledge-form" class="pledge"${PAYPAL ? ` data-paypal="${esc(PAYPAL)}"` : ""}>
+    ? `<form id="pledge-form" class="pledge"${PAYPAL ? ` data-paypal="${esc(PAYPAL)}"` : ""}${ALIPAY_QR ? ` data-alipay="${esc(ALIPAY_QR)}"` : ""}>
 ${L("name", "f_name", 'required maxlength="60" autocomplete="organization"')}
 ${L("tagline", "f_tagline", 'maxlength="80"')}
 ${L("link", "f_link", 'type="url" maxlength="200" pattern="https://.+" placeholder="https://"')}
@@ -1389,6 +1395,7 @@ writeFileSync(at("dist/refunds.html"), refundsPage());
 writeFileSync(at("dist/privacy.html"), privacyPage());
 writeFileSync(at("dist/credit.html"), creditPage());
 writeFileSync(at("dist/stats.html"), statsPage());
+if (ALIPAY_QR) { mkdirSync(dirname(at(`dist/${ALIPAY_QR}`)), { recursive: true }); copyFileSync(at(`site/${ALIPAY_QR}`), at(`dist/${ALIPAY_QR}`)); }
 mkdirSync(at("dist/c"), { recursive: true });
 for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: true }); writeFileSync(at(`dist/${notePage(n)}`), notePageHtml(n)); }
 const contributors = [...new Set(scoreEvts.map((e) => String(e.who)))].filter((w) => LOGIN_RE.test(w));
