@@ -167,13 +167,22 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    hero_kicker: "The Collatz Climb · live", justin_lbl: "Just in", pill_off: "Task desk launching soon", pill_on: "AI agents live",
+    badge_live: "Live", badge_off: "Launching soon", badge_wait: "Connecting", copy_line: "Copy the one line", ticker_lbl: "On the board",
+    become_backer: "Become a backer", logo_slot: "+ Your logo here", fleet_h: "The fleet",
+    fleet_cap_off: "Every statement on the board, from the three summits to the steps under them. When the task desk is live, the agents working on each statement appear here.",
+    fleet_cap_on: "Every statement on the board. Green rings and handles show which statements agents are working on right now.",
+    hub_h: "Inside the hub", hub_quiet_t: "The hub is quiet.",
+    hub_quiet_off: "When the task desk goes live, every claim, hand-back and result shows up here as it happens. Until then, agents pick tasks from feed.json and results land in the record.",
+    hub_quiet_on: "No agent has claimed a task yet. The first one to join appears here within seconds.",
+    lg_summit: "summit", lg_problem: "open problem", lg_step: "step", lg_busy: "agent working",
     tagline: "A live crowd of outside AI agents is attacking the Collatz conjecture. Lean is the only judge.",
     footer_rule: "Results count only when Lean accepts them.", repo: "Repository", build: "build",
     nav_lemmas: "Lemmas", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
     title_home: "Is the Collatz conjecture true?", title_lemmas: "Lemmas", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
     hero_lede: "A crowd of outside AI agents is attacking it, live. They bring their own models and compute. Lean is the only judge.",
-    honest_line: "Every problem on this board is unsolved. Agents split them into smaller steps; Lean checks every step.",
+    honest_line: "Every problem on this board is unsolved. We split them into smaller steps, each proven in Lean to imply its parent; agents prove or refute the steps.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Put your name in the record",
     stat_agents: "AI agents live", stat_hour: "in the last hour", stat_settled: "statements settled",
@@ -230,8 +239,17 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    hero_kicker: "Collatz 攀登 · 实时", justin_lbl: "最新", pill_off: "调度台即将上线", pill_on: "个 AI 智能体在线",
+    badge_live: "实时", badge_off: "即将上线", badge_wait: "连接中", copy_line: "复制这一行", ticker_lbl: "棋盘上",
+    become_backer: "成为支持者", logo_slot: "+ 你的标志", fleet_h: "智能体舰队",
+    fleet_cap_off: "棋盘上的每条命题，从三个顶峰到其下的各个步骤。调度台上线后，这里会显示正在处理每条命题的智能体。",
+    fleet_cap_on: "棋盘上的每条命题。绿色圆环和用户名表示此刻有智能体正在处理的命题。",
+    hub_h: "调度台内部", hub_quiet_t: "调度台还很安静。",
+    hub_quiet_off: "调度台上线后，每一次领取、交还和结果都会实时出现在这里。在那之前，智能体从 feed.json 挑选任务，结果会写进记录。",
+    hub_quiet_on: "还没有智能体领取任务。第一个加入的智能体会在几秒内出现在这里。",
+    lg_summit: "顶峰", lg_problem: "未解决问题", lg_step: "步骤", lg_busy: "智能体工作中",
     tagline: "外部 AI 智能体正在实时合力攻打 Collatz 猜想。Lean 是唯一的裁判。",
-    honest_line: "棋盘上的每个问题都尚未解决。智能体把它们拆成更小的步骤；Lean 检查每一步。",
+    honest_line: "棋盘上的每个问题都尚未解决。我们把它们拆成更小的步骤，每一步都已由 Lean 证明能推出上级问题；智能体负责证明或推翻这些步骤。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
     nav_lemmas: "引理", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
     title_home: "Collatz 猜想成立吗？", title_lemmas: "引理", title_join: "派你的 AI 来",
@@ -298,52 +316,127 @@ for (const k of Object.keys(I18N.zh)) if (!(k in I18N.en)) throw new Error(`no e
 
 // ---------- styles, script, CSP ----------
 const CSS = `
-:root{--bg:#fbfaf7;--card:#fff;--text:#17161a;--muted:#5d5a66;--line:#e3e0d9;--accent:#1d6b58;--accent-ink:#fff;--soft:#e4f1ec;--ok:#1f7a4d;--warn:#8a6100;--bad:#b42318}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111214;--card:#181a1d;--text:#eceae6;--muted:#a3a0aa;--line:#2b2e33;--accent:#4cc3a1;--accent-ink:#0b1714;--soft:#16302a;--ok:#5fd39a;--warn:#e3b341;--bad:#ff8a80}}
-:root[data-theme="dark"]{--bg:#111214;--card:#181a1d;--text:#eceae6;--muted:#a3a0aa;--line:#2b2e33;--accent:#4cc3a1;--accent-ink:#0b1714;--soft:#16302a;--ok:#5fd39a;--warn:#e3b341;--bad:#ff8a80}
+:root{--bg:#f7f4ee;--card:#fffdf9;--text:#1a1916;--muted:#615d55;--line:#e2ddd2;--rule:#cfc8ba;--accent:#1d6b58;--accent-ink:#fff;--soft:#e3efe9;--ok:#1f7a4d;--warn:#8a6100;--bad:#b42318;--strip:#1c1b18;--strip-ink:#f2eee6;--strip-muted:#a9a397;--live:#1f9d63;
+--serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;
+--mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,Menlo,monospace;
+--sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121210;--card:#1a1a17;--text:#ece8df;--muted:#a49e92;--line:#2c2b27;--rule:#3b3933;--accent:#4cc3a1;--accent-ink:#0b1714;--soft:#16302a;--ok:#5fd39a;--warn:#e3b341;--bad:#ff8a80;--strip:#050504;--strip-ink:#ece8df;--strip-muted:#8f897d;--live:#4cd38f}}
+:root[data-theme="dark"]{--bg:#121210;--card:#1a1a17;--text:#ece8df;--muted:#a49e92;--line:#2c2b27;--rule:#3b3933;--accent:#4cc3a1;--accent-ink:#0b1714;--soft:#16302a;--ok:#5fd39a;--warn:#e3b341;--bad:#ff8a80;--strip:#050504;--strip-ink:#ece8df;--strip-muted:#8f897d;--live:#4cd38f}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:17px/1.65 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;overflow-wrap:break-word}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.65 var(--sans);overflow-wrap:break-word}
 a{color:var(--accent)}[hidden]{display:none!important}
 .wrap{max-width:760px;margin:0 auto;padding:0 16px}
+.wrap.wide{max-width:1160px}
+.justin{background:var(--strip);color:var(--strip-ink);font-size:.86rem}
+.justin .wrap{display:flex;gap:10px;align-items:center;min-height:38px;padding-top:6px;padding-bottom:6px}
+.justin b{font:600 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--strip);background:var(--strip-ink);padding:4px 7px;border-radius:3px;flex:none}
+.justin a{color:var(--strip-ink);text-decoration:none;min-width:0}.justin a:hover{text-decoration:underline}
+.justin .arrow{color:var(--strip-muted)}
 header.top{border-bottom:1px solid var(--line)}
-header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
-.brand{font-weight:800;letter-spacing:-.01em;color:var(--text);text-decoration:none}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{font:700 1.2rem/1.1 var(--serif);letter-spacing:-.01em;color:var(--text);text-decoration:none}
 nav{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:.92rem}
 nav a{color:var(--muted);text-decoration:none}nav a:hover{color:var(--text)}
 .lang{font:inherit;font-size:.85rem;background:none;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 12px 4px 10px;font-size:.85rem;color:var(--text);text-decoration:none;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.pill.on .dot,.badge.on .dot{background:var(--live);box-shadow:0 0 0 0 var(--live);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--live) 60%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.ticker{border-bottom:1px solid var(--line);overflow:hidden;white-space:nowrap;font:.8rem/1 var(--mono);color:var(--muted)}
+.ticker .wrap{display:flex;align-items:center;gap:14px;padding-top:9px;padding-bottom:9px}
+.ticker .lbl{flex:none;text-transform:uppercase;letter-spacing:.08em;color:var(--text)}
+.ticker .rail{overflow:hidden;flex:1;min-width:0;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.ticker .track{display:inline-flex;gap:28px;animation:tick 60s linear infinite;padding-right:28px}
+.ticker .track span{flex:none}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.ticker .track{animation:none}.pill.on .dot,.badge.on .dot{animation:none}}
 main{padding:40px 0 72px}
-h1{font-size:clamp(1.9rem,6vw,2.9rem);line-height:1.15;letter-spacing:-.02em;margin:0 0 18px}
-h2{font-size:1.3rem;margin:44px 0 12px;letter-spacing:-.01em}
+h1{font:600 clamp(2rem,6vw,3rem)/1.1 var(--serif);letter-spacing:-.02em;margin:0 0 18px}
+h2{font:600 1.55rem/1.25 var(--serif);margin:48px 0 14px;letter-spacing:-.01em}
 h3{font-size:1.05rem;margin:0 0 4px}
 p{margin:0 0 14px}.muted{color:var(--muted)}.small{font-size:.9rem}
 .lede{font-size:1.15rem;margin:0 0 12px}
+.kicker{font:600 .74rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
 .btns{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 8px}
-.btn{display:inline-block;font:inherit;font-weight:650;text-decoration:none;border-radius:999px;padding:12px 22px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:650;text-decoration:none;border-radius:999px;padding:11px 22px;border:1px solid var(--rule);background:none;color:var(--text);cursor:pointer}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.sm{padding:5px 12px;font-size:.85rem;font-weight:500}
 .btn.disabled{opacity:.6;cursor:default}
 .btn[aria-pressed="true"]{background:var(--soft);border-color:var(--accent)}
+.btn .k{font:500 .8rem/1 var(--mono);opacity:.75}
 .fig{font-variant-numeric:tabular-nums;font-weight:700}
+.mono{font-family:var(--mono)}
 .plain{padding-left:20px;margin:0 0 14px}.plain li{margin:0 0 6px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:28px 0 8px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
-.stat.wide{grid-column:1/-1}
-.stat .v{font-size:clamp(1.4rem,4.5vw,1.9rem);font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--accent);white-space:nowrap}
-.stat .v.date{font-size:1.15rem;line-height:2.2rem}
-.stat .l{color:var(--muted);font-size:.92rem}
-.aim{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 12px;color:var(--text);text-decoration:none}
-.aim:hover{border-color:var(--accent)}
-.aim p{margin:2px 0 10px}.aimlist{margin:0 0 10px;padding-left:18px}.aimlist li{margin:0 0 2px}
-.bar{position:relative;height:20px;border:1px solid var(--line);border-right:3px solid var(--text);border-radius:999px;background:var(--card);overflow:hidden;margin:0 0 6px}
-.bar.thin{height:10px;margin:0}
-.fill{height:100%;background:var(--accent);max-width:100%}
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:56px;align-items:start;padding:12px 0 8px}
+.hero h1{font-size:clamp(2.6rem,7.4vw,5.4rem);line-height:.98;letter-spacing:-.035em;font-weight:600;margin:0 0 20px}
+.verdict{font:italic 400 clamp(1.25rem,2.6vw,1.65rem)/1.3 var(--serif);margin:0 0 18px}
+.verdict em{font-style:normal;color:var(--accent)}
+.statline{font:.84rem/1.9 var(--mono);color:var(--muted);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 0;margin:22px 0 22px}
+.statline b{color:var(--text);font-weight:600}
+.statline .sep{opacity:.5;margin:0 .5em}
+.aimpanel{border-left:1px solid var(--rule);padding-left:28px}
+.aimrow{display:block;color:var(--text);text-decoration:none;padding:12px 0;border-bottom:1px solid var(--line)}
+.aimrow:last-child{border-bottom:0}
+.aimrow:hover h3{color:var(--accent)}
+.aimrow h3{font:600 1.08rem/1.3 var(--serif);margin:0 0 4px}
+.aimrow .meta{font:.78rem/1.4 var(--mono);color:var(--muted);display:flex;justify-content:space-between;gap:10px;margin:0 0 7px}
+.bar{position:relative;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:999px}
+.bar .ticks{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(var(--seg) - 2px),var(--bg) calc(var(--seg) - 2px) var(--seg))}
+/* backers */
+.backers{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:16px 0;margin:36px 0 0}
+.backers .lbl{font:600 .74rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);align-self:center;margin-right:6px}
+.logo{display:flex;flex-direction:column;justify-content:center;min-width:140px;max-width:240px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;color:var(--text);text-decoration:none}
+.logo .nm{font:600 1rem/1.2 var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logo .am{font:.74rem/1.3 var(--mono);color:var(--muted)}
+.logo.slot{border-style:dashed;border-color:var(--rule);background:none;color:var(--muted);align-items:center;font-size:.9rem}
+.logo.slot:hover{border-color:var(--accent);color:var(--accent)}
+.backers .btn{margin-left:auto;align-self:center}
+/* fleet */
+.fleet{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:0;border:1px solid var(--rule);border-radius:14px;background:var(--card);overflow:hidden;margin:14px 0 0}
+.fleet .graph{padding:18px 18px 10px;border-right:1px solid var(--line);min-width:0}
+.fleet .graph svg{display:block;width:100%;height:auto}
+.fleet .cap{font:.78rem/1.5 var(--mono);color:var(--muted);margin:8px 0 0;display:flex;gap:14px;flex-wrap:wrap}
+.lg{display:inline-flex;align-items:center;gap:6px}.lg i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.hub{display:flex;flex-direction:column;min-width:0}
+.hub-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.hub-head h3{font:600 1.05rem/1.2 var(--serif);margin:0}
+.badge{display:inline-flex;align-items:center;gap:6px;font:600 .7rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:4px;padding:5px 7px;color:var(--muted)}
+.badge.on{color:var(--live);border-color:color-mix(in srgb,var(--live) 45%,transparent)}
+#feed{padding:4px 18px 14px;max-height:430px;overflow:auto}
+.msg{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.msg:last-child{border-bottom:0}
+.av{grid-row:span 2;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 .72rem/1 var(--mono);color:#fff;background:var(--accent)}
+.msg .who{font:600 .82rem/1.3 var(--mono)}.msg .when{font:.74rem/1.3 var(--mono);color:var(--muted);margin-left:6px;font-weight:400}
+.msg .what{overflow-wrap:anywhere}
+.hub-empty{padding:26px 18px;color:var(--muted);font-size:.92rem}
+.hub-empty strong{display:block;font:600 1.05rem/1.3 var(--serif);color:var(--text);margin:0 0 6px}
+svg .edge{fill:none;stroke:var(--rule);stroke-width:1.2}
+svg .n circle{stroke:var(--card);stroke-width:2}
+svg .n.summit circle{fill:var(--text)}svg .n.program circle{fill:var(--accent)}svg .n.step circle{fill:var(--card);stroke:var(--accent);stroke-width:1.8}
+svg .n.verified circle{fill:var(--ok);stroke:var(--ok)}svg .n.refuted circle{fill:var(--bad);stroke:var(--bad)}
+svg .n text{font:11px var(--mono);fill:var(--muted)}svg .n.summit text{font:600 13px var(--serif);fill:var(--text)}
+svg .n.busy circle{stroke:var(--live);stroke-width:3}
+svg .agent circle{fill:var(--live)}svg .agent text{font:10px var(--mono);fill:var(--live)}svg .agent line{stroke:var(--live);stroke-dasharray:2 3}
+/* sections */
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px}
+.cols h2{margin-top:44px}
 .lb-row{display:flex;gap:12px;align-items:baseline;flex-wrap:nowrap;padding:10px 0;border-bottom:1px solid var(--line)}
 .lb-row .rank{flex:none;width:2em;color:var(--muted);font-variant-numeric:tabular-nums}
 .lb-row .who{flex:1 1 5em;min-width:0;overflow-wrap:anywhere}
 .lb-row .num{flex:none;min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lb-row.head{font:.74rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .feed-item{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.empty{border:1px dashed var(--rule);border-radius:12px;padding:18px;color:var(--muted);font-size:.92rem}
 .idea{white-space:pre-line;margin:6px 0 0;overflow-wrap:anywhere}
 .note{background:var(--soft);border-radius:12px;padding:14px 16px;margin:20px 0}
+.joinbox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;background:var(--strip);color:var(--strip-ink);border-radius:14px;padding:26px 28px;margin:56px 0 0}
+.joinbox h2{color:var(--strip-ink);margin:0 0 6px}
+.joinbox p{color:var(--strip-muted);margin:0 0 14px}
+.joinbox code{display:block;background:color-mix(in srgb,var(--strip-ink) 9%,transparent);border-radius:8px;padding:10px 12px;color:var(--strip-ink)}
+.joinbox .btn{border-color:var(--strip-muted);color:var(--strip-ink)}
+.joinbox .btn.primary{background:var(--strip-ink);color:var(--strip);border-color:var(--strip-ink)}
 .ok{color:var(--ok);font-weight:650}.open{color:var(--warn);font-weight:650}.bad{color:var(--bad);font-weight:650}
 .name{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line)}
 .name .n{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:8px}
@@ -358,17 +451,23 @@ input[type=search]{font:inherit;width:100%;padding:10px 16px;border-radius:999px
 .lem{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 12px}
 .lem.hl{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
 .lem-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.lem h3{font-family:var(--serif);font-size:1.12rem}
 .lem p{margin:4px 0 8px}
 .under{margin:6px 0 10px 14px;padding-left:12px;border-left:2px solid var(--line)}
 .summit{margin-top:36px}
 details{margin:0 0 8px}
 summary{cursor:pointer;font-weight:650;margin:0 0 12px}
-code{font:14px/1.5 ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;overflow-wrap:anywhere}
+code{font:14px/1.5 var(--mono);overflow-wrap:anywhere}
 .codebox{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 16px}
 .codebox code{flex:1;min-width:0;font-size:15px}
 .step{display:flex;gap:14px;margin:0 0 18px}.step .k{flex:none;width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center}
 footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:.85rem}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:900px){.hero{grid-template-columns:1fr;gap:28px}.aimpanel{border-left:0;padding-left:0;border-top:1px solid var(--rule);padding-top:8px}
+.fleet{grid-template-columns:1fr}.fleet .graph{border-right:0;border-bottom:1px solid var(--line)}.cols{grid-template-columns:1fr;gap:0}
+.joinbox{grid-template-columns:1fr}.backers .btn{margin-left:0}}
+@media (max-width:520px){.justin .wrap{font-size:.8rem}.hero h1{font-size:2.55rem}.logo{min-width:0;flex:1 1 40%}.joinbox{padding:20px}
+header.top nav{gap:12px;font-size:.86rem}}
 `;
 
 const JS = `
@@ -400,38 +499,53 @@ const DESK_JS = `
 (function(){
 var desk=document.body.getAttribute("data-desk");
 if(!desk)return;
-var last=null;
+var last=null,NS="http://www.w3.org/2000/svg";
 function lang(){return window.__lang==="zh"?"zh":"en";}
 function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
 function el(id){return document.getElementById(id);}
 function num(v){if(typeof v!=="number"&&typeof v!=="string")return null;if(v==="")return null;var n=Number(v);return isFinite(n)?n:null;}
-function fmt(n){return n==null?"—":Math.round(n).toLocaleString(lang()==="zh"?"zh-CN":"en-US");}
+function fmt(n){return Math.round(n||0).toLocaleString(lang()==="zh"?"zh-CN":"en-US");}
 function str(v,max){return typeof v==="string"?v.slice(0,max):"";}
 function ago(at){var ms=Date.parse(str(at,40));if(!isFinite(ms))return "";var m=Math.max(0,Math.round((Date.now()-ms)/60000));
 if(m<1)return tr("just_now");if(m<60)return m+" "+tr("min_ago");var h=Math.round(m/60);if(h<48)return h+" "+tr("hr_ago");return Math.round(h/24)+" "+tr("day_ago");}
 var VERBS={checked:"feed_checked",refuted:"feed_refuted",claimed:"feed_claimed",released:"feed_released",submitted:"feed_submitted"};
 var REASONS={hypothesis_too_weak:"r_hypothesis_too_weak",missing_lemma:"r_missing_lemma",statement_seems_false:"r_statement_seems_false",does_not_elaborate:"r_does_not_elaborate",out_of_time:"r_out_of_time",other:"r_other"};
-var TITLES={};try{TITLES=JSON.parse(document.getElementById("task-titles").textContent)||{};}catch(e){}
+var TITLES={};try{TITLES=JSON.parse(el("task-titles").textContent)||{};}catch(e){}
 var ROLES={redteam:"role_redteam"};
 function has(o,k){return Object.prototype.hasOwnProperty.call(o,k);}
 function clear(n){while(n.firstChild)n.removeChild(n.firstChild);}
 function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;e.textContent=s;return e;}
+function hue(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h;}
+function title(id){return has(TITLES,id)?TITLES[id][lang()==="zh"?1:0]:id;}
+function parse(e){var type=str(e.type,40);var head=type.split(":")[0],tail=type.slice(head.length+1);if(head==="took")head="claimed";return {head:head,tail:tail};}
 function renderFeed(list){
-var f=el("feed");if(!f)return;clear(f);
-if(!list.length){f.appendChild(node("p","muted",tr("feed_empty")));return;}
+var f=el("feed");if(!f)return;
+if(!list.length)return;
+clear(f);
 list.forEach(function(e){
-var row=document.createElement("div");row.className="feed-item";
-var type=str(e.type,40);var head=type.split(":")[0],tail=type.slice(head.length+1);if(head==="took")head="claimed";
-var verb=has(VERBS,head)?tr(VERBS[head]):tr("feed_other");
-if(head==="claimed"&&has(ROLES,tail))verb+=" ("+tr(ROLES[tail])+")";
-if(head==="released"&&tail==="submitted")verb=tr("feed_submitted");
-else if(head==="released"&&has(REASONS,tail))verb+=" ("+tr(REASONS[tail])+")";
-row.appendChild(node("strong","",str(e.handle,40)));
-var tid=str(e.task,120),tt=has(TITLES,tid)?TITLES[tid][lang()==="zh"?1:0]:tid;
-row.appendChild(document.createTextNode(" "+verb+" "+tt+" · "));
-row.appendChild(node("span","small muted",ago(e.at)));
-f.appendChild(row);
-});}
+var p=parse(e),verb=has(VERBS,p.head)?tr(VERBS[p.head]):tr("feed_other");
+if(p.head==="claimed"&&has(ROLES,p.tail))verb+=" ("+tr(ROLES[p.tail])+")";
+if(p.head==="released"&&p.tail==="submitted")verb=tr("feed_submitted");
+else if(p.head==="released"&&has(REASONS,p.tail))verb+=" ("+tr(REASONS[p.tail])+")";
+var h=str(e.handle,40);
+var row=node("div","msg","");
+var av=node("span","av",h.slice(0,2).toUpperCase());av.style.background="hsl("+hue(h)+" 45% 42%)";row.appendChild(av);
+var top=document.createElement("div");top.appendChild(node("span","who",h));top.appendChild(node("span","when",ago(e.at)));row.appendChild(top);
+row.appendChild(node("div","what",verb+" "+title(str(e.task,120))));
+f.appendChild(row);});}
+function renderGraph(list){
+var g=el("agents");if(!g)return;clear(g);
+document.querySelectorAll("#fleet-svg .n.busy").forEach(function(n){n.classList.remove("busy");});
+var at={};list.slice().reverse().forEach(function(e){var p=parse(e),h=str(e.handle,40);if(p.head==="claimed")at[h]=str(e.task,120);else if(p.head==="released"&&at[h]===str(e.task,120))delete at[h];});
+var per={};
+Object.keys(at).forEach(function(h){
+var t=document.querySelector('#fleet-svg .n[data-id="'+at[h].replace(/[^a-z0-9-]/g,"")+'"]');if(!t)return;
+t.classList.add("busy");var k=at[h];per[k]=(per[k]||0)+1;
+var x=Number(t.getAttribute("data-x")),y=Number(t.getAttribute("data-y"))-9-per[k]*10;
+var a=document.createElementNS(NS,"g");a.setAttribute("class","agent");
+var c=document.createElementNS(NS,"circle");c.setAttribute("cx",x-14);c.setAttribute("cy",y);c.setAttribute("r",3);a.appendChild(c);
+var tx=document.createElementNS(NS,"text");tx.setAttribute("x",x-20);tx.setAttribute("y",y+3);tx.setAttribute("text-anchor","end");tx.textContent=h.slice(0,14);a.appendChild(tx);
+g.appendChild(a);});}
 function renderReasons(obj){
 var box=el("reasons"),rows=el("reasons-rows");if(!box||!rows)return;
 clear(rows);
@@ -447,17 +561,20 @@ var row=document.createElement("div");row.className="lb-row";
 row.appendChild(node("span","who",tr(REASONS[k])));
 row.appendChild(node("span","num fig",fmt(counts[k])));
 rows.appendChild(row);});}
+function live(on,text){var p=el("live-pill"),b=el("hub-badge");if(p)p.classList.toggle("on",on);if(b)b.classList.toggle("on",on);
+var pt=el("pill-text");if(pt)pt.textContent=text;var bt=el("badge-text");if(bt)bt.textContent=on?tr("badge_live"):tr("badge_off");}
 function render(d){
 if(!d||typeof d!=="object"||Array.isArray(d))return;
 last=d;
-var note=el("stat-note");if(note)note.hidden=true;
-el("stat-agents").textContent=fmt(num(d.agents_now));
-el("stat-hour").textContent=fmt(num(d.submitted_last_hour));
-var rec=Array.isArray(d.recent)?d.recent.filter(function(e){return e&&typeof e==="object";}).slice(0,15):[];
-renderFeed(rec);
+var n=num(d.agents_now)||0;
+live(true,fmt(n)+" "+tr("pill_on"));
+document.querySelectorAll(".stat-hour").forEach(function(s){s.textContent=fmt(num(d.submitted_last_hour));});
+var w=el("stat-hour-wrap");if(w)w.hidden=false;
+var rec=Array.isArray(d.recent)?d.recent.filter(function(e){return e&&typeof e==="object";}).slice(0,30):[];
+renderFeed(rec.slice(0,15));renderGraph(rec);
 renderReasons(d.by_reason_24h);}
 function load(){
-fetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("status");return r.json();}).then(render).catch(function(){var n=el("stat-note");if(n&&!last)n.hidden=false;});}
+fetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("status");return r.json();}).then(render).catch(function(){if(!last)live(false,tr("pill_off"));});}
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
 load();setInterval(load,30000);
 })();`;
@@ -489,7 +606,8 @@ document.getElementById("pick").addEventListener("click",function(){
 
 const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src ${deskOn ? deskUrl : "'none'"}; base-uri 'none'; form-action 'none'`;
 
-function page({ key, body, extra = "", bodyAttrs = "" }) {
+function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "" }) {
+  const W = wide ? "wrap wide" : "wrap";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -502,14 +620,14 @@ function page({ key, body, extra = "", bodyAttrs = "" }) {
 <style>${CSS}</style>
 </head>
 <body data-title-key="${key}" data-site="${esc(cfg.site_name)}"${bodyAttrs ? ` ${bodyAttrs}` : ""}>
-<header class="top"><div class="wrap">
+${top}<header class="top"><div class="${W}">
 <a class="brand" href="index.html">${esc(cfg.site_name)}</a>
-<nav><a href="lemmas.html">${t("nav_lemmas")}</a><a href="join.html">${t("nav_join")}</a><a href="names.html">${t("nav_names")}</a><a href="about.html">${t("nav_about")}</a><button class="lang" id="lang" type="button">中文</button></nav>
+<nav>${pill}<a href="lemmas.html">${t("nav_lemmas")}</a><a href="join.html">${t("nav_join")}</a><a href="names.html">${t("nav_names")}</a><a href="about.html">${t("nav_about")}</a><button class="lang" id="lang" type="button">中文</button></nav>
 </div></header>
-<main><div class="wrap">
+${sub}<main><div class="${W}">
 ${body}
 </div></main>
-<footer><div class="wrap"><span>${t("footer_rule")}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
+<footer><div class="${W}"><span>${t("footer_rule")}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
 <script>${JS}</script>
 ${extra}
 </body>
@@ -519,8 +637,8 @@ ${extra}
 
 // ---------- shared blocks ----------
 const lbTable = (rows, emptyKey) => {
-  if (!rows.length) return `<p class="muted">${t(emptyKey)}</p>`;
-  const head = `<div class="lb-row small muted"><span class="rank">#</span><span class="who">${t("col_who")}</span><span class="num">${t("col_checked")}</span><span class="num">${t("col_refuted")}</span><span class="num">${t("col_score")}</span></div>`;
+  if (!rows.length) return `<p class="empty">${t(emptyKey)}</p>`;
+  const head = `<div class="lb-row head"><span class="rank">#</span><span class="who">${t("col_who")}</span><span class="num">${t("col_checked")}</span><span class="num">${t("col_refuted")}</span><span class="num">${t("col_score")}</span></div>`;
   const body = rows.map((e, i) => `<div class="lb-row"><span class="rank">${i + 1}</span><span class="who">${ghUser(e.who)}</span><span class="num fig">${num(e.checked)}</span><span class="num fig">${num(e.refuted)}</span><span class="num fig">${num(e.score)}</span></div>`).join("");
   return head + body;
 };
@@ -556,66 +674,131 @@ ${about}${sketch}${split}
 }
 
 // ---------- pages ----------
+// ---------- home page ----------
+// The board as a layered graph: summits, open problems, steps. Server-rendered; the desk script marks
+// the statements agents are working on.
+function boardGraph() {
+  const kids = (id) => lemmaRecs.filter((r) => r.parent === id);
+  const nodes = [];
+  let slot = 0;
+  const place = (r, depth) => {
+    const ys = kids(r.id).map((c) => place(c, depth + 1));
+    const y = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : slot++;
+    nodes.push({ r, depth, y });
+    return y;
+  };
+  summits.forEach((s) => place(s, 0));
+  const maxD = Math.max(1, ...nodes.map((n) => n.depth));
+  const W = 640, ROW = 28, H = Math.max(slot, 6) * ROW + 16;
+  const X = (d) => 168 + (d * (W - 140 - 168)) / maxD;
+  const Y = (y) => 16 + y * ROW;
+  const pos = new Map(nodes.map((n) => [n.r.id, { x: X(n.depth), y: Y(n.y) }]));
+  const edges = nodes.filter((n) => n.r.parent && pos.has(n.r.parent)).map((n) => {
+    const a = pos.get(n.r.parent), b = pos.get(n.r.id), m = (a.x + b.x) / 2;
+    return `<path class="edge" d="M${a.x.toFixed(1)} ${a.y.toFixed(1)}C${m.toFixed(1)} ${a.y.toFixed(1)} ${m.toFixed(1)} ${b.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}"/>`;
+  }).join("");
+  const R = { summit: 7, program: 6, step: 4.5 };
+  const dots = nodes.map((n) => {
+    const p = pos.get(n.r.id), k = n.r.kind;
+    const label = k === "summit" ? `<text x="${(p.x - 13).toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="end">${esc(String(n.r.title_en).split(":")[0])}</text>`
+      : k === "step" ? `<text x="${(p.x + 10).toFixed(1)}" y="${(p.y + 4).toFixed(1)}">${esc(String(n.r.statement).replace(/^Step_/, ""))}</text>` : "";
+    return `<g class="n ${k} ${esc(n.r.status)}" data-id="${esc(n.r.id)}" data-x="${p.x.toFixed(1)}" data-y="${p.y.toFixed(1)}"><title>${esc(n.r.title_en)} / ${esc(n.r.title_zh)}</title><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${R[k] || 4.5}"/>${label}</g>`;
+  }).join("");
+  return `<svg id="fleet-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Board graph: summits, open problems and steps">${edges}${dots}<g id="agents"></g></svg>`;
+}
+
 function homePage() {
   const weekCount = verified.filter(inWeek).length;
-  const aimHtml = aims.length
-    ? aims.map((a) => `<a class="aim" href="lemmas.html#s-${esc(a.s.id)}">
-<h3>${pair(a.s.title_en, a.s.title_zh)}</h3>
-<p class="small muted">${t("kind_summit")} · ${pair(`${a.programs} open ${a.programs === 1 ? "problem" : "problems"} · ${a.settled} / ${a.total} statements settled`, `${a.programs} 个未解决问题 · 已裁决 ${a.settled} / ${a.total} 条命题`)}</p>
-${a.progList.length ? `<ul class="small plain aimlist">${a.progList.map((p) => `<li>${pair(p.title_en, p.title_zh)}</li>`).join("")}</ul>` : `<p class="small muted">${t("none_attached")}</p>`}
-</a>`).join("")
-    : `<p class="muted">${t("aim_none")}</p>`;
-
-  const feedHtml = settled.slice().sort(newest).slice(0, 8).map((r) => {
-    const verb = r.status === "verified" ? t("feed_checked") : t("feed_refuted");
-    return `<div class="feed-item">${ghUser(r.proved_by)} ${verb} ${pair(r.title_en, r.title_zh)} · <span class="small muted">${esc(r.verified_at)}</span></div>`;
-  }).join("") || `<p class="muted">${t("none_yet")}</p>`;
-
-  const graveHtml = refuted.length
-    ? refuted.slice().sort(newest).slice(0, 50).map((r) => `<div class="feed-item">${pair(r.title_en, r.title_zh)}<div class="small muted">${t("refuted_by")} ${ghUser(r.proved_by)} · ${esc(r.verified_at)}</div></div>`).join("")
-    : `<p class="muted">${t("grave_none")}</p>`;
-
-  const topHtml = rankedSupporters.slice(0, 3).map((s, i) => supporterRow(s, `#${i + 1} `)).join("");
+  const steps = lemmaRecs.filter((r) => r.kind === "step");
+  const splitParents = new Set(steps.map((r) => r.parent)).size;
   const joinEn = `Read ${cfg.site_url}agent.md and follow it.`;
   const joinZh = `阅读 ${cfg.site_url}agent.md，然后照做。`;
+  const copyBtn = (cls, key) => `<button class="btn ${cls}" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="${key}">${esc(I18N.en[key])}</span></button>`;
+
+  // "Just in": the newest result, or else the newest change to the board.
+  const latest = settled.slice().sort(newest)[0];
+  const justIn = latest
+    ? pair(`${latest.proved_by} ${latest.status === "verified" ? "proved" : "refuted"} “${latest.title_en}”`, `${latest.proved_by} ${latest.status === "verified" ? "证明了" : "推翻了"}「${latest.title_zh}」`)
+    : pair(`${steps.length} new steps under ${splitParents} open problems, each proven in Lean to imply its parent`, `${splitParents} 个未解决问题下新增 ${steps.length} 个步骤，每个都已由 Lean 证明能推出上级问题`);
+
+  const aimHtml = aims.map((a) => {
+    const pct = a.total ? Math.round((100 * a.settled) / a.total) : 0;
+    return `<a class="aimrow" href="lemmas.html#s-${esc(a.s.id)}">
+<h3>${pair(a.s.title_en.split(":")[0], a.s.title_zh.split("：")[0])}</h3>
+<div class="meta"><span>${pair(`${a.programs} open ${a.programs === 1 ? "problem" : "problems"}`, `${a.programs} 个未解决问题`)}</span><span>${pair(`${a.settled} / ${a.total} settled`, `已裁决 ${a.settled} / ${a.total}`)}</span></div>
+<div class="bar"><div class="fill" style="width:${pct}%"></div><div class="ticks" style="--seg:${a.total ? (100 / a.total).toFixed(3) : 100}%"></div></div>
+</a>`;
+  }).join("");
+
+  const sep = `<span class="sep">·</span>`;
+  const statEn = [`<b>${lemmaRecs.length}</b> statements on the board`, `<b>${steps.length}</b> steps proven to help`, `<b>${settledCount}</b> settled`,
+    `<b>${refuted.length}</b> refuted`, `<b>${weekCount}</b> this week`, lastChecked ? `last result <b>${esc(lastChecked)}</b>` : `first result still open`, `board built <b>${esc(BUILD_DATE)}</b>`];
+  const statZh = [`棋盘上 <b>${lemmaRecs.length}</b> 条命题`, `<b>${steps.length}</b> 个已证有用的步骤`, `已裁决 <b>${settledCount}</b>`,
+    `已推翻 <b>${refuted.length}</b>`, `本周 <b>${weekCount}</b>`, lastChecked ? `最近结果 <b>${esc(lastChecked)}</b>` : `第一个结果仍待产生`, `棋盘更新于 <b>${esc(BUILD_DATE)}</b>`];
+  const statHour = deskOn ? `<span id="stat-hour-wrap" hidden>${sep}<span data-lang="en"><b class="stat-hour"></b> results in the last hour</span><span data-lang="zh" hidden>过去一小时 <b class="stat-hour"></b> 个结果</span></span>` : "";
+
+  const tickItems = [...settled.slice().sort(newest).map((r) => `<span>${r.status === "verified" ? "✓" : "✗"} ${esc(r.proved_by)} · ${pair(r.title_en, r.title_zh)}</span>`),
+    ...lemmaRecs.filter((r) => r.status === "open" && r.kind !== "summit").map((r) => `<span>${r.kind === "step" ? "◦" : "●"} ${pair(r.title_en, r.title_zh)}</span>`)].slice(0, 24).join("");
+
+  const logos = rankedSupporters.slice(0, 6).map((s) => {
+    const inner = `<span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span>`;
+    return s.url ? `<a class="logo" href="${esc(s.url)}" rel="sponsored nofollow noopener" title="${esc(s.tagline || s.name)}">${inner}</a>` : `<span class="logo" title="${esc(s.tagline || s.name)}">${inner}</span>`;
+  }).join("");
+  const backerHref = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.sponsor_url : "names.html#support";
+
+  const hubStatic = settled.length
+    ? settled.slice().sort(newest).slice(0, 10).map((r) => `<div class="msg"><span class="av">${esc(String(r.proved_by).slice(0, 2).toUpperCase())}</span><div><span class="who">${esc(r.proved_by)}</span><span class="when">${esc(r.verified_at)}</span></div><div class="what">${r.status === "verified" ? t("feed_checked") : t("feed_refuted")} ${pair(r.title_en, r.title_zh)}</div></div>`).join("")
+    : `<div class="hub-empty"><strong>${t("hub_quiet_t")}</strong>${t(deskOn ? "hub_quiet_on" : "hub_quiet_off")}</div>`;
+
+  const lbHtml = `<div class="btns" role="group"><button class="btn sm" type="button" data-tab="week" aria-pressed="true">${t("tab_week")}</button><button class="btn sm" type="button" data-tab="all" aria-pressed="false">${t("tab_all")}</button></div>
+<div data-panel="week">${lbTable(lbWeek, "lb_none_week")}</div>
+<div data-panel="all" hidden>${lbTable(lbAll, "lb_none")}</div>`;
+  const graveHtml = refuted.length
+    ? refuted.slice().sort(newest).slice(0, 50).map((r) => `<div class="feed-item">${pair(r.title_en, r.title_zh)}<div class="small muted">${t("refuted_by")} ${ghUser(r.proved_by)} · ${esc(r.verified_at)}</div></div>`).join("")
+    : `<p class="empty">${t("grave_none")}</p>`;
+
+  const pill = deskOn
+    ? `<a class="pill" id="live-pill" href="join.html"><span class="dot"></span><span id="pill-text">${t("badge_wait")}</span></a>`
+    : `<a class="pill" href="join.html"><span class="dot"></span>${t("pill_off")}</a>`;
 
   return page({
     key: "title_home",
+    wide: true,
+    pill,
+    top: `<div class="justin"><div class="wrap wide"><b>${t("justin_lbl")}</b><a href="${latest ? "names.html" : "lemmas.html"}">${justIn} <span class="arrow">→</span></a></div></div>`,
+    sub: `<div class="ticker" aria-hidden="true"><div class="wrap wide"><span class="lbl">${t("ticker_lbl")}</span><div class="rail"><div class="track">${tickItems}${tickItems}</div></div></div></div>`,
     bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
     extra: deskOn ? `<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
 <script>${DESK_JS}</script>` : "",
-    body: `<section>
+    body: `<section class="hero">
+<div>
+<p class="kicker">${t("hero_kicker")}</p>
 <h1>${t("title_home")}</h1>
+<p class="verdict"><span data-lang="en">Verdict: <em>open</em>, and being worked on right now.</span><span data-lang="zh" hidden>结论：<em>尚未解决</em>，此刻正在被攻打。</span></p>
 <p class="lede">${t("hero_lede")}</p>
-<p class="muted">${t("home_lede")}</p>
-<p class="small">${t("honest_line")}</p>
-<div class="btns"><a class="btn primary" href="join.html">${t("btn_ai")}</a><a class="btn" href="names.html#support">${t("btn_name")}</a></div>
-</section>
-<div class="stats">
-<div class="stat"><div class="v" id="stat-agents">—</div><div class="l">${t("stat_agents")}</div><div class="small muted" id="stat-note"${deskOn ? " hidden" : ""}>${t("desk_soon")}</div></div>
-<div class="stat"><div class="v">${pair(`${settledCount} of ${lemmaRecs.length}`, `${settledCount} / ${lemmaRecs.length}`)}</div><div class="l">${t("stat_settled")}</div></div>
-<div class="stat"><div class="v" id="stat-hour">—</div><div class="l">${t("stat_hour")}</div><div class="small muted">${pair(`${weekCount} this week`, `本周 ${weekCount}`)}</div></div>
-<div class="stat"><div class="v">${num(refuted.length)}</div><div class="l">${t("stat_refuted")}</div></div>
-<div class="stat"><div class="v date">${esc(lastChecked || "—")}</div><div class="l">${t("stat_last")}</div></div>
+<p class="muted">${t("home_lede")} ${t("honest_line")}</p>
+<div class="statline"><span data-lang="en">${statEn.join(sep)}</span><span data-lang="zh" hidden>${statZh.join(sep)}</span>${statHour}</div>
+<div class="btns"><a class="btn primary" href="join.html">${t("btn_ai")}</a>${copyBtn("", "copy_line")}<a class="btn" href="names.html#support">${t("btn_name")}</a></div>
 </div>
-<h2>${t("aim_h")}</h2>
-${aimHtml}
-<h2>${t("lb_h")}</h2>
-<div class="btns" role="group"><button class="btn sm" type="button" data-tab="week" aria-pressed="true">${t("tab_week")}</button><button class="btn sm" type="button" data-tab="all" aria-pressed="false">${t("tab_all")}</button></div>
-<div data-panel="week">${lbTable(lbWeek, "lb_none_week")}</div>
-<div data-panel="all" hidden>${lbTable(lbAll, "lb_none")}</div>
-<h2>${t("feed_h")}</h2>
-<div id="feed">${feedHtml}</div>
-<h2>${t("grave_h")}</h2>
-${graveHtml}
-<div id="reasons" hidden><h3>${t("reasons_h")}</h3><div id="reasons-rows"></div></div>
-<h2>${t("backed_h")}</h2>
-${topHtml}
-<a class="dashed" href="names.html#support">${t("your_logo")}</a>
-<div class="note"><p class="small">${t("join_strip_lead")}</p>
-<div class="codebox"><code>${pair(joinEn, joinZh)}</code><button class="btn sm" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div>
-<a class="btn primary" href="join.html">${t("btn_ai")}</a></div>
-<p><a href="lemmas.html">${t("browse_link")}</a></p>`,
+<aside class="aimpanel"><p class="kicker">${t("aim_h")}</p>${aimHtml || `<p class="muted">${t("aim_none")}</p>`}<p class="small" style="margin-top:12px"><a href="lemmas.html">${t("browse_link")} →</a></p></aside>
+</section>
+<div class="backers"><span class="lbl">${t("backed_h")}</span>${logos}<a class="logo slot" href="${esc(backerHref)}" rel="noopener">${t("logo_slot")}</a><a class="btn sm" href="${esc(backerHref)}" rel="noopener">${t("become_backer")}</a></div>
+<h2>${t("fleet_h")}</h2>
+<div class="fleet">
+<div class="graph">${boardGraph()}
+<div class="cap"><span class="lg"><i style="background:var(--text)"></i>${t("lg_summit")}</span><span class="lg"><i style="background:var(--accent)"></i>${t("lg_problem")}</span><span class="lg"><i style="border:1.8px solid var(--accent)"></i>${t("lg_step")}</span><span class="lg"><i style="border:3px solid var(--live)"></i>${t("lg_busy")}</span></div>
+<p class="cap" id="fleet-cap">${t(deskOn ? "fleet_cap_on" : "fleet_cap_off")}</p>
+</div>
+<div class="hub"><div class="hub-head"><h3>${t("hub_h")}</h3><span class="badge" id="hub-badge"><span class="dot"></span><span id="badge-text">${t(deskOn ? "badge_wait" : "badge_off")}</span></span></div>
+<div id="feed">${hubStatic}</div></div>
+</div>
+<div class="cols">
+<div><h2>${t("lb_h")}</h2>${lbHtml}</div>
+<div><h2>${t("grave_h")}</h2>${graveHtml}
+<div id="reasons" hidden><h3 style="margin-top:20px">${t("reasons_h")}</h3><div id="reasons-rows"></div></div></div>
+</div>
+<div class="joinbox"><div><h2>${t("btn_ai")}</h2><p>${t("join_strip_lead")}</p><code>${pair(joinEn, joinZh)}</code></div>
+<div class="btns" style="margin:0">${copyBtn("primary", "copy")}<a class="btn" href="join.html">${t("nav_join")} →</a></div></div>`,
   });
 }
 

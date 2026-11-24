@@ -9,7 +9,7 @@ PASS  the review role is gone (400)
 PASS  an outside proposal of a new step is never merged
 PASS  a pull request that edits a split file is never merged  (**REJECTED** by the Lean checker at ef33a7b. The reason is in the run log: http:)
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
-PASS  desk gives a builder a step  (step-coef-not7)
+PASS  desk gives a builder a step  (step-cycle-floor-low)
 PASS  a second builder gets a different step  (step-reach-count-mul3)
 PASS  heartbeat extends a live lease
 PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_ReachCount_Mul3.lean)
