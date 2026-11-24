@@ -22,48 +22,15 @@ def Summit_NoDivergence : Prop := ∀ n : ℕ, ∃ B : ℕ, ∀ k : ℕ, step^[k
 def Open_DensityOne : Prop := Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ Reaches n} : ℝ) / N)) Filter.atTop (nhds 1)
 
 /-- Unsolved, under summit-collatz. -/
-def Open_ReachCount_0_9 : Prop := ∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.9 : ℝ) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ Reaches n} : ℝ)
+def Open_ReachCount_0_95 : Prop := ∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.95 : ℝ) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ Reaches n} : ℝ)
 
 /-- Unsolved, under summit-collatz. -/
 def Open_CoefficientStopping : Prop := ∀ n k : ℕ, 2 ≤ n → 3 ^ ((Finset.range k).filter (fun i => Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) i n % 2 = 1)).card < 2 ^ k → ∃ j : ℕ, j ≤ k ∧ Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) j n < n
 
-/-- Unsolved, under summit-collatz. -/
-def Open_VerifiedBelow_2_80 : Prop := ∀ n : ℕ, 0 < n → n < 2 ^ 80 → Reaches n
-
 /-- Unsolved, under summit-no-cycle. -/
-def Open_CycleFloor_2_80 : Prop := ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n = 1 ∨ n = 2 ∨ n = 4 ∨ 2 ^ 80 ≤ n
+def Open_NoMCycle_100 : Prop := (∀ n : ℕ, 0 < n → n < 2 ^ 71 → Reaches n) → ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → ((Finset.range k).filter (fun i => step^[i] n % 2 = 1 ∧ step^[i + k - 2] n % 2 = 0)).card ≤ 100 → n = 1 ∨ n = 2 ∨ n = 4
 
 /-- Unsolved, under summit-no-divergence. -/
 def Open_FiveXPlusOne_7 : Prop := ∀ B : ℕ, ∃ k : ℕ, B < Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else 5 * m + 1) k 7
-
-/-- Unsolved step of open-verified-2-80; see Split_Open_VerifiedBelow_2_80. -/
-def Step_Below80_Not3 : Prop := ∀ n : ℕ, 0 < n → n < 2 ^ 80 → n % 3 ≠ 0 → Reaches n
-
-/-- Unsolved step of open-verified-2-80; see Split_Open_VerifiedBelow_2_80. -/
-def Step_Below80_Mul3 : Prop := ∀ n : ℕ, 0 < n → n < 2 ^ 80 → n % 3 = 0 → Reaches n
-
-/-- Unsolved step of open-cycle-floor; see Split_Open_CycleFloor_2_80. -/
-def Step_CycleFloor_Low : Prop := ∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n < 2 ^ 79 → n = 1 ∨ n = 2 ∨ n = 4
-
-/-- Unsolved step of open-cycle-floor; see Split_Open_CycleFloor_2_80. -/
-def Step_CycleFloor_Mid : Prop := ∀ n k : ℕ, 0 < k → 2 ^ 79 ≤ n → n < 2 ^ 80 → step^[k] n ≠ n
-
-/-- Unsolved step of open-coefficient-stopping; see Split_Open_CoefficientStopping. -/
-def Step_Coef_Not7mod8 : Prop := ∀ n k : ℕ, 2 ≤ n → n % 8 ≠ 7 → 3 ^ ((Finset.range k).filter (fun i => Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) i n % 2 = 1)).card < 2 ^ k → ∃ j : ℕ, j ≤ k ∧ Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) j n < n
-
-/-- Unsolved step of open-coefficient-stopping; see Split_Open_CoefficientStopping. -/
-def Step_Coef_7mod8 : Prop := ∀ n k : ℕ, 2 ≤ n → n % 8 = 7 → 3 ^ ((Finset.range k).filter (fun i => Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) i n % 2 = 1)).card < 2 ^ k → ∃ j : ℕ, j ≤ k ∧ Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) j n < n
-
-/-- Unsolved step of open-density-one; see Split_Open_DensityOne. -/
-def Step_Density_Not3 : Prop := Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ n % 3 ≠ 0 ∧ Reaches n} : ℝ) / N)) Filter.atTop (nhds (2 / 3))
-
-/-- Unsolved step of open-density-one; see Split_Open_DensityOne. -/
-def Step_Density_Mul3 : Prop := Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ n % 3 = 0 ∧ Reaches n} : ℝ) / N)) Filter.atTop (nhds (1 / 3))
-
-/-- Unsolved step of open-reach-count; see Split_Open_ReachCount_0_9. -/
-def Step_ReachCount_Not3 : Prop := ∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.9 : ℝ) * (2 / 3) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ n % 3 ≠ 0 ∧ Reaches n} : ℝ)
-
-/-- Unsolved step of open-reach-count; see Split_Open_ReachCount_0_9. -/
-def Step_ReachCount_Mul3 : Prop := ∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.9 : ℝ) * (1 / 3) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ n % 3 = 0 ∧ Reaches n} : ℝ)
 
 end OpenConjecture.Collatz

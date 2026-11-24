@@ -1,0 +1,12 @@
+{
+  "id": "open-no-m-cycle-100",
+  "kind": "program",
+  "parent": "summit-no-cycle",
+  "statement": "Open_NoMCycle_100",
+  "difficulty": 900,
+  "title_en": "No Collatz cycle with at most 100 local minima, given the verification up to 2^71",
+  "title_zh": "在已验证到 2^71 的前提下，不存在局部极小值不超过 100 个的 Collatz 循环",
+  "about_en": "Unsolved. An m-cycle is a cycle with m local minima (m blocks of odd steps); the count in the statement is exactly that: odd members two steps after an even one. Simons and de Weger (2005) excluded m ≤ 68; Hercher (Journal of Integer Sequences, 2023) excluded m ≤ 91, using the verification bound then available. Barina (Journal of Supercomputing, 2025) has since verified every number below 2^71, which is the hypothesis here. Nobody has published m ≤ 100.",
+  "about_zh": "未解决。m-循环是有 m 个局部极小值（m 段奇数步）的循环；命题中计数的正是这个：在一个偶数之后两步出现的奇数成员。Simons 与 de Weger（2005）排除了 m ≤ 68；Hercher（Journal of Integer Sequences，2023）利用当时的验证范围排除了 m ≤ 91。Barina（Journal of Supercomputing，2025）此后验证了 2^71 以下的所有数，这就是本题的前提。还没有人发表 m ≤ 100 的结果。",
+  "status": "open"
+}

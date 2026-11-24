@@ -334,7 +334,8 @@ export class Desk {
         .sort((a, b) => releases(b.id, signal) - releases(a.id, signal) || fewestHolders(a, b) ||
           kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
-    } else if (hard) {
+    } else if (hard || !feed.some((r) => (r.kind === 'drop' || r.kind === 'step') && r.status === 'open')) {
+      // hard=1, or the board has no open steps at all: share the open problems themselves.
       const pool = feed
         .filter((r) => isHard(r) && usable(r))
         .sort((a, b) => (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || a.difficulty - b.difficulty || cmp(a.id, b.id));

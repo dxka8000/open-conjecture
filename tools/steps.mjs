@@ -1,61 +1,11 @@
-// In-house splits. Each step is strictly easier than its parent, still unsolved, and the steps of a
-// split together imply the parent: that implication is proved in Lean in Splits/Split_<Parent>.lean.
-// We never prove the steps themselves.
-const steps = [
-  // Open_VerifiedBelow_2_80, split by n mod 3
-  { id: "step-below80-not3", parent: "open-verified-2-80", split: "Split_Open_VerifiedBelow_2_80", statement: "Step_Below80_Not3",
-    lean: "∀ n : ℕ, 0 < n → n < 2 ^ 80 → n % 3 ≠ 0 → Reaches n",
-    title_en: "Every number below 2^80 that is not a multiple of 3 reaches 1",
-    title_zh: "2^80 以下不是 3 的倍数的每个数都会到 1",
-    sketch: "Two thirds of the parent. Multiples of 3 are leaves of the Collatz tree (no odd number maps to them), so the two classes behave differently: this one holds every number with an odd predecessor. Still far beyond the 2^68 that has been checked by computer." },
-  { id: "step-below80-mul3", parent: "open-verified-2-80", split: "Split_Open_VerifiedBelow_2_80", statement: "Step_Below80_Mul3",
-    lean: "∀ n : ℕ, 0 < n → n < 2 ^ 80 → n % 3 = 0 → Reaches n",
-    title_en: "Every multiple of 3 below 2^80 reaches 1",
-    title_zh: "2^80 以下 3 的每个倍数都会到 1",
-    sketch: "The other third. An odd multiple of 3, n, goes to 3n+1, which is not a multiple of 3, so the step above covers it only when 3n+1 < 2^80; the top range [2^80/3, 2^80) is genuinely new work." },
-  // Open_CycleFloor_2_80, split by where a cycle member sits
-  { id: "step-cycle-floor-low", parent: "open-cycle-floor", split: "Split_Open_CycleFloor_2_80", statement: "Step_CycleFloor_Low",
-    lean: "∀ n k : ℕ, 0 < n → 0 < k → step^[k] n = n → n < 2 ^ 79 → n = 1 ∨ n = 2 ∨ n = 4",
-    title_en: "No number below 2^79 lies on a non-trivial cycle",
-    title_zh: "2^79 以下没有任何数位于非平凡循环上",
-    sketch: "The lower half of the parent's range. Known verification excludes cycle members below about 2^68; this asks for 2^79." },
-  { id: "step-cycle-floor-mid", parent: "open-cycle-floor", split: "Split_Open_CycleFloor_2_80", statement: "Step_CycleFloor_Mid",
-    lean: "∀ n k : ℕ, 0 < k → 2 ^ 79 ≤ n → n < 2 ^ 80 → step^[k] n ≠ n",
-    title_en: "No number from 2^79 up to 2^80 lies on a cycle",
-    title_zh: "2^79 到 2^80 之间没有任何数位于循环上",
-    sketch: "The upper half. A cycle through this band could have all its members at or above 2^79, so the lower half does not settle it." },
-  // Open_CoefficientStopping, split by n mod 8
-  { id: "step-coef-not7", parent: "open-coefficient-stopping", split: "Split_Open_CoefficientStopping", statement: "Step_Coef_Not7mod8",
-    lean: "∀ n k : ℕ, 2 ≤ n → n % 8 ≠ 7 → 3 ^ ((Finset.range k).filter (fun i => Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) i n % 2 = 1)).card < 2 ^ k → ∃ j : ℕ, j ≤ k ∧ Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) j n < n",
-    title_en: "Terras's conjecture for every n that is not 7 mod 8",
-    title_zh: "对所有模 8 不余 7 的 n，Terras 系数停时猜想成立",
-    sketch: "Even n and n = 1 mod 4 drop at once, but the class 3 mod 8 does not: it splits into infinitely many subclasses mod 2^k whose first k steps are fixed. The conjecture is a statement about all of them." },
-  { id: "step-coef-7", parent: "open-coefficient-stopping", split: "Split_Open_CoefficientStopping", statement: "Step_Coef_7mod8",
-    lean: "∀ n k : ℕ, 2 ≤ n → n % 8 = 7 → 3 ^ ((Finset.range k).filter (fun i => Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) i n % 2 = 1)).card < 2 ^ k → ∃ j : ℕ, j ≤ k ∧ Nat.iterate (fun m : ℕ => if m % 2 = 0 then m / 2 else (3 * m + 1) / 2) j n < n",
-    title_en: "Terras's conjecture for every n that is 7 mod 8",
-    title_zh: "对所有模 8 余 7 的 n，Terras 系数停时猜想成立",
-    sketch: "The class 7 mod 8 starts with three odd steps in a row, the slowest start possible, so its stopping times are the longest. Each n here is about its own orbit only, so the two classes are independent." },
-  // Open_DensityOne, split by n mod 3
-  { id: "step-density-not3", parent: "open-density-one", split: "Split_Open_DensityOne", statement: "Step_Density_Not3",
-    lean: "Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ n % 3 ≠ 0 ∧ Reaches n} : ℝ) / N)) Filter.atTop (nhds (2 / 3))",
-    title_en: "Almost every number that is not a multiple of 3 reaches 1 (density 2/3 of all numbers)",
-    title_zh: "几乎所有不是 3 的倍数的数都会到 1（占全部数的密度 2/3）",
-    sketch: "The parent restricted to numbers with an odd predecessor. Tao's 2019 result is in logarithmic density and only gives almost bounded orbits; this needs natural density and reaching 1." },
-  { id: "step-density-mul3", parent: "open-density-one", split: "Split_Open_DensityOne", statement: "Step_Density_Mul3",
-    lean: "Filter.Tendsto (fun N : ℕ => ((Set.ncard {n : ℕ | n < N ∧ n % 3 = 0 ∧ Reaches n} : ℝ) / N)) Filter.atTop (nhds (1 / 3))",
-    title_en: "Almost every multiple of 3 reaches 1 (density 1/3 of all numbers)",
-    title_zh: "几乎所有 3 的倍数都会到 1（占全部数的密度 1/3）",
-    sketch: "Multiples of 3 are the leaves of the tree. An odd multiple 3m goes to 9m+1, a sparse set, so density one on the other class does not give this one." },
-  // Open_ReachCount_0_9, split by n mod 3
-  { id: "step-reach-count-not3", parent: "open-reach-count", split: "Split_Open_ReachCount_0_9", statement: "Step_ReachCount_Not3",
-    lean: "∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.9 : ℝ) * (2 / 3) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ n % 3 ≠ 0 ∧ Reaches n} : ℝ)",
-    title_en: "For large x, at least (2/3)·x^0.9 numbers up to x that are not multiples of 3 reach 1",
-    title_zh: "x 足够大时，x 以内至少有 (2/3)·x^0.9 个不是 3 的倍数的数会到 1",
-    sketch: "Krasikov and Lagarias reach x^0.84 by counting the tree of predecessors of 1 through residue classes mod powers of 3; this half needs a better exponent on the classes with predecessors." },
-  { id: "step-reach-count-mul3", parent: "open-reach-count", split: "Split_Open_ReachCount_0_9", statement: "Step_ReachCount_Mul3",
-    lean: "∃ x₀ : ℕ, ∀ x : ℕ, x₀ ≤ x → (x : ℝ) ^ (0.9 : ℝ) * (1 / 3) ≤ (Set.ncard {n : ℕ | 0 < n ∧ n ≤ x ∧ n % 3 = 0 ∧ Reaches n} : ℝ)",
-    title_en: "For large x, at least (1/3)·x^0.9 multiples of 3 up to x reach 1",
-    title_zh: "x 足够大时，x 以内至少有 (1/3)·x^0.9 个 3 的倍数会到 1",
-    sketch: "Leaves only. Every multiple of 3 that reaches 1 hangs below a number 2^j·3m reached through the tree; counting them needs the tree itself to be large near x." },
-];
+// In-house splits. Each step is strictly easier than its parent, still unsolved, and a real ingredient of
+// it (not a case split by residue or range, which only restates the parent). The steps of a split
+// together imply the parent: that implication is proved in Lean in Splits/Split_<Parent>.lean.
+// We never prove the steps themselves. A problem with no honest split stays unsplit.
+//
+// The first board (2026-11-24) had five residue and range case splits. They were removed the same day:
+// each half was essentially the whole problem (for example, a multiple of 3 reaches a non-multiple of 3
+// within a few steps), so they were padding, not decomposition.
+// Entry fields: id, parent, split ("Split_<ParentStatement>"), statement ("Step_<Name>"), lean, title_en, title_zh, sketch.
+const steps = [];
 export default steps;

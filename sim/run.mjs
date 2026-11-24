@@ -202,12 +202,12 @@ async function main() {
   const recs0 = wsJson("dist/feed.json").records;
   const steps0 = recs0.filter((r) => r.kind === "step");
   const progs0 = recs0.filter((r) => r.kind === "program");
-  check("every open problem but the 5x+1 one is split into 2 to 4 steps", progs0.every((p) => {
+  check("every open problem is unsplit or split into 2 to 4 steps", progs0.every((p) => {
     const n = steps0.filter((st) => st.parent === p.id).length;
-    return p.id === "open-five-x-plus-one" ? n === 0 : n >= 2 && n <= 4;
+    return n === 0 || (n >= 2 && n <= 4);
   }), `${steps0.length} steps under ${progs0.length} open problems`);
   check("every step names a split file that exists", steps0.every((st) => existsSync(join(WS, `OpenConjecture/Collatz/Splits/${st.split}.lean`))));
-  check("the real gate writes one reduction check per split", gate(WS).status === 0 && (wsRead("checker/Verified.lean").match(/^theorem OpenConjectureCheck\.s\d+ : \(/gm) || []).length === 5);
+  check("the real gate writes one reduction check per split", gate(WS).status === 0 && (wsRead("checker/Verified.lean").match(/^theorem OpenConjectureCheck\.s\d+ : \(/gm) || []).length === new Set(steps0.map((st) => st.split)).size);
   // A restated step must be caught by the gate (in-house quality guard): try it on a copy.
   {
     const dir = join(tmpdir(), "collatz-sim-restate");
@@ -238,20 +238,20 @@ async function main() {
   await ciCheck(pP, true);
   check("an outside proposal of a new step is never merged", gh.prs.get(pP.number).state === "open");
   const pS = openPr({ author: "sim-mallory", title: "Prove open-density-one", files: {
-    "OpenConjecture/Collatz/Splits/Split_Open_DensityOne.lean": wsRead("OpenConjecture/Collatz/Splits/Split_Open_DensityOne.lean") + "\n-- changed\n",
+    "OpenConjecture/Collatz/Splits/Split_Open_DensityOne.lean": "import OpenConjecture.Collatz.Lemmas\n\nnamespace OpenConjecture.Collatz.Splits.Split_Open_DensityOne\n\ntheorem main : True := trivial\n\nend OpenConjecture.Collatz.Splits.Split_Open_DensityOne\n",
     "records/collatz/open-density-one.json": JSON.stringify({ ...wsJson("records/collatz/open-density-one.json"), status: "verified", proved_by: "sim-mallory", model: "x", verified_at: today }, null, 2) + "\n" } });
   await ciCheck(pS, true);
-  check("a pull request that edits a split file is never merged", gh.prs.get(pS.number).state === "open" && /REJECTED|Proofs/.test(lastComment(pS)), lastComment(pS).slice(0, 80));
-  const pL = openPr({ author: "sim-mallory", title: "Prove step-density-mul3", files: {
-    ...resultFiles("sim-mallory", "step-density-mul3", "Step_Density_Mul3"),
-    "OpenConjecture/Collatz/Lemmas.lean": wsRead("OpenConjecture/Collatz/Lemmas.lean").replace("def Step_Density_Mul3 : Prop :=", "def Step_Density_Mul3 : Prop := True ∨") } });
+  check("a pull request that adds a split file is never merged", gh.prs.get(pS.number).state === "open" && /REJECTED|Proofs/.test(lastComment(pS)), lastComment(pS).slice(0, 80));
+  const pL = openPr({ author: "sim-mallory", title: "Prove open-density-one", files: {
+    ...resultFiles("sim-mallory", "open-density-one", "Open_DensityOne"),
+    "OpenConjecture/Collatz/Lemmas.lean": wsRead("OpenConjecture/Collatz/Lemmas.lean").replace("def Open_DensityOne : Prop :=", "def Open_DensityOne : Prop := True ∨") } });
   await ciCheck(pL, true);
   check("a proof that also weakens the statement in Lemmas.lean is never merged", gh.prs.get(pL.number).state === "open" && /exactly two files/.test(lastComment(pL)));
 
   // ---- 2. Builders and the red team
   log("\n== Round 2: builders and red team");
   const a3 = await next("sim-alice");
-  check("desk gives a builder a step", a3.status === 200 && a3.body.gap?.kind === "step" && /^Step_/.test(a3.body.gap.statement_name) && !!a3.body.gap.statement, a3.body.gap?.id);
+  check("desk gives a builder a task (a step, or an open problem when nothing is split)", a3.status === 200 && ["step", "program"].includes(a3.body.gap?.kind) && !!a3.body.gap.statement, a3.body.gap?.id);
   const b3 = await next("sim-bob");
   check("a second builder gets a different step", b3.status === 200 && b3.body.gap && b3.body.gap.id !== a3.body.gap.id, b3.body.gap?.id);
   const realStep = a3, falseStep = b3, realWho = "sim-alice", falseWho = "sim-bob";
@@ -261,7 +261,7 @@ async function main() {
   await release(falseWho, falseStep.body.lease.id, "statement_seems_false");
 
   const g3 = await next("sim-grace", "&role=redteam");
-  check("red team is sent to the step reported as false", g3.body.gap?.id === falseId && /Refute_Step_.*\.lean$/.test(g3.body.gap.file), g3.body.gap?.file);
+  check("red team is sent to the step reported as false", g3.body.gap?.id === falseId && /Refute_(Step|Open)_.*\.lean$/.test(g3.body.gap.file), g3.body.gap?.file);
   const h3 = await next("sim-heidi", "&hard=1");
   check("hard=1 gives an open problem", h3.body.gap?.kind === "program", h3.body.gap?.id);
   await release("sim-heidi", h3.body.lease.id, "missing_lemma");

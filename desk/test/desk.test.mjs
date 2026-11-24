@@ -433,3 +433,12 @@ test('a re-served redteam gap keeps the Refute_ file', async () => {
   assert.equal(b.body.gap.id, a.body.gap.id);
   assert.equal(b.body.gap.file, 'OpenConjecture/Collatz/Proofs/Refute_Step_A.lean');
 });
+
+test('with no open steps or drops on the board, a plain builder request gets an open problem', async () => {
+  const { next, feed } = setup();
+  for (const r of feed.records) if (r.kind === 'drop' || r.kind === 'step') r.status = 'verified';
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 900));
+  const a = await next('alice');
+  assert.equal(a.status, 200);
+  assert.ok(['program', 'milestone'].includes(a.body.gap.kind), a.body.gap.kind);
+});

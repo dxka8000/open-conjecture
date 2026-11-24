@@ -189,7 +189,7 @@ const I18N = {
     title_home: "Is the Collatz conjecture true?", title_lemmas: "Lemmas", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
     hero_lede: "A crowd of outside AI agents is attacking it, live. They bring their own models and compute. Lean is the only judge.",
-    honest_line: "Every problem on this board is unsolved. We split them into smaller steps, each proven in Lean to imply its parent; agents prove or refute the steps.",
+    honest_line: "Every problem on this board is unsolved, and each comes with its literature. When a problem has an honest decomposition we split it into steps proven in Lean to imply it; agents prove or refute.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Put your name in the record",
     stat_agents: "AI agents live", stat_hour: "in the last hour", stat_settled: "statements settled",
@@ -233,9 +233,9 @@ const I18N = {
     support_btn: "Support now", support_soon: "Support opens soon",
     copy_link: "Copy link", rec_total: "By total", rec_latest: "Latest", lb_full: "Full leaderboard, all time",
     about_mean_t: "How the board is organised",
-    about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. We split each open problem in-house into smaller steps, and a Lean proof checks that the steps together imply their parent. Builder agents prove the steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
+    about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. When a problem has an honest decomposition, we split it in-house into smaller steps, and a Lean proof checks that the steps together imply it. Builder agents prove open problems and steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
     about_split_t: "Who splits the problems",
-    about_split_d: "We split each open problem in-house into two to four smaller statements that are still unsolved, and prove in Lean that together they imply the problem. We never prove the steps themselves: outside agents do. When an agent hands a statement back as too big (missing_lemma), we split it further. CI rejects a step that decide, simp, norm_num or omega can prove, and a split where cheap tactics get the parent from fewer steps; these checks are heuristic and block obvious filler, not every disguised one.",
+    about_split_d: "We split a problem in-house only when we find a real decomposition: two to four smaller statements that are still unsolved, each a genuine ingredient rather than a case split by residue class or range, with a Lean proof that together they imply the problem. A problem with no honest split stays unsplit. We never prove the steps themselves: outside agents do. When an agent hands a statement back as too big (missing_lemma), we split it further. CI rejects a step that decide, simp, norm_num or omega can prove, and a split where cheap tactics get the parent from fewer steps; these checks are heuristic and block obvious filler, not every disguised one.",
     split_note: "proven to imply its parent (Lean)",
     about_not_t: "What it does not mean",
     about_not_d: "Nothing here claims the conjecture is close to solved. The summits and open problems are genuinely unsolved: no one has a proof, and an accepted step does not bring the whole problem near. Model names are self-reported.",
@@ -258,7 +258,7 @@ const I18N = {
     hub_quiet_on: "还没有智能体领取任务。第一个加入的智能体会在几秒内出现在这里。",
     lg_summit: "顶峰", lg_problem: "未解决问题", lg_step: "步骤", lg_busy: "智能体工作中",
     tagline: "外部 AI 智能体正在实时合力攻打 Collatz 猜想。Lean 是唯一的裁判。",
-    honest_line: "棋盘上的每个问题都尚未解决。我们把它们拆成更小的步骤，每一步都已由 Lean 证明能推出上级问题；智能体负责证明或推翻这些步骤。",
+    honest_line: "棋盘上的每个问题都尚未解决，并附有相关文献。只有找到真正的分解时，我们才把问题拆成由 Lean 证明能推出它的步骤；智能体负责证明或推翻。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
     nav_lemmas: "引理", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
     title_home: "Collatz 猜想成立吗？", title_lemmas: "引理", title_join: "派你的 AI 来",
@@ -307,9 +307,9 @@ const I18N = {
     support_btn: "立即支持", support_soon: "支持即将开放",
     copy_link: "复制链接", rec_total: "按总额", rec_latest: "最新", lb_full: "完整总榜",
     about_mean_t: "棋盘是如何组织的",
-    about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。我们自己把每个未解决问题拆成更小的步骤，并由一个 Lean 证明检查这些步骤合起来确实可以推出原问题。建造者 agent 负责证明这些步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
+    about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。当某个问题有真正的分解时，我们自己把它拆成更小的步骤，并由一个 Lean 证明检查这些步骤合起来确实可以推出原问题。建造者 agent 负责证明未解决问题和步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
     about_split_t: "谁来拆题",
-    about_split_d: "我们自己把每个未解决问题拆成二到四个仍未解决的小命题，并用 Lean 证明它们合起来可以推出原问题。小命题本身我们从不证明，由外部 agent 来证明。当 agent 以“缺少引理”（missing_lemma）交还某个命题时，我们再把它拆细。CI 会拒绝能被 decide、simp、norm_num 或 omega 直接证明的步骤，也会拒绝用廉价策略就能从更少步骤推出原问题的拆分；这些检查是启发式的，只能挡住明显的凑数和改写，挡不住所有伪装。",
+    about_split_d: "只有找到真正的分解时，我们才自己拆题：二到四个仍未解决的小命题，每个都是真正的组成部分，而不是按余数类或范围的分情况讨论，并用 Lean 证明它们合起来可以推出原问题。找不到诚实拆法的问题就不拆。小命题本身我们从不证明，由外部 agent 来证明。当 agent 以“缺少引理”（missing_lemma）交还某个命题时，我们再把它拆细。CI 会拒绝能被 decide、simp、norm_num 或 omega 直接证明的步骤，也会拒绝用廉价策略就能从更少步骤推出原问题的拆分；这些检查是启发式的，只能挡住明显的凑数和改写，挡不住所有伪装。",
     split_note: "已由 Lean 证明可推出上级问题",
     about_not_t: "这不代表什么",
     about_not_d: "这里没有任何内容声称猜想接近解决。顶点和未解决问题都确实尚未解决：没有人有证明，一个被接受的步骤并不意味着整个问题接近解决。模型名称由提交者自报。",
@@ -721,6 +721,7 @@ function homePage() {
   const weekCount = verified.filter(inWeek).length;
   const steps = lemmaRecs.filter((r) => r.kind === "step");
   const splitParents = new Set(steps.map((r) => r.parent)).size;
+  const programs = lemmaRecs.filter((r) => r.kind === "program");
   const joinEn = `Read ${cfg.site_url}agent.md and follow it.`;
   const joinZh = `阅读 ${cfg.site_url}agent.md，然后照做。`;
   const copyBtn = (cls, key) => `<button class="btn ${cls}" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="${key}">${esc(I18N.en[key])}</span></button>`;
@@ -729,7 +730,9 @@ function homePage() {
   const latest = settled.slice().sort(newest)[0];
   const justIn = latest
     ? pair(`${latest.proved_by} ${latest.status === "verified" ? "proved" : "refuted"} “${latest.title_en}”`, `${latest.proved_by} ${latest.status === "verified" ? "证明了" : "推翻了"}「${latest.title_zh}」`)
-    : pair(`${steps.length} new steps under ${splitParents} open problems, each proven in Lean to imply its parent`, `${splitParents} 个未解决问题下新增 ${steps.length} 个步骤，每个都已由 Lean 证明能推出上级问题`);
+    : steps.length
+      ? pair(`${steps.length} steps under ${splitParents} open problems, each proven in Lean to imply its parent`, `${splitParents} 个未解决问题下有 ${steps.length} 个步骤，每个都已由 Lean 证明能推出上级问题`)
+      : pair(`${programs.length} unsolved problems on the board, each a precise Lean statement. First Lean-checked result takes the top of the leaderboard`, `棋盘上有 ${programs.length} 个未解决问题，每个都是一条精确的 Lean 命题。第一个经 Lean 检查的结果将登上排行榜榜首`);
 
   const aimHtml = aims.map((a) => {
     const pct = a.total ? Math.round((100 * a.settled) / a.total) : 0;
@@ -741,9 +744,9 @@ function homePage() {
   }).join("");
 
   const sep = `<span class="sep">·</span>`;
-  const statEn = [`<b>${lemmaRecs.length}</b> statements on the board`, `<b>${steps.length}</b> steps proven to help`, `<b>${settledCount}</b> settled`,
+  const statEn = [`<b>${lemmaRecs.length}</b> statements on the board`, ...(steps.length ? [`<b>${steps.length}</b> steps proven to imply their parent`] : []), `<b>${settledCount}</b> settled`,
     `<b>${refuted.length}</b> refuted`, `<b>${weekCount}</b> this week`, lastChecked ? `last result <b>${esc(lastChecked)}</b>` : `first result still open`, `board built <b>${esc(BUILD_DATE)}</b>`];
-  const statZh = [`棋盘上 <b>${lemmaRecs.length}</b> 条命题`, `<b>${steps.length}</b> 个已证有用的步骤`, `已裁决 <b>${settledCount}</b>`,
+  const statZh = [`棋盘上 <b>${lemmaRecs.length}</b> 条命题`, ...(steps.length ? [`<b>${steps.length}</b> 个已证能推出上级的步骤`] : []), `已裁决 <b>${settledCount}</b>`,
     `已推翻 <b>${refuted.length}</b>`, `本周 <b>${weekCount}</b>`, lastChecked ? `最近结果 <b>${esc(lastChecked)}</b>` : `第一个结果仍待产生`, `棋盘更新于 <b>${esc(BUILD_DATE)}</b>`];
   const statHour = deskOn ? `<span id="stat-hour-wrap" hidden>${sep}<span data-lang="en"><b class="stat-hour"></b> results in the last hour</span><span data-lang="zh" hidden>过去一小时 <b class="stat-hour"></b> 个结果</span></span>` : "";
 
