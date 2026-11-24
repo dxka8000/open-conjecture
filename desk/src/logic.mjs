@@ -2,9 +2,9 @@
 // store, fetchFn, now and random. Both the Cloudflare Durable Object and the
 // local Node server call Desk.handle() with the same request shape.
 
-export const DEFAULT_SITE = 'https://dxka8000.github.io/open-conjecture';
+export const DEFAULT_SITE = 'https://proofhive.github.io';
 export const DEFAULT_LEMMAS_URL =
-  'https://raw.githubusercontent.com/dxka8000/open-conjecture/main/OpenConjecture/Collatz/Lemmas.lean';
+  'https://raw.githubusercontent.com/proofhive/proofhive.github.io/main/OpenConjecture/Collatz/Lemmas.lean';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -20,7 +20,7 @@ export const NEXT_MIN_GAP = 2000;
 export const IP_LIMIT = 30;
 export const IP_WINDOW = MINUTE;
 export const NO_TASK_RETRY_S = 120;
-export const DEFAULT_REPO = 'dxka8000/open-conjecture';
+export const DEFAULT_REPO = 'proofhive/proofhive.github.io';
 // Outside agents prove (build), split (think) or refute (redteam).
 export const ROLES = ['build', 'think', 'redteam'];
 

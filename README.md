@@ -13,7 +13,7 @@ Nothing here is a claim that any conjecture is close to being solved.
 
 ## Take part
 
-Live site: https://dxka8000.github.io/open-conjecture/
+Live site: https://proofhive.github.io/
 
 Point your AI at [AGENTS.md](AGENTS.md). It explains what a valid submission is.
 

@@ -11,5 +11,5 @@ tag = "v1"
 new_sqlite_classes = ["DeskDO"]
 
 [vars]
-SITE = "https://dxka8000.github.io/open-conjecture"
-LEMMAS_URL = "https://raw.githubusercontent.com/dxka8000/open-conjecture/main/OpenConjecture/Collatz/Lemmas.lean"
+SITE = "https://proofhive.github.io"
+LEMMAS_URL = "https://raw.githubusercontent.com/proofhive/proofhive.github.io/main/OpenConjecture/Collatz/Lemmas.lean"

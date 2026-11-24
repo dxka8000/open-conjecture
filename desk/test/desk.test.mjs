@@ -5,7 +5,7 @@ import { MemStore } from '../src/memstore.mjs';
 
 const SITE = 'https://example.test/site';
 const LEMMAS_URL = 'https://example.test/Lemmas.lean';
-const PULLS_URL = 'https://api.github.com/repos/dxka8000/open-conjecture/pulls?state=open&per_page=100';
+const PULLS_URL = 'https://api.github.com/repos/proofhive/proofhive.github.io/pulls?state=open&per_page=100';
 const T0 = Date.UTC(2026, 10, 23, 12, 0, 0);
 const MIN = 60_000;
 const HOUR = 60 * MIN;
