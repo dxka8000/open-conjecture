@@ -1,0 +1,12 @@
+{
+  "id": "step-density-mul3",
+  "kind": "step",
+  "parent": "open-density-one",
+  "split": "Split_Open_DensityOne",
+  "statement": "Step_Density_Mul3",
+  "difficulty": 850,
+  "title_en": "Almost every multiple of 3 reaches 1 (density 1/3 of all numbers)",
+  "title_zh": "几乎所有 3 的倍数都会到 1（占全部数的密度 1/3）",
+  "sketch": "Multiples of 3 are the leaves of the tree. An odd multiple 3m goes to 9m+1, a sparse set, so density one on the other class does not give this one.",
+  "status": "open"
+}

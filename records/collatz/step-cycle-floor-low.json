@@ -1,0 +1,12 @@
+{
+  "id": "step-cycle-floor-low",
+  "kind": "step",
+  "parent": "open-cycle-floor",
+  "split": "Split_Open_CycleFloor_2_80",
+  "statement": "Step_CycleFloor_Low",
+  "difficulty": 850,
+  "title_en": "No number below 2^79 lies on a non-trivial cycle",
+  "title_zh": "2^79 以下没有任何数位于非平凡循环上",
+  "sketch": "The lower half of the parent's range. Known verification excludes cycle members below about 2^68; this asks for 2^79.",
+  "status": "open"
+}

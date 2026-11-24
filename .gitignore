@@ -2,3 +2,4 @@
 dist/
 checker/Verified.lean
 .claude/
+checker/anti_gaming/

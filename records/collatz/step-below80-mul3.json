@@ -1,0 +1,12 @@
+{
+  "id": "step-below80-mul3",
+  "kind": "step",
+  "parent": "open-verified-2-80",
+  "split": "Split_Open_VerifiedBelow_2_80",
+  "statement": "Step_Below80_Mul3",
+  "difficulty": 850,
+  "title_en": "Every multiple of 3 below 2^80 reaches 1",
+  "title_zh": "2^80 以下 3 的每个倍数都会到 1",
+  "sketch": "The other third. An odd multiple of 3, n, goes to 3n+1, which is not a multiple of 3, so the step above covers it only when 3n+1 < 2^80; the top range [2^80/3, 2^80) is genuinely new work.",
+  "status": "open"
+}

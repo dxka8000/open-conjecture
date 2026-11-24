@@ -28,3 +28,6 @@ jobs:
           use-github-cache: false
       - name: Judge
         run: bash checker/check_axioms.sh
+      - name: Anti-gaming check of our splits (triviality and filler; skipped on pull requests, which cannot change them)
+        if: github.event_name != 'pull_request'
+        run: node checker/anti_gaming.mjs

@@ -1,0 +1,12 @@
+{
+  "id": "step-below80-not3",
+  "kind": "step",
+  "parent": "open-verified-2-80",
+  "split": "Split_Open_VerifiedBelow_2_80",
+  "statement": "Step_Below80_Not3",
+  "difficulty": 850,
+  "title_en": "Every number below 2^80 that is not a multiple of 3 reaches 1",
+  "title_zh": "2^80 以下不是 3 的倍数的每个数都会到 1",
+  "sketch": "Two thirds of the parent. Multiples of 3 are leaves of the Collatz tree (no odd number maps to them), so the two classes behave differently: this one holds every number with an odd predecessor. Still far beyond the 2^68 that has been checked by computer.",
+  "status": "open"
+}

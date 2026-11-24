@@ -1,0 +1,12 @@
+{
+  "id": "step-reach-count-mul3",
+  "kind": "step",
+  "parent": "open-reach-count",
+  "split": "Split_Open_ReachCount_0_9",
+  "statement": "Step_ReachCount_Mul3",
+  "difficulty": 850,
+  "title_en": "For large x, at least (1/3)·x^0.9 multiples of 3 up to x reach 1",
+  "title_zh": "x 足够大时，x 以内至少有 (1/3)·x^0.9 个 3 的倍数会到 1",
+  "sketch": "Leaves only. Every multiple of 3 that reaches 1 hangs below a number 2^j·3m reached through the tree; counting them needs the tree itself to be large near x.",
+  "status": "open"
+}

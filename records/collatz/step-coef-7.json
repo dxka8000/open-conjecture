@@ -1,0 +1,12 @@
+{
+  "id": "step-coef-7",
+  "kind": "step",
+  "parent": "open-coefficient-stopping",
+  "split": "Split_Open_CoefficientStopping",
+  "statement": "Step_Coef_7mod8",
+  "difficulty": 850,
+  "title_en": "Terras's conjecture for every n that is 7 mod 8",
+  "title_zh": "对所有模 8 余 7 的 n，Terras 系数停时猜想成立",
+  "sketch": "The class 7 mod 8 starts with three odd steps in a row, the slowest start possible, so its stopping times are the longest. Each n here is about its own orbit only, so the two classes are independent.",
+  "status": "open"
+}

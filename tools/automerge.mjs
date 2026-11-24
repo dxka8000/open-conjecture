@@ -1,23 +1,22 @@
 // Trusted auto-merge. Runs from the default branch, never from a pull request.
-// It never checks out or executes code from a pull request: it reads file lists, one JSON record and
-// reviews through the GitHub API, as data, and merges only the exact commit the Lean checker passed.
+// It never checks out or executes code from a pull request: it reads file lists, one JSON record
+// through the GitHub API, as data, and merges only the exact commit the Lean checker passed.
 //
 // MODE=run   : triggered when "Lean checker" finishes on a pull request. Posts the verdict
 //              (ACCEPTED / REJECTED / FAULT) and merges if the pull request qualifies.
-// MODE=sweep : every 15 minutes. Re-examines every open pull request (proposals gather their
-//              approvals over time) and merges the ones that now qualify. Posts nothing on failure.
+// MODE=sweep : every 15 minutes. Retries recent pull requests whose check passed (for example after a
+//              transient API failure) and merges the ones that qualify. Posts nothing on failure.
 //
-// Three shapes qualify, each changing exactly two files:
+// Outside agents only prove or refute statements already on the board. Two shapes qualify, each
+// changing exactly two files:
 //   proof     : adds Proofs/<Statement>.lean, flips an open record to "verified"
 //   refute    : adds Proofs/Refute_<Statement>.lean, flips an open record to "refuted"
-//   proposal  : adds Proposals/Step_<Name>.lean and a new "step" record; needs 2 approvals
+// New statements (our splits) are never accepted from pull requests.
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
 const CHECK_WORKFLOW = "Lean checker";
-const APPROVALS_NEEDED = 2;
-const MIN_ACCOUNT_AGE_DAYS = 365; // reviewers without a result here need an account at least this old
 const API = process.env.GITHUB_API || "https://api.github.com"; // overridden only by the local simulation
 
 const api = async (path, opts = {}) => {
@@ -35,22 +34,6 @@ const mainRecords = new Map();
 for (const f of readdirSync("records/collatz")) {
   try { const r = JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")); mainRecords.set(r.id, r); } catch {}
 }
-const provers = new Set([...mainRecords.values()].filter((r) => r.status !== "open").map((r) => String(r.proved_by).toLowerCase()));
-
-// A reviewer qualifies with a settled result here, or with a GitHub account at least a year old
-// (a cheap guard against throwaway accounts approving each other's proposals).
-const ageCache = new Map();
-async function qualified(login) {
-  const key = login.toLowerCase();
-  if (provers.has(key)) return true;
-  if (!ageCache.has(key)) {
-    const u = await api(`/users/${encodeURIComponent(login)}`);
-    const created = u && Date.parse(u.created_at);
-    ageCache.set(key, Number.isFinite(created) && Date.now() - created >= MIN_ACCOUNT_AGE_DAYS * 864e5 && u.type === "User");
-  }
-  return ageCache.get(key);
-}
-
 async function fileAtHead(pr, path) {
   const got = await api(`/repos/${pr.head.repo.full_name}/contents/${path}?ref=${pr.head.sha}`);
   return got && got.content ? Buffer.from(got.content, "base64").toString("utf8") : null;
@@ -62,13 +45,12 @@ async function checkPassed(sha) {
   return mine.length > 0 && mine[0].status === "completed" && mine[0].conclusion === "success";
 }
 
-// Returns {ok: true, kind, summary} or {ok: false, why, waiting?}.
+// Returns {ok: true, kind, summary} or {ok: false, why}.
 async function evaluate(pr) {
   const author = pr.user.login;
   const files = await api(`/repos/${REPO}/pulls/${pr.number}/files?per_page=100`);
   if (!files || files.length !== 2) return { ok: false, why: `it must change exactly two files, but it changes ${files ? files.length : "?"}.` };
   const proof = files.find((f) => /^OpenConjecture\/Collatz\/Proofs\/[A-Za-z0-9_]+\.lean$/.test(f.filename));
-  const prop = files.find((f) => /^OpenConjecture\/Collatz\/Proposals\/Step_[A-Za-z0-9_]+\.lean$/.test(f.filename));
   const rec = files.find((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
   if (!rec) return { ok: false, why: "it must change one record under records/collatz/." };
   let head;
@@ -98,29 +80,7 @@ async function evaluate(pr) {
                        : `**ACCEPTED**. Lean checked every step of \`${base.statement}\`. Merged; it appears on the site within a few minutes, credited to @${author}.` };
   }
 
-  if (prop) {
-    if (prop.status !== "added" || rec.status !== "added") return { ok: false, why: "a proposal adds one new file under Proposals/ and one new record." };
-    const name = prop.filename.split("/").pop().replace(/\.lean$/, "");
-    if (head.kind !== "step" || head.statement !== name || head.status !== "open") return { ok: false, why: `the new record must have kind "step", statement "${name}" and status "open".` };
-    if (String(head.proposed_by).toLowerCase() !== author.toLowerCase()) return { ok: false, why: `proposed_by must be your GitHub login (${author}).` };
-    if (!mainRecords.has(head.parent)) return { ok: false, why: `parent ${head.parent} is not an existing lemma.` };
-    const reviews = await api(`/repos/${REPO}/pulls/${pr.number}/reviews?per_page=100`);
-    const latest = new Map();
-    for (const r of reviews || []) {
-      const who = r.user && r.user.login;
-      if (!who || who.toLowerCase() === author.toLowerCase() || !(await qualified(who))) continue;
-      if (r.commit_id !== pr.head.sha || !["APPROVED", "CHANGES_REQUESTED"].includes(r.state)) continue;
-      latest.set(who.toLowerCase(), r.state);
-    }
-    const yes = [...latest.values()].filter((s) => s === "APPROVED").length;
-    const no = [...latest.values()].filter((s) => s === "CHANGES_REQUESTED").length;
-    if (yes < APPROVALS_NEEDED || no >= yes)
-      return { ok: false, waiting: true, why: `a proposal needs ${APPROVALS_NEEDED} approvals on its latest commit from qualified reviewers (a checked result here, or a GitHub account at least a year old; not the proposer), and more approvals than change requests. It has ${yes} approval(s) and ${no} change request(s).` };
-    return { ok: true, kind: "proposal", summary: `New step: ${id} by ${author}`,
-      accepted: `**ACCEPTED**. The statement compiles and ${yes} reviewers approved it. \`${name}\` is now an open lemma under \`${head.parent}\`.` };
-  }
-
-  return { ok: false, why: "it must add one file under OpenConjecture/Collatz/Proofs/ or OpenConjecture/Collatz/Proposals/, plus its record." };
+  return { ok: false, why: "it must add one file under OpenConjecture/Collatz/Proofs/ and change its record. Outside pull requests can only prove or refute statements already on the board." };
 }
 
 async function merge(pr, result) {
@@ -158,16 +118,14 @@ if (MODE === "run") {
   if (result.ok) mergedAny = await merge(pr, result);
   else {
     console.log(`Not merging #${pr.number}: ${result.why}`);
-    await comment(pr, result.waiting
-      ? `The Lean checker passed. Waiting for review: ${result.why} This is re-checked every 15 minutes.`
-      : `The Lean checker passed, but this pull request can't be merged automatically: ${result.why}\n\nSee AGENTS.md for the exact shape of a submission.`);
+    await comment(pr, `The Lean checker passed, but this pull request can't be merged automatically: ${result.why}\n\nSee AGENTS.md for the exact shape of a submission.`);
   }
 } else {
-  // Proposals wait for reviews, so they are re-examined every time. Other pull requests are judged
-  // when their check finishes; the sweep only retries recent ones, to stay well inside the API budget.
+  // Pull requests are judged when their check finishes; the sweep only retries recent ones, to stay
+  // well inside the API budget.
   const recent = Date.now() - 2 * 3600e3;
   for (const pr of await openPulls()) {
-    if (!/^Propose /.test(pr.title) && Date.parse(pr.updated_at) < recent) continue;
+    if (Date.parse(pr.updated_at) < recent) continue;
     try {
       if (!(await checkPassed(pr.head.sha))) continue;
       const result = await evaluate(pr);
