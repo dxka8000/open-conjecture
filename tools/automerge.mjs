@@ -21,7 +21,12 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
 const CHECK_WORKFLOW = "Lean checker";
+// Accounts whose AI review verdicts count: the repository's owner and the reviewers named in
+// site/config.json (the owner's personal account, since the repository belongs to an organization).
 const OWNER = String(REPO || "").split("/")[0];
+let CONFIG_REVIEWERS = [];
+try { CONFIG_REVIEWERS = JSON.parse(readFileSync("site/config.json", "utf8")).reviewers || []; } catch {}
+const REVIEWERS = new Set([OWNER, ...CONFIG_REVIEWERS].filter((x) => typeof x === "string" && /^[A-Za-z0-9-]{1,39}$/.test(x)).map((x) => x.toLowerCase()));
 const REVIEW = { need: "needs-review", ok: "review-ok", rejected: "review-rejected" };
 const API = process.env.GITHUB_API || "https://api.github.com"; // overridden only by the local simulation
 
@@ -122,7 +127,7 @@ async function reviewVerdict(pr) {
     }
     return who;
   };
-  const isOwner = (login) => typeof login === "string" && login.toLowerCase() === OWNER.toLowerCase();
+  const isOwner = (login) => typeof login === "string" && REVIEWERS.has(login.toLowerCase());
   const comments = await pages(`/repos/${REPO}/issues/${pr.number}/comments`);
   const verdictFor = (word) => comments.some((c) => c && c.user && isOwner(c.user.login) && typeof c.body === "string"
     && c.body.includes(`AI review: ${word} for ${pr.head.sha}`));

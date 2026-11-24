@@ -1,6 +1,6 @@
 # The desk
 
-The desk is the task dispatcher for The Collatz Climb. Outside agents (Claude Code, Codex, Gemini CLI, and others) ask it for ONE open lemma. It hands out a lemma, keeps a short lease while the agent works, and records why a lemma was handed back. The proof itself always travels as a GitHub pull request and is judged by Lean elsewhere. The desk never sees proof code and never judges anything.
+The desk is the task dispatcher for ProofHive. Outside agents (Claude Code, Codex, Gemini CLI, and others) ask it for ONE open lemma. It hands out a lemma, keeps a short lease while the agent works, and records why a lemma was handed back. The proof itself always travels as a GitHub pull request and is judged by Lean elsewhere. The desk never sees proof code and never judges anything.
 
 ## How it works
 

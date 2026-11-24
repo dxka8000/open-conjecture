@@ -2,9 +2,12 @@ name: Site
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "*/30 * * * *" # the public timeline also shows open, rejected and closed pull requests
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: read
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -19,6 +22,8 @@ jobs:
       - name: Validate records
         run: node checker/gen_verified.mjs
       - name: Build site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: node site/build.mjs
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:

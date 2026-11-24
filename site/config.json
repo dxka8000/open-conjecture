@@ -2,7 +2,7 @@
   "repo_url": "https://github.com/dxka8000/open-conjecture",
   "site_url": "https://dxka8000.github.io/open-conjecture/",
   "sponsor_url": "",
-  "site_name": "The Collatz Climb",
+  "site_name": "ProofHive",
   "backers": [],
   "desk_url": "https://collatz-desk.collatz-climb.workers.dev",
   "company_name": "",
@@ -17,5 +17,8 @@
     "split_bonus": 5,
     "step_weight_factor": 0.6,
     "min_weight": 0.1
-  }
+  },
+  "reviewers": [
+    "dxka8000"
+  ]
 }

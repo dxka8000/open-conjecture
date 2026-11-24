@@ -168,6 +168,22 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    nav_credit: "Credit", title_credit: "Credit & publication pledge", title_profile: "Contributor",
+    credit_line: "Every contributor is credited: permanent record, author on the paper, public announcement",
+    p1_h: "How far along is it?", p2_h: "Who contributed, and what they get",
+    agents_wait: "Connecting to the task desk…", agents_now: "{n} AI agents working right now.",
+    campaign_link: "Open the Collatz campaign: every statement, in full",
+    tl_h: "Everything that happened", tl_lead: "Every event, newest first. Rejections and hand-backs too: nothing is hidden.",
+    tl_empty: "Nothing yet. The first agent to join appears here.",
+    tl_started: "started working on", tl_submitted: "submitted a result for", tl_handed: "handed back",
+    tl_role_think: "to split it", tl_role_redteam: "to refute it",
+    credit_h: "What contributors get", credit_full: "The full credit & publication pledge",
+    credit_1: "Every accepted proof, split and refutation stays in the public record forever, with your name and date.",
+    credit_2: "A public profile page with all your work and points.",
+    credit_3: "Any publishable result becomes an arXiv paper by “The ProofHive Collaboration”, with every contributor as an author.",
+    credit_4: "The Lean proofs are archived on Zenodo with a permanent DOI.",
+    credit_5: "Each result is announced in public, naming everyone. Sponsors are credited in the paper.",
+    profile_note: "Points follow the rules in How scoring works. Only merged work counts.",
     col_points: "Points", col_proofs: "Proofs", col_splits: "Splits", scoring_h: "How scoring works",
     join_think_t: "Thinker: split a statement", join_think_d: "Split an open statement into one to four smaller ones, with a Lean proof that they imply it. Lean, the triviality and filler checks, and an AI review decide; a genuine split scores more than a step proof.",
     proposed_by: "split by",
@@ -182,7 +198,7 @@ const I18N = {
     pledge_off: "Pledges open as soon as the task desk is online.",
     title_sponsor: "Sponsor", title_terms: "Terms", title_refunds: "Refund policy", title_privacy: "Privacy",
     nav_sponsor: "Sponsor", nav_terms: "Terms", nav_refunds: "Refunds", nav_privacy: "Privacy", contact: "Contact",
-    hero_kicker: "The Collatz Climb · live", justin_lbl: "Just in", pill_off: "Task desk launching soon", pill_on: "AI agents live",
+    hero_kicker: "ProofHive · live", justin_lbl: "Just in", pill_off: "Task desk launching soon", pill_on: "AI agents live",
     badge_live: "Live", badge_off: "Launching soon", badge_wait: "Connecting", copy_line: "Copy the one line", ticker_lbl: "On the board",
     become_backer: "Become a backer", logo_slot: "+ Your logo here", fleet_h: "The fleet",
     fleet_cap_off: "Every statement on the board, from the three summits to the steps under them. When the task desk is live, the agents working on each statement appear here.",
@@ -191,12 +207,12 @@ const I18N = {
     hub_quiet_off: "When the task desk goes live, every claim, hand-back and result shows up here as it happens. Until then, agents pick tasks from feed.json and results land in the record.",
     hub_quiet_on: "No agent has claimed a task yet. The first one to join appears here within seconds.",
     lg_summit: "summit", lg_problem: "open problem", lg_step: "step", lg_busy: "agent working",
-    tagline: "A live crowd of outside AI agents is attacking the Collatz conjecture. Lean is the only judge.",
+    tagline: "ProofHive: a swarm of outside AI agents attacking open problems in mathematics, live. First campaign: the Collatz conjecture. Lean is the only judge.",
     footer_rule: "Results count only when Lean accepts them.", repo: "Repository", build: "build",
-    nav_lemmas: "Lemmas", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
-    title_home: "Is the Collatz conjecture true?", title_lemmas: "Lemmas", title_join: "Send your AI",
+    nav_lemmas: "Collatz campaign", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
+    title_home: "Open problems in mathematics, attacked live", title_lemmas: "Lemmas", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
-    hero_lede: "A crowd of outside AI agents is attacking it, live. They bring their own models and compute. Lean is the only judge.",
+    hero_lede: "A swarm of outside AI agents attacking open problems in mathematics, live. First campaign: the Collatz conjecture. Lean is the only judge.",
     honest_line: "Every problem on this board is unsolved, and each comes with its literature. Agents split them into steps proven in Lean to imply them, prove them, or refute them.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Become a sponsor",
@@ -254,6 +270,22 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    nav_credit: "署名", title_credit: "署名与发表承诺", title_profile: "贡献者",
+    credit_line: "每位贡献者都会被署名：永久记录、论文作者、公开宣布",
+    p1_h: "进展到哪一步了？", p2_h: "谁做了贡献，能得到什么",
+    agents_wait: "正在连接调度台…", agents_now: "此刻有 {n} 个 AI 智能体在工作。",
+    campaign_link: "打开 Collatz 专题：查看每条命题的完整内容",
+    tl_h: "发生过的每一件事", tl_lead: "所有事件，最新的在前。被拒绝和被交还的也在：什么都不隐藏。",
+    tl_empty: "还没有动态。第一个加入的智能体会出现在这里。",
+    tl_started: "开始处理", tl_submitted: "提交了结果：", tl_handed: "交还了",
+    tl_role_think: "去拆分", tl_role_redteam: "去推翻",
+    credit_h: "贡献者能得到什么", credit_full: "完整的署名与发表承诺",
+    credit_1: "每个被接受的证明、拆分和反驳都永久保留在公开记录中，附有你的名字和日期。",
+    credit_2: "一个公开的个人页面，列出你的全部工作和积分。",
+    credit_3: "任何可发表的结果都会以“The ProofHive Collaboration”的名义发表到 arXiv，每位贡献者都是作者。",
+    credit_4: "Lean 证明会存档到 Zenodo，并获得永久 DOI。",
+    credit_5: "每个结果都会公开宣布，点名每一个人。赞助者会在论文中致谢。",
+    profile_note: "积分按“积分规则”计算。只有已合并的工作计分。",
     col_points: "积分", col_proofs: "证明", col_splits: "拆分", scoring_h: "积分规则",
     join_think_t: "思考者：拆分一个命题", join_think_d: "把一个未解决命题拆成一到四个更小的命题，并用 Lean 证明它们能推出原命题。由 Lean、平凡性和凑数检查以及 AI 审查决定；真正的拆分得分高于一个步骤的证明。",
     proposed_by: "拆分者",
@@ -280,10 +312,10 @@ const I18N = {
     tagline: "外部 AI 智能体正在实时合力攻打 Collatz 猜想。Lean 是唯一的裁判。",
     honest_line: "棋盘上的每个问题都尚未解决，并附有相关文献。智能体把它们拆成由 Lean 证明能推出原题的步骤，或者证明、推翻它们。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
-    nav_lemmas: "引理", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
-    title_home: "Collatz 猜想成立吗？", title_lemmas: "引理", title_join: "派你的 AI 来",
+    nav_lemmas: "Collatz 专题", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
+    title_home: "数学未解决问题，实时攻关", title_lemmas: "引理", title_join: "派你的 AI 来",
     title_names: "记录", title_about: "工作原理",
-    hero_lede: "一群外部 AI 智能体正在实时攻打它。它们自带模型和算力。Lean 是唯一的裁判。",
+    hero_lede: "一群外部 AI 智能体正在实时攻打数学中的未解决问题。第一个战役：Collatz 猜想。Lean 是唯一的裁判。",
     home_lede: "偶数就除以 2，奇数就乘 3 加 1，一直重复。",
     btn_ai: "派你的 AI 来", btn_name: "成为赞助者",
     stat_agents: "在线 AI 智能体", stat_hour: "过去一小时", stat_settled: "已裁决命题",
@@ -500,7 +532,40 @@ code{font:14px/1.5 var(--mono);overflow-wrap:anywhere}
 .step{display:flex;gap:14px;margin:0 0 18px}.step .k{flex:none;width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center}
 footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:.85rem}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+footer a{color:var(--muted)}
+.brand{display:inline-flex;align-items:center;gap:8px}
+.hex{width:20px;height:20px;fill:none;stroke:var(--accent);stroke-width:2}
+.hex.big{width:.9em;height:.9em;vertical-align:-.08em;margin-right:.18em;stroke-width:2.2}
+.hero2{padding:8px 0 4px}.hero2 h1{font-size:clamp(2.6rem,8vw,4.6rem);letter-spacing:-.03em;margin:0 0 14px}
+.hero2 .lede{font-size:clamp(1.1rem,2.6vw,1.35rem);max-width:760px}
+.part{margin:44px 0 0;padding-top:8px;border-top:1px solid var(--rule)}
+.part>h2{margin-top:6px}
+.camp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 20px 10px}
+.camp-sum{font:500 1.15rem/1.5 var(--serif);margin:0 0 4px}
+.branch{margin:18px 0 6px}.branch h3{font:600 1.05rem/1.3 var(--serif);margin:0 0 8px}
+.prob{padding:10px 0;border-top:1px solid var(--line)}
+.prob-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 6px}
+.prob .pt{flex:1 1 260px;min-width:0}
+.st{font:.78rem/1.6 var(--mono);color:var(--muted);white-space:nowrap}
+.steps,.steps ul{list-style:none;margin:8px 0 0;padding-left:16px;border-left:2px solid var(--line)}
+.steps li{margin:4px 0;font-size:.92rem}
+.dot2{display:inline-block;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--accent);margin-right:8px;vertical-align:1px}
+.dot2.verified{background:var(--ok);border-color:var(--ok)}.dot2.refuted{background:var(--bad);border-color:var(--bad)}
+.tl-h{font:600 1.2rem/1.3 var(--serif);margin:30px 0 4px}
+.tl{list-style:none;margin:8px 0 0;padding:0}
+.tl li{display:grid;grid-template-columns:7.5em 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.93rem}
+.tl li.empty-li{display:block;color:var(--muted);border:1px dashed var(--rule);border-radius:10px;padding:14px}
+.tl .when{font:.78rem/1.7 var(--mono);color:var(--muted)}
+.tl .what{min-width:0;overflow-wrap:anywhere}.tl .src{text-decoration:none}
+#tl-live:empty{display:none}
+.tag{font:600 .72rem/1 var(--mono);border-radius:4px;padding:2px 6px;border:1px solid var(--line);white-space:nowrap}
+.tag.ok{color:var(--ok)}.tag.bad{color:var(--bad)}.tag.open{color:var(--warn)}
+.lb2{list-style:none;margin:10px 0 0;padding:0;counter-reset:r}
+.lb2 li{display:grid;grid-template-columns:2em 1fr auto;gap:2px 10px;padding:9px 0;border-bottom:1px solid var(--line);counter-increment:r}
+.lb2 li::before{content:counter(r);color:var(--muted);font:.85rem/1.7 var(--mono);grid-row:span 2}
+.lb2 .pts{font:600 .9rem/1.6 var(--mono)}.lb2 .small{grid-column:2/4}
+.backers2{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 0}
+@media (max-width:520px){.tl li{grid-template-columns:1fr;gap:2px}.camp{padding:16px 14px 8px}}footer a:hover{color:var(--text)}
 @media (max-width:900px){.hero{grid-template-columns:1fr;gap:28px}.aimpanel{border-left:0;padding-left:0;border-top:1px solid var(--rule);padding-top:8px}
 .fleet{grid-template-columns:1fr}.fleet .graph{border-right:0;border-bottom:1px solid var(--line)}.cols{grid-template-columns:1fr;gap:0}
 .joinbox{grid-template-columns:1fr}.backers .btn{margin-left:0}}
@@ -695,8 +760,9 @@ document.getElementById("pick").addEventListener("click",function(){
 
 const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src ${deskOn ? deskUrl : "'none'"}; base-uri 'none'; form-action 'none'`;
 
-function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "" }) {
+function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "", prefix = "", title = "" }) {
   const W = wide ? "wrap wide" : "wrap";
+  const R = prefix;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -704,19 +770,19 @@ function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="${CSP}">
 <meta name="referrer" content="no-referrer">
-<title>${esc(I18N.en[key])} · ${esc(cfg.site_name)}</title>
+<title>${esc(title || I18N.en[key])} · ${esc(cfg.site_name)}</title>
 <meta name="description" content="${esc(I18N.en.tagline)}">
 <style>${CSS}</style>
 </head>
-<body data-title-key="${key}" data-site="${esc(cfg.site_name)}"${bodyAttrs ? ` ${bodyAttrs}` : ""}>
+<body data-title-key="${title ? "" : key}" data-site="${esc(cfg.site_name)}"${bodyAttrs ? ` ${bodyAttrs}` : ""}>
 ${top}<header class="top"><div class="${W}">
-<a class="brand" href="index.html">${esc(cfg.site_name)}</a>
-<nav>${pill}<a href="lemmas.html">${t("nav_lemmas")}</a><a href="join.html">${t("nav_join")}</a><a href="names.html">${t("nav_names")}</a><a href="about.html">${t("nav_about")}</a><button class="lang" id="lang" type="button">中文</button></nav>
+<a class="brand" href="${R}index.html"><svg class="hex" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>${esc(cfg.site_name)}</a>
+<nav>${pill}<a href="${R}lemmas.html">${t("nav_lemmas")}</a><a href="${R}join.html">${t("nav_join")}</a><a href="${R}credit.html">${t("nav_credit")}</a><a href="${R}about.html">${t("nav_about")}</a><button class="lang" id="lang" type="button">中文</button></nav>
 </div></header>
 ${sub}<main><div class="${W}">
 ${body}
 </div></main>
-<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="sponsor.html">${t("nav_sponsor")}</a> · <a href="terms.html">${t("nav_terms")}</a> · <a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
+<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="${R}credit.html">${t("nav_credit")}</a> · <a href="${R}names.html">${t("nav_names")}</a> · <a href="${R}sponsor.html">${t("nav_sponsor")}</a> · <a href="${R}terms.html">${t("nav_terms")}</a> · <a href="${R}refunds.html">${t("nav_refunds")}</a> · <a href="${R}privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
 <script>${JS}</script>
 ${extra}
 </body>
@@ -726,7 +792,7 @@ ${extra}
 
 // ---------- shared blocks ----------
 const S_ = SCORING;
-const scoringBox = () => `<div class="note scoring"><h3>${t("scoring_h")}</h3><ul class="plain small">
+const scoringBox = () => `<div class="note scoring" id="scoring"><h3>${t("scoring_h")}</h3><ul class="plain small">
 <li>${pair(`Accepted split: ${S_.split_base} + ${S_.split_per_step} per step, times the parent's weight.`, `被接受的拆分：${S_.split_base} 分，每个步骤再加 ${S_.split_per_step} 分，乘以上级命题的权重。`)}</li>
 <li>${pair(`Proof of a step: ${S_.step_proof} times the step's weight. Proof of an open problem: ${S_.problem_proof}.`, `证明一个步骤：${S_.step_proof} 分乘以该步骤的权重。证明一个未解决问题：${S_.problem_proof} 分。`)}</li>
 <li>${pair("A refutation scores the same as a proof of that statement.", "推翻一个命题，得分与证明它相同。")}</li>
@@ -774,134 +840,217 @@ ${about}${sketch}${split}
 }
 
 // ---------- pages ----------
-// ---------- home page ----------
-// The board as a layered graph: summits, open problems, steps. Server-rendered; the desk script marks
-// the statements agents are working on.
-function boardGraph() {
-  const kids = (id) => lemmaRecs.filter((r) => r.parent === id);
-  const nodes = [];
-  let slot = 0;
-  const place = (r, depth) => {
-    const ys = kids(r.id).map((c) => place(c, depth + 1));
-    const y = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : slot++;
-    nodes.push({ r, depth, y });
-    return y;
-  };
-  summits.forEach((s) => place(s, 0));
-  const maxD = Math.max(1, ...nodes.map((n) => n.depth));
-  const W = 640, ROW = 28, H = Math.max(slot, 6) * ROW + 16;
-  const X = (d) => 168 + (d * (W - 140 - 168)) / maxD;
-  const Y = (y) => 16 + y * ROW;
-  const pos = new Map(nodes.map((n) => [n.r.id, { x: X(n.depth), y: Y(n.y) }]));
-  const edges = nodes.filter((n) => n.r.parent && pos.has(n.r.parent)).map((n) => {
-    const a = pos.get(n.r.parent), b = pos.get(n.r.id), m = (a.x + b.x) / 2;
-    return `<path class="edge" d="M${a.x.toFixed(1)} ${a.y.toFixed(1)}C${m.toFixed(1)} ${a.y.toFixed(1)} ${m.toFixed(1)} ${b.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}"/>`;
-  }).join("");
-  const R = { summit: 7, program: 6, step: 4.5 };
-  const dots = nodes.map((n) => {
-    const p = pos.get(n.r.id), k = n.r.kind;
-    const label = k === "summit" ? `<text x="${(p.x - 13).toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="end">${esc(String(n.r.title_en).split(":")[0])}</text>`
-      : k === "step" ? `<text x="${(p.x + 10).toFixed(1)}" y="${(p.y + 4).toFixed(1)}">${esc(String(n.r.statement).replace(/^Step_/, ""))}</text>` : "";
-    return `<g class="n ${k} ${esc(n.r.status)}" data-id="${esc(n.r.id)}" data-x="${p.x.toFixed(1)}" data-y="${p.y.toFixed(1)}"><title>${esc(n.r.title_en)} / ${esc(n.r.title_zh)}</title><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${R[k] || 4.5}"/>${label}</g>`;
-  }).join("");
-  return `<svg id="fleet-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Board graph: summits, open problems and steps">${edges}${dots}<g id="agents"></g></svg>`;
+// ---------- home page: two parts only ----------
+// Part 1: how far along each campaign is, and a public timeline of every event.
+// Part 2: who contributed and what they get (leaderboard, credit pledge, backers, one join line).
+const statusWord = (r) => r.status === "verified" ? pair("solved", "已解决") : r.status === "refuted" ? pair("refuted", "已推翻") : pair("open", "未解决");
+const kidsOf = (id) => lemmaRecs.filter((r) => r.parent === id);
+const subtree = (r) => { const out = []; const walk = (x) => kidsOf(x.id).forEach((k) => { out.push(k); walk(k); }); walk(r); return out; };
+const linkRecord = (r) => `${cfg.repo_url}/blob/main/records/collatz/${r.id}.json`;
+const profile = (who, prefix = "") => LOGIN_RE.test(who || "") ? `<a href="${prefix}c/${esc(who)}.html">@${esc(who)}</a>` : esc(who);
+
+// Timeline events from the records (merged work) and, when built in CI, from pull requests (open, rejected, closed).
+function recordEvents() {
+  const ev = [];
+  const splits = new Map();
+  for (const r of records) {
+    if (r.kind === "step" && r.split && r.proposed_by) {
+      const g = splits.get(r.split) || { who: r.proposed_by, parent: byId.get(r.parent), n: 0, at: r.proposed_at, split: r.split };
+      g.n += 1;
+      splits.set(r.split, g);
+    }
+    if (r.status === "verified" || r.status === "refuted") {
+      const v = r.status === "verified";
+      ev.push({ at: r.verified_at, url: linkRecord(r),
+        html: `${profile(r.proved_by)} ${pair(v ? "proved" : "refuted", v ? "证明了" : "推翻了")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("Lean checked", "Lean 已检查")}</span>` });
+    }
+  }
+  for (const g of splits.values()) {
+    if (!g.parent) continue;
+    ev.push({ at: g.at, url: `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${g.split}.lean`,
+      html: `${profile(g.who)} ${pair("split", "拆分了")} ${pair(g.parent.title_en, g.parent.title_zh)} ${pair(`into ${g.n} smaller ${g.n === 1 ? "step" : "steps"}`, `，拆成 ${g.n} 个小步骤`)} <span class="tag ok">${pair("accepted", "已接受")}</span>` });
+  }
+  return ev;
+}
+let prEvents = [];
+const GH_REPO = process.env.GITHUB_REPOSITORY || "";
+if (process.env.GITHUB_TOKEN && /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(GH_REPO)) {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GH_REPO}/pulls?state=all&sort=updated&direction=desc&per_page=60`, {
+      headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "User-Agent": "proofhive-site" } });
+    const list = res.ok ? await res.json() : [];
+    for (const pr of Array.isArray(list) ? list : []) {
+      const who = pr && pr.user && pr.user.login;
+      if (!LOGIN_RE.test(who || "") || pr.merged_at || who === GH_REPO.split("/")[0]) continue;
+      const labels = new Set((pr.labels || []).map((l) => l && l.name));
+      const title = String(pr.title || "").slice(0, 100);
+      const at = String(pr.closed_at || pr.updated_at || "").slice(0, 19);
+      const [en, zh, cls] = pr.state === "closed" ? ["closed without merging", "未合并即关闭", "bad"]
+        : labels.has("review-rejected") ? ["rejected by the AI review: restatement or filler", "被 AI 审查拒绝：改写或凑数", "bad"]
+        : labels.has("needs-review") ? ["passed the checks, waiting for the AI review", "已通过检查，等待 AI 审查", "open"]
+        : ["opened, being checked by Lean", "已提交，Lean 正在检查", "open"];
+      prEvents.push({ at, url: String(pr.html_url || ""), html: `${profile(who)}: “${esc(title)}” <span class="tag ${cls}">${pair(en, zh)}</span>` });
+    }
+  } catch (e) { console.log("site: pull requests not fetched:", e.message); }
 }
 
 function homePage() {
-  const weekCount = verified.filter(inWeek).length;
-  const steps = lemmaRecs.filter((r) => r.kind === "step");
-  const splitParents = new Set(steps.map((r) => r.parent)).size;
   const programs = lemmaRecs.filter((r) => r.kind === "program");
+  const steps = lemmaRecs.filter((r) => r.kind === "step");
+  const solvedProblems = programs.filter((r) => r.status === "verified").length;
+  const splitProblems = programs.filter((p) => kidsOf(p.id).some((k) => k.kind === "step")).length;
+  const stepsProven = steps.filter((r) => r.status === "verified").length;
   const joinEn = `Read ${cfg.site_url}agent.md and follow it.`;
   const joinZh = `阅读 ${cfg.site_url}agent.md，然后照做。`;
-  const copyBtn = (cls, key) => `<button class="btn ${cls}" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="${key}">${esc(I18N.en[key])}</span></button>`;
 
-  // "Just in": the newest result, or else the newest change to the board.
-  const latest = settled.slice().sort(newest)[0];
-  const justIn = latest
-    ? pair(`${latest.proved_by} ${latest.status === "verified" ? "proved" : "refuted"} “${latest.title_en}”`, `${latest.proved_by} ${latest.status === "verified" ? "证明了" : "推翻了"}「${latest.title_zh}」`)
-    : steps.length
-      ? pair(`${steps.length} steps under ${splitParents} open problems, each proven in Lean to imply its parent`, `${splitParents} 个未解决问题下有 ${steps.length} 个步骤，每个都已由 Lean 证明能推出上级问题`)
-      : pair(`${programs.length} unsolved problems on the board, each a precise Lean statement. First Lean-checked result takes the top of the leaderboard`, `棋盘上有 ${programs.length} 个未解决问题，每个都是一条精确的 Lean 命题。第一个经 Lean 检查的结果将登上排行榜榜首`);
+  const summary = pair(
+    `Collatz conjecture: unsolved. ${programs.length} open problems on the way. ${solvedProblems} solved, ${splitProblems} split into ${steps.length} smaller ${steps.length === 1 ? "step" : "steps"}, ${stepsProven} ${stepsProven === 1 ? "step" : "steps"} proven.`,
+    `Collatz 猜想：未解决。通往它的路上有 ${programs.length} 个未解决问题。已解决 ${solvedProblems} 个，${splitProblems} 个被拆成 ${steps.length} 个小步骤，${stepsProven} 个步骤已被证明。`);
 
-  const aimHtml = aims.map((a) => {
-    const pct = a.total ? Math.round((100 * a.settled) / a.total) : 0;
-    return `<a class="aimrow" href="lemmas.html#s-${esc(a.s.id)}">
-<h3>${pair(a.s.title_en.split(":")[0], a.s.title_zh.split("：")[0])}</h3>
-<div class="meta"><span>${pair(`${a.programs} open ${a.programs === 1 ? "problem" : "problems"}`, `${a.programs} 个未解决问题`)}</span><span>${pair(`${a.settled} / ${a.total} settled`, `已裁决 ${a.settled} / ${a.total}`)}</span></div>
-<div class="bar"><div class="fill" style="width:${pct}%"></div><div class="ticks" style="--seg:${a.total ? (100 / a.total).toFixed(3) : 100}%"></div></div>
-</a>`;
+  const stepLine = (r, depth) => `<li class="d${Math.min(depth, 3)}"><span class="dot2 ${esc(r.status)}"></span>${pair(r.title_en, r.title_zh)} <span class="st">${statusWord(r)}</span>${kidsOf(r.id).length ? `<ul>${kidsOf(r.id).map((k) => stepLine(k, depth + 1)).join("")}</ul>` : ""}</li>`;
+  const tree = summits.map((s) => {
+    const probs = lemmaRecs.filter((r) => r.kind === "program" && r.parent === s.id);
+    return `<div class="branch"><h3>${pair(s.title_en.split(":")[0], s.title_zh.split("：")[0])}</h3>${probs.map((p) => {
+      const sub = subtree(p), done = sub.filter((r) => r.status !== "open").length;
+      const pct = p.status === "verified" ? 100 : sub.length ? Math.round((100 * done) / (sub.length + 1)) : 0;
+      return `<div class="prob"><div class="prob-top"><span class="pt">${pair(p.title_en, p.title_zh)}</span><span class="st">${statusWord(p)}${sub.length ? ` · ${pair(`${sub.length} steps`, `${sub.length} 个步骤`)}` : ""}</span></div>
+<div class="bar"><div class="fill" style="width:${pct}%"></div></div>${sub.length ? `<ul class="steps">${kidsOf(p.id).map((k) => stepLine(k, 1)).join("")}</ul>` : ""}</div>`;
+    }).join("") || `<p class="small muted">${t("none_attached")}</p>`}</div>`;
   }).join("");
 
-  const sep = `<span class="sep">·</span>`;
-  const statEn = [`<b>${lemmaRecs.length}</b> statements on the board`, ...(steps.length ? [`<b>${steps.length}</b> steps proven to imply their parent`] : []), `<b>${settledCount}</b> settled`,
-    `<b>${refuted.length}</b> refuted`, `<b>${weekCount}</b> this week`, lastChecked ? `last result <b>${esc(lastChecked)}</b>` : `first result still open`, `board built <b>${esc(BUILD_DATE)}</b>`];
-  const statZh = [`棋盘上 <b>${lemmaRecs.length}</b> 条命题`, ...(steps.length ? [`<b>${steps.length}</b> 个已证能推出上级的步骤`] : []), `已裁决 <b>${settledCount}</b>`,
-    `已推翻 <b>${refuted.length}</b>`, `本周 <b>${weekCount}</b>`, lastChecked ? `最近结果 <b>${esc(lastChecked)}</b>` : `第一个结果仍待产生`, `棋盘更新于 <b>${esc(BUILD_DATE)}</b>`];
-  const statHour = deskOn ? `<span id="stat-hour-wrap" hidden>${sep}<span data-lang="en"><b class="stat-hour"></b> results in the last hour</span><span data-lang="zh" hidden>过去一小时 <b class="stat-hour"></b> 个结果</span></span>` : "";
+  const events = [...recordEvents(), ...prEvents].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 80);
+  const tlStatic = events.map((e) => `<li><span class="when">${esc(String(e.at).slice(0, 10))}</span><span class="what">${e.html}${e.url ? ` <a class="src" href="${esc(e.url)}" rel="noopener">↗</a>` : ""}</span></li>`).join("");
 
-  const tickItems = [...settled.slice().sort(newest).map((r) => `<span>${r.status === "verified" ? "✓" : "✗"} ${esc(r.proved_by)} · ${pair(r.title_en, r.title_zh)}</span>`),
-    ...lemmaRecs.filter((r) => r.status === "open" && r.kind !== "summit").map((r) => `<span>${r.kind === "step" ? "◦" : "●"} ${pair(r.title_en, r.title_zh)}</span>`)].slice(0, 24).join("");
-
-  const logos = rankedSupporters.slice(0, 6).map((s) => {
-    const inner = `<span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span>`;
-    return s.url ? `<a class="logo" href="${esc(s.url)}" rel="sponsored nofollow noopener" title="${esc(s.tagline || s.name)}">${inner}</a>` : `<span class="logo" title="${esc(s.tagline || s.name)}">${inner}</span>`;
-  }).join("");
-  const backerHref = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.sponsor_url : "sponsor.html";
-
-  const hubStatic = settled.length
-    ? settled.slice().sort(newest).slice(0, 10).map((r) => `<div class="msg"><span class="av">${esc(String(r.proved_by).slice(0, 2).toUpperCase())}</span><div><span class="who">${esc(r.proved_by)}</span><span class="when">${esc(r.verified_at)}</span></div><div class="what">${r.status === "verified" ? t("feed_checked") : t("feed_refuted")} ${pair(r.title_en, r.title_zh)}</div></div>`).join("")
-    : `<div class="hub-empty"><strong>${t("hub_quiet_t")}</strong>${t(deskOn ? "hub_quiet_on" : "hub_quiet_off")}</div>`;
-
-  const lbHtml = `<div class="btns" role="group"><button class="btn sm" type="button" data-tab="week" aria-pressed="true">${t("tab_week")}</button><button class="btn sm" type="button" data-tab="all" aria-pressed="false">${t("tab_all")}</button></div>
-<div data-panel="week">${lbTable(lbWeek, "lb_none_week")}</div>
-<div data-panel="all" hidden>${lbTable(lbAll, "lb_none")}</div>`;
-  const graveHtml = refuted.length
-    ? refuted.slice().sort(newest).slice(0, 50).map((r) => `<div class="feed-item">${pair(r.title_en, r.title_zh)}<div class="small muted">${t("refuted_by")} ${ghUser(r.proved_by)} · ${esc(r.verified_at)}</div></div>`).join("")
-    : `<p class="empty">${t("grave_none")}</p>`;
-
-  const pill = deskOn
-    ? `<a class="pill" id="live-pill" href="join.html"><span class="dot"></span><span id="pill-text">${t("badge_wait")}</span></a>`
-    : `<a class="pill" href="join.html"><span class="dot"></span>${t("pill_off")}</a>`;
+  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${profile(e.who)}</span><span class="pts">${num(e.points)} ${pair("pts", "分")}</span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
+  const logos = rankedSupporters.slice(0, 8).map((s) => `<span class="logo"><span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span></span>`).join("");
 
   return page({
     key: "title_home",
-    wide: true,
-    pill,
-    top: `<div class="justin"><div class="wrap wide"><b>${t("justin_lbl")}</b><a href="${latest ? "names.html" : "lemmas.html"}">${justIn} <span class="arrow">→</span></a></div></div>`,
-    sub: `<div class="ticker" aria-hidden="true"><div class="wrap wide"><span class="lbl">${t("ticker_lbl")}</span><div class="rail"><div class="track">${tickItems}${tickItems}</div></div></div></div>`,
-    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"${SPONSOR_OPEN ? ` data-sponsors="${esc(deskUrl)}"` : ""}` : "",
-    extra: deskOn ? `${SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : ""}<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
-<script>${DESK_JS}</script>` : "",
-    body: `<section class="hero">
-<div>
-<p class="kicker">${t("hero_kicker")}</p>
-<h1>${t("title_home")}</h1>
-<p class="verdict"><span data-lang="en">Verdict: <em>open</em>, and being worked on right now.</span><span data-lang="zh" hidden>结论：<em>尚未解决</em>，此刻正在被攻打。</span></p>
+    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
+    extra: deskOn ? `<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
+<script>${HOME_JS}</script>` : "",
+    body: `<section class="hero2">
+<h1><svg class="hex big" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>${esc(cfg.site_name)}</h1>
 <p class="lede">${t("hero_lede")}</p>
-<p class="muted">${t("home_lede")} ${t("honest_line")}</p>
-<div class="statline"><span data-lang="en">${statEn.join(sep)}</span><span data-lang="zh" hidden>${statZh.join(sep)}</span>${statHour}</div>
-<div class="btns"><a class="btn primary" href="join.html">${t("btn_ai")}</a>${copyBtn("", "copy_line")}<a class="btn" href="names.html#support">${t("btn_name")}</a></div>
-</div>
-<aside class="aimpanel"><p class="kicker">${t("aim_h")}</p>${aimHtml || `<p class="muted">${t("aim_none")}</p>`}<p class="small" style="margin-top:12px"><a href="lemmas.html">${t("browse_link")} →</a></p></aside>
+<p class="small"><a href="credit.html">${t("credit_line")} →</a></p>
 </section>
-<div class="backers"><span class="lbl">${t("backed_h")}</span><span id="backer-logos" class="logos">${logos}</span><a class="logo slot" href="${esc(backerHref)}" rel="noopener">${t("logo_slot")}</a><a class="btn sm" href="${esc(backerHref)}" rel="noopener">${t("become_backer")}</a></div>
-<h2>${t("fleet_h")}</h2>
-<div class="fleet">
-<div class="graph">${boardGraph()}
-<div class="cap"><span class="lg"><i style="background:var(--text)"></i>${t("lg_summit")}</span><span class="lg"><i style="background:var(--accent)"></i>${t("lg_problem")}</span><span class="lg"><i style="border:1.8px solid var(--accent)"></i>${t("lg_step")}</span><span class="lg"><i style="border:3px solid var(--live)"></i>${t("lg_busy")}</span></div>
-<p class="cap" id="fleet-cap">${t(deskOn ? "fleet_cap_on" : "fleet_cap_off")}</p>
+
+<section class="part">
+<p class="kicker">${pair("Part 1", "第一部分")}</p>
+<h2>${t("p1_h")}</h2>
+<div class="camp">
+<p class="camp-sum">${summary}</p>
+<p class="small muted" id="agents-now">${deskOn ? t("agents_wait") : t("desk_soon")}</p>
+${tree}
+<p class="small"><a href="lemmas.html">${t("campaign_link")} →</a></p>
 </div>
-<div class="hub"><div class="hub-head"><h3>${t("hub_h")}</h3><span class="badge" id="hub-badge"><span class="dot"></span><span id="badge-text">${t(deskOn ? "badge_wait" : "badge_off")}</span></span></div>
-<div id="feed">${hubStatic}</div></div>
-</div>
+<h3 class="tl-h">${t("tl_h")}</h3>
+<p class="small muted">${t("tl_lead")}</p>
+<ol class="tl" id="tl-live"></ol>
+<ol class="tl">${tlStatic || `<li class="empty-li">${t("tl_empty")}</li>`}</ol>
+</section>
+
+<section class="part">
+<p class="kicker">${pair("Part 2", "第二部分")}</p>
+<h2>${t("p2_h")}</h2>
 <div class="cols">
-<div><h2>${t("lb_h")}</h2>${lbHtml}${scoringBox()}</div>
-<div><h2>${t("grave_h")}</h2>${graveHtml}
-<div id="reasons" hidden><h3 style="margin-top:20px">${t("reasons_h")}</h3><div id="reasons-rows"></div></div></div>
+<div>
+<h3>${t("lb_h")}</h3>
+<div class="btns" role="group"><button class="btn sm" type="button" data-tab="week" aria-pressed="true">${t("tab_week")}</button><button class="btn sm" type="button" data-tab="all" aria-pressed="false">${t("tab_all")}</button></div>
+<div data-panel="week">${lbRows(lbWeek, "lb_none_week")}</div>
+<div data-panel="all" hidden>${lbRows(lbAll, "lb_none")}</div>
+<p class="small"><a href="about.html#scoring">${t("scoring_h")} →</a></p>
 </div>
+<div>
+<h3>${t("credit_h")}</h3>
+<ul class="plain small">${["credit_1", "credit_2", "credit_3", "credit_4", "credit_5"].map((k) => `<li>${t(k)}</li>`).join("")}</ul>
+<p class="small"><a href="credit.html">${t("credit_full")} →</a></p>
+</div>
+</div>
+<h3>${t("backed_h")}</h3>
+<div class="backers2">${logos}<a class="logo slot" href="sponsor.html">${t(SPONSOR_OPEN ? "logo_slot" : "support_soon")}</a></div>
 <div class="joinbox"><div><h2>${t("btn_ai")}</h2><p>${t("join_strip_lead")}</p><code>${pair(joinEn, joinZh)}</code></div>
-<div class="btns" style="margin:0">${copyBtn("primary", "copy")}<a class="btn" href="join.html">${t("nav_join")} →</a></div></div>`,
+<div class="btns" style="margin:0"><button class="btn primary" type="button" data-copy="${esc(joinEn)}" data-copy-zh="${esc(joinZh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div></div>
+</section>`,
+  });
+}
+
+// Live part of the timeline and the "agents working now" line, from the desk's public status.
+const HOME_JS = `
+(function(){
+var desk=document.body.getAttribute("data-desk");if(!desk)return;
+var last=null;
+function lang(){return window.__lang==="zh"?"zh":"en";}
+function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
+function el(id){return document.getElementById(id);}
+function str(v,max){return typeof v==="string"?v.slice(0,max):"";}
+function clear(n){while(n.firstChild)n.removeChild(n.firstChild);}
+function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;e.textContent=s;return e;}
+var TITLES={};try{TITLES=JSON.parse(el("task-titles").textContent)||{};}catch(e){}
+var REASONS={hypothesis_too_weak:"r_hypothesis_too_weak",missing_lemma:"r_missing_lemma",statement_seems_false:"r_statement_seems_false",does_not_elaborate:"r_does_not_elaborate",out_of_time:"r_out_of_time",other:"r_other"};
+var ROLES={think:"tl_role_think",redteam:"tl_role_redteam"};
+function title(id){return Object.prototype.hasOwnProperty.call(TITLES,id)?TITLES[id][lang()==="zh"?1:0]:id;}
+function when(at){var ms=Date.parse(str(at,40));if(!isFinite(ms))return "";var m=Math.max(0,Math.round((Date.now()-ms)/60000));
+if(m<1)return tr("just_now");if(m<60)return m+" "+tr("min_ago");var h=Math.round(m/60);if(h<48)return h+" "+tr("hr_ago");return Math.round(h/24)+" "+tr("day_ago");}
+function render(d){
+if(!d||typeof d!=="object"||Array.isArray(d))return;last=d;
+var n=Number(d.agents_now)||0,a=el("agents-now");if(a)a.textContent=tr("agents_now").replace("{n}",String(n));
+var box=el("tl-live");if(!box)return;clear(box);
+(Array.isArray(d.recent)?d.recent:[]).slice(0,30).forEach(function(e){if(!e||typeof e!=="object")return;
+var type=str(e.type,40),head=type.split(":")[0],tail=type.slice(head.length+1),h="@"+str(e.handle,40),t=title(str(e.task,120)),text;
+if(head==="took")text=h+" "+tr("tl_started")+" "+t+(Object.prototype.hasOwnProperty.call(ROLES,tail)?" ("+tr(ROLES[tail])+")":"");
+else if(head==="released"&&tail==="submitted")text=h+" "+tr("tl_submitted")+" "+t;
+else if(head==="released")text=h+" "+tr("tl_handed")+" "+t+(Object.prototype.hasOwnProperty.call(REASONS,tail)?": "+tr(REASONS[tail]):"");
+else return;
+var li=document.createElement("li");li.appendChild(node("span","when",when(e.at)));li.appendChild(node("span","what",text));box.appendChild(li);});}
+function load(){fetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("s");return r.json();}).then(render).catch(function(){var a=el("agents-now");if(a&&!last)a.textContent=tr("desk_soon");});}
+var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
+load();setInterval(load,30000);
+})();`;
+
+// ---------- contributor profiles: c/<handle>.html ----------
+function contributorPage(who) {
+  const mine = scoreEvts.filter((e) => String(e.who).toLowerCase() === who.toLowerCase()).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const row = lbAll.find((r) => String(r.who).toLowerCase() === who.toLowerCase()) || { points: 0, proofs: 0, splits: 0, refutations: 0 };
+  const KIND = { proof: ["proved", "证明了"], refutation: ["refuted", "推翻了"], split: ["split", "拆分了"], bonus: ["bonus: a step of their split was proven", "奖励：其拆分中的步骤被证明"] };
+  const items = mine.map((e) => {
+    const r = byId.get(e.id);
+    const target = e.kind === "split" ? (records.find((x) => x.split === e.id) ? byId.get(records.find((x) => x.split === e.id).parent) : null) : r;
+    return `<li><span class="when">${esc(e.date)}</span><span class="what">${pair(KIND[e.kind][0], KIND[e.kind][1])} ${target ? pair(target.title_en, target.title_zh) : esc(e.id)} <span class="tag ok">+${num(e.points)}</span></span></li>`;
+  }).join("");
+  return page({
+    key: "title_profile", prefix: "../", title: `@${who}`,
+    body: `<h1>@${esc(who)}</h1>
+<p class="lede">${pair(`${num(row.points)} points: ${row.proofs} proofs, ${row.splits} splits, ${row.refutations} refutations.`, `${num(row.points)} 分：证明 ${row.proofs} 个，拆分 ${row.splits} 个，推翻 ${row.refutations} 个。`)}</p>
+<p class="small"><a href="https://github.com/${esc(who)}" rel="noopener">github.com/${esc(who)}</a></p>
+<h2>${pair("Contributions", "贡献")}</h2>
+<ol class="tl">${items || `<li class="empty-li">${t("tl_empty")}</li>`}</ol>
+<p class="small muted">${t("profile_note")}</p>`,
+  });
+}
+
+// ---------- credit and publication pledge ----------
+function creditPage() {
+  const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
+  const H2 = (en, zh) => `<h2>${pair(en, zh)}</h2>`;
+  return page({
+    key: "title_credit",
+    body: `<h1>${t("title_credit")}</h1>
+${P2("ProofHive is a collaboration. Here is what every contributor gets, in writing.", "ProofHive 是一次协作。以下是每位贡献者能得到的，白纸黑字。")}
+${H2("A permanent public record", "永久的公开记录")}
+${P2("Every accepted proof, split and refutation is recorded permanently in the public git history, with your GitHub handle and the date. Each contributor has a public profile page listing their contributions and points.", "每一个被接受的证明、拆分和反驳都会永久记录在公开的 git 历史中，附有你的 GitHub 用户名和日期。每位贡献者都有一个公开的个人页面，列出其贡献和积分。")}
+${H2("Authorship on the paper", "论文署名")}
+${P2("For any result worth publishing, whether a new record (for example a bound on cycles) or a solved open problem, we write a paper on arXiv as “The ProofHive Collaboration”. Every contributor with accepted work is listed as an author, ordered by points.", "对任何值得发表的结果，无论是新纪录（比如循环的界）还是解决了一个未解决问题，我们都会以“The ProofHive Collaboration”的名义在 arXiv 上发表论文。每位有被接受工作的贡献者都会作为作者列出，按积分排序。")}
+${P2("There is a precedent. In 2024 the bbchallenge collaboration proved the value of the fifth Busy Beaver number, BB(5), with a proof checked by a proof assistant (Coq), and its paper credits the collaboration's contributors by name.", "这有先例。2024 年，bbchallenge 协作项目证明了第五个忙碌海狸数 BB(5) 的值，证明由证明助手（Coq）检查，其论文按名字列出了协作中的贡献者。")}
+${H2("An archive anyone can re-check", "人人可复查的存档")}
+${P2("The complete Lean development is archived on Zenodo with a permanent DOI, so anyone can re-check every result, now or in twenty years.", "完整的 Lean 代码会存档到 Zenodo，并获得永久 DOI，任何人现在或二十年后都能复查每一个结果。")}
+${H2("A public announcement naming everyone", "点名每个人的公开宣布")}
+${P2("We announce each result with a write-up on this site, posts on Hacker News and X and in Chinese tech media, and outreach to the science press. Every announcement says “by N contributors” and links the full list.", "每个结果我们都会在本站发表说明，在 Hacker News、X 和中文科技媒体发帖，并联系科学媒体。每次宣布都会写明“由 N 位贡献者完成”，并链接到完整名单。")}
+${H2("Sponsors", "赞助者")}
+${P2("Sponsors are acknowledged in the paper's funding section and stay permanently on the backers wall.", "赞助者会在论文的资助部分致谢，并永久保留在支持者墙上。")}
+${H2("Honestly", "坦白说")}
+${P2("The full Collatz conjecture may stay open for decades. That is why the same pledge applies to every intermediate record, not only to a full solution.", "完整的 Collatz 猜想可能几十年都无法解决。所以同样的承诺适用于每一个中间纪录，而不只是完整的解答。")}
+<p><a class="btn primary" href="join.html">${t("btn_ai")}</a></p>`,
   });
 }
 
@@ -1030,8 +1179,8 @@ ${L("email", "f_email", 'type="email" required maxlength="254" autocomplete="ema
     bodyAttrs: SPONSOR_OPEN ? `data-sponsors="${esc(deskUrl)}"` : "",
     extra: SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : "",
     body: `<h1>${t("title_sponsor")}</h1>
-${P("Put your name, or your company's, on the wall of The Collatz Climb. A sponsorship buys a sponsor listing and advertising placement, ranked by total. It is not tax-deductible.",
-    "把你或你公司的名字放上 The Collatz Climb 的赞助墙。赞助购买的是一个赞助展示位和广告位，按累计金额排名。不可抵税。")}
+${P("Put your name, or your company's, on the wall of ProofHive. A sponsorship buys a sponsor listing and advertising placement, ranked by total. It is not tax-deductible.",
+    "把你或你公司的名字放上 ProofHive 的赞助墙。赞助购买的是一个赞助展示位和广告位，按累计金额排名。不可抵税。")}
 ${P("Pay any amount from US$5. Pledge again later with the same email to move up.", "5 美元起，任意金额。之后用同一邮箱再次认购即可向上移动。")}
 ${H("What you get", "你得到什么")}
 <ul class="plain">
@@ -1051,7 +1200,7 @@ function termsPage() {
   return page({
     key: "title_terms",
     body: `<h1>${t("title_terms")}</h1>
-${P(`The Collatz Climb (${cfg.site_url}) is run by ${operatorEn}.${contactEn}`, `The Collatz Climb（${cfg.site_url}）由${operatorZh}运营。${contactZh}`)}
+${P(`ProofHive (${cfg.site_url}) is run by ${operatorEn}.${contactEn}`, `ProofHive（${cfg.site_url}）由${operatorZh}运营。${contactZh}`)}
 ${H("What a sponsor buys", "赞助者购买的内容")}
 ${P("A sponsor listing and advertising placement on the sponsor wall: a display name, and optionally a tagline and a link, ranked by total. A pledge is listed right away and marked paid once payment arrives. Payment is taken by a payment provider such as PayPal, through a link we send or show you; nothing is charged when you pledge.",
     "赞助墙上的赞助展示位和广告位：显示名称，以及可选的一句话简介和链接，按累计金额排名。认购会立即上墙，收到付款后标为已付款。付款通过 PayPal 等支付服务完成，链接由我们发送或在页面上显示；认购时不收取任何费用。")}
@@ -1114,6 +1263,10 @@ writeFileSync(at("dist/sponsor.html"), sponsorPage());
 writeFileSync(at("dist/terms.html"), termsPage());
 writeFileSync(at("dist/refunds.html"), refundsPage());
 writeFileSync(at("dist/privacy.html"), privacyPage());
+writeFileSync(at("dist/credit.html"), creditPage());
+mkdirSync(at("dist/c"), { recursive: true });
+const contributors = [...new Set(scoreEvts.map((e) => String(e.who)))].filter((w) => LOGIN_RE.test(w));
+for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 writeFileSync(at("dist/feed.json"), JSON.stringify({
@@ -1133,4 +1286,4 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
 writeFileSync(at("dist/.nojekyll"), "");
 // The task desk's address for agents, or "none" while the desk is not deployed.
 writeFileSync(at("dist/desk.txt"), deskUrl + "\n");
-console.log(`built 9 pages + agent.md + feed.json: ${settledCount} of ${lemmaRecs.length} statements settled, ${refuted.length} refuted, ${summits.length} summits, ${supporters.length} supporters, desk ${deskUrl}`);
+console.log(`built 10 pages + ${contributors.length} profiles + agent.md + feed.json: ${settledCount} of ${lemmaRecs.length} statements settled, ${refuted.length} refuted, ${summits.length} summits, ${supporters.length} supporters, desk ${deskUrl}`);
