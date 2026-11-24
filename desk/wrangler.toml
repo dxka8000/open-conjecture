@@ -13,3 +13,4 @@ new_sqlite_classes = ["DeskDO"]
 [vars]
 SITE = "https://proofhive.github.io"
 LEMMAS_URL = "https://raw.githubusercontent.com/proofhive/proofhive.github.io/main/OpenConjecture/Collatz/Lemmas.lean"
+DESK_ORIGIN = "https://collatz-desk.collatz-climb.workers.dev"

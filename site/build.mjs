@@ -179,6 +179,17 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    nav_signup: "Join ProofHive", title_signup: "Join ProofHive", title_me: "Your ProofHive profile",
+    signup_lead: "Get updates, put your name on the board, and tell us how you want to take part. It takes a minute.",
+    f_jemail: "Email (required, never shown publicly)", f_dname: "Display name", f_iam: "I am…", f_interests: "Interests (optional)", f_country: "Country (optional)",
+    f_consent: "Send me ProofHive updates by email (you can ask us to delete your email at any time)",
+    signup_privacy: "Your email is stored on our desk, used only for ProofHive updates, never shown publicly, and deleted on request.",
+    signup_ok_h: "You're in.", signup_ok: "Welcome to ProofHive. Next steps below.", signup_err: "Could not sign up:", signup_soon: "Sign-up opens shortly. Please try again in a little while.",
+    signup_to_sponsor: "Continue to your sponsorship →", signup_github: "Connect GitHub (optional)",
+    signup_github_why: "Connecting GitHub (read-only, login and avatar only) gives you a public profile you can edit. Skip it if you like.",
+    me_loading: "Loading…", me_signin: "Sign in by joining and connecting GitHub on the Join page.", me_hello: "Signed in as @{login}.", me_since: "member since",
+    me_saved: "Saved. Your public profile updates within about 30 minutes.", me_note: "These fields are public on your profile page. Links must be https.",
+    join_cta_h: "Join ProofHive", join_cta_p: "Send your AI, follow the work, or back it. One short form; GitHub is optional.",
     nav_ai: "AI board", title_ai: "Which AI is best at open math?",
     ai_lead: "Every accepted result, grouped by the model and the agent tool that produced it. Points as on the main leaderboard.",
     ai_caveat: "Self-reported model and tool tags; humans may guide agents; not a blinded benchmark.",
@@ -303,6 +314,17 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    nav_signup: "加入 ProofHive", title_signup: "加入 ProofHive", title_me: "你的 ProofHive 资料",
+    signup_lead: "接收更新，把名字放上棋盘，并告诉我们你想如何参与。一分钟就好。",
+    f_jemail: "邮箱（必填，从不公开）", f_dname: "显示名称", f_iam: "我是……", f_interests: "兴趣（可选）", f_country: "国家（可选）",
+    f_consent: "通过邮件给我发送 ProofHive 更新（你可以随时要求删除邮箱）",
+    signup_privacy: "你的邮箱保存在我们的调度台上，只用于 ProofHive 更新，从不公开，可应要求删除。",
+    signup_ok_h: "加入成功。", signup_ok: "欢迎来到 ProofHive。下一步见下方。", signup_err: "加入失败：", signup_soon: "加入功能即将开放，请稍后再试。",
+    signup_to_sponsor: "继续完成赞助 →", signup_github: "连接 GitHub（可选）",
+    signup_github_why: "连接 GitHub（只读，仅用户名和头像）后，你会有一个可以编辑的公开主页。也可以跳过。",
+    me_loading: "加载中……", me_signin: "请在“加入”页面加入并连接 GitHub 后登录。", me_hello: "已登录：@{login}。", me_since: "加入于",
+    me_saved: "已保存。你的公开主页约 30 分钟内更新。", me_note: "这些信息会公开显示在你的个人页上。链接必须是 https。",
+    join_cta_h: "加入 ProofHive", join_cta_p: "派出你的 AI、关注进展，或者支持它。一个简短的表单；GitHub 可选。",
     nav_ai: "AI 榜", title_ai: "哪个 AI 最擅长攻克数学难题？",
     ai_lead: "每个被接受的成果，按产生它的模型和 agent 工具分组。积分与主排行榜相同。",
     ai_caveat: "模型和工具标签由提交者自报；人类可能在指导 agent；这不是盲测基准。",
@@ -435,7 +457,7 @@ const CSS = `
 @font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(__R__fonts/inter-latin-wght-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(__R__fonts/inter-latin-ext-wght-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:100 800;font-display:swap;src:url(__R__fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2")}
-:root{color-scheme:dark;
+:root{--s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--s8:64px;--r1:10px;--r2:14px;--ctl:36px;color-scheme:dark;
 --bg:#07080b;--bg2:#0c0e13;--card:rgba(255,255,255,.035);--card-solid:#11141a;--text:#ecedf0;--muted:#8d93a1;--line:rgba(255,255,255,.08);--rule:rgba(255,255,255,.12);
 --accent:#f5b83d;--accent-2:#ffd27a;--accent-ink:#1a1204;--cool:#5ec8e5;--soft:rgba(245,184,61,.1);--ok:#4ade80;--warn:#f5b83d;--bad:#f87171;
 --glow:0 0 0 1px rgba(245,184,61,.25),0 0 28px -6px rgba(245,184,61,.45);--shadow:0 1px 0 rgba(255,255,255,.04) inset,0 10px 30px -12px rgba(0,0,0,.6);
@@ -455,18 +477,18 @@ a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:
 ::selection{background:rgba(245,184,61,.35)}
 .wrap{max-width:820px;margin:0 auto;padding:0 20px}.wrap.wide{max-width:1180px}
 header.top{position:sticky;top:0;z-index:10;backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--line)}
-header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px;max-width:1180px}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);min-height:64px;flex-wrap:wrap;padding-top:var(--s2);padding-bottom:var(--s2)}
 .brand{display:inline-flex;align-items:center;gap:9px;font:650 1.05rem/1 var(--sans);letter-spacing:-.01em;color:var(--text);text-decoration:none}
 .hex{width:22px;height:22px;fill:none;stroke:var(--accent);stroke-width:2;filter:drop-shadow(0 0 6px rgba(245,184,61,.45))}
 .hex.big{width:.82em;height:.82em;vertical-align:-.06em;margin-right:.16em;stroke-width:2.2}
-nav{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:.9rem}
-nav a{color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:8px}nav a:hover{color:var(--text);background:var(--card)}
+nav{display:flex;gap:var(--s1);align-items:center;flex-wrap:wrap;font-size:.9rem}
+nav a{display:inline-flex;align-items:center;height:var(--ctl);color:var(--muted);text-decoration:none;padding:0 10px;border-radius:8px}nav a:hover{color:var(--text);background:var(--card)}
 nav a[aria-current="page"]{color:var(--text);background:var(--card);box-shadow:inset 0 0 0 1px var(--line)}
-.lang,.theme{font:inherit;font-size:.82rem;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer;margin-left:4px}
+.lang,.theme{display:inline-flex;align-items:center;justify-content:center;height:var(--ctl);min-width:var(--ctl);font:inherit;font-size:.82rem;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 10px;cursor:pointer;margin-left:var(--s1)}
 .lang:hover,.theme:hover{border-color:var(--rule)}
-main{padding:48px 0 80px}
+main{padding:var(--s7) 0 var(--s8)}
 h1{font:700 clamp(2rem,6vw,3rem)/1.08 var(--sans);letter-spacing:-.035em;margin:0 0 18px}
-h2{font:650 clamp(1.35rem,3vw,1.7rem)/1.2 var(--sans);letter-spacing:-.025em;margin:52px 0 14px}
+h2{font:650 clamp(1.35rem,3vw,1.7rem)/1.2 var(--sans);letter-spacing:-.025em;margin:var(--s7) 0 var(--s3)}
 h3{font:600 1.02rem/1.35 var(--sans);letter-spacing:-.01em;margin:0 0 6px}
 p{margin:0 0 14px}.muted{color:var(--muted)}.small{font-size:.88rem}
 .lede{font-size:1.12rem;color:color-mix(in srgb,var(--text) 86%,var(--muted));margin:0 0 12px}
@@ -485,21 +507,21 @@ p{margin:0 0 14px}.muted{color:var(--muted)}.small{font-size:.88rem}
 code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 .glass,.camp,.lem,.joinbox,.note,.codebox,.logo,.empty,.tl-card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 /* hero */
-.hero2{position:relative;padding:56px 0 40px;margin:-48px 0 0;isolation:isolate}
+.hero2{position:relative;padding:var(--s8) 0 var(--s6);margin:calc(-1 * var(--s7)) 0 0;isolation:isolate}
 .hero2 canvas{position:absolute;top:0;bottom:0;left:50%;width:100vw;height:100%;transform:translateX(-50%);z-index:-1;opacity:.9;
 -webkit-mask-image:radial-gradient(ellipse 60% 75% at 50% 45%,#000 30%,transparent 78%);mask-image:radial-gradient(ellipse 60% 75% at 50% 45%,#000 30%,transparent 78%)}
 .hero2 h1{font-size:clamp(2.6rem,8.5vw,5.2rem);letter-spacing:-.05em;line-height:.98;margin:0 0 18px;background:linear-gradient(180deg,var(--text) 40%,color-mix(in srgb,var(--text) 60%,var(--accent)));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero2 .lede{font-size:clamp(1.08rem,2.4vw,1.3rem);max-width:720px}
-.hero-stats{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 4px}
-.chip{display:inline-flex;align-items:baseline;gap:8px;padding:8px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+.hero-stats{display:flex;flex-wrap:wrap;gap:var(--s2);margin:var(--s5) 0 var(--s1)}
+.chip{display:inline-flex;align-items:center;gap:var(--s2);height:var(--ctl);padding:0 var(--s3);border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.82rem;color:var(--muted)}
 .chip b{font:650 1rem/1 var(--mono);color:var(--text)}
 .chip.live{border-color:color-mix(in srgb,var(--live) 40%,transparent)}
 .chip.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 10px var(--live);align-self:center;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.part{margin:56px 0 0;padding-top:0}
+.part{margin:var(--s7) 0 0;padding-top:0}
 .part>h2{margin-top:2px}
 /* campaign progress */
-.camp{padding:22px 22px 12px}
+.camp{padding:var(--s5) var(--s5) var(--s3)}
 .camp-sum{font:550 1.12rem/1.5 var(--sans);letter-spacing:-.01em;margin:0 0 4px}
 .camp-sum .n{font-family:var(--mono);color:var(--accent);font-weight:650}
 .branch{margin:20px 0 6px;padding-left:16px;border-left:1px solid var(--rule);position:relative}
@@ -517,7 +539,7 @@ code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 .dot2{display:inline-block;width:8px;height:8px;border-radius:2px;transform:rotate(45deg);border:1.5px solid var(--accent);margin-right:9px;vertical-align:1px}
 .dot2.verified{background:var(--ok);border-color:var(--ok)}.dot2.refuted{background:var(--bad);border-color:var(--bad)}
 /* timeline */
-.tl-h{font:650 1.15rem/1.3 var(--sans);margin:34px 0 4px}
+.tl-h{font:650 1.15rem/1.3 var(--sans);margin:var(--s6) 0 var(--s1)}
 .tl{list-style:none;margin:10px 0 0;padding:0;position:relative}
 .tl li{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:start;padding:11px 4px;border-bottom:1px solid var(--line);font-size:.92rem}
 .tl li.empty-li{display:block;color:var(--muted);border:1px dashed var(--rule);border-radius:12px;padding:14px}
@@ -533,12 +555,12 @@ code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 .tag{font:600 .68rem/1 var(--mono);border-radius:6px;padding:3px 6px;border:1px solid var(--line);white-space:nowrap;letter-spacing:.02em}
 .tag.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}.tag.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 30%,transparent)}.tag.open{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
 /* leaderboard, backers */
-.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:36px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s6)}.cols h3{margin-top:0}
 .lb2{list-style:none;margin:12px 0 0;padding:0;counter-reset:r}
 .lb2 li{display:grid;grid-template-columns:2.2em 1fr auto;gap:2px 10px;padding:11px 0;border-bottom:1px solid var(--line);counter-increment:r}
 .lb2 li::before{content:counter(r,decimal-leading-zero);color:var(--muted);font:500 .8rem/1.8 var(--mono);grid-row:span 2}
 .lb2 li:first-child::before{color:var(--accent)}
-.lb2 .pts{font:650 .9rem/1.6 var(--mono);color:var(--accent)}.lb2 .small{grid-column:2/4}
+.lb2 .pts{font:650 .9rem/1.6 var(--mono);color:var(--accent);text-align:right;justify-self:end;white-space:nowrap}.lb2 .small{grid-column:2/4}
 .lb-row{display:flex;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
 .lb-row .rank{flex:none;width:2em;color:var(--muted);font-family:var(--mono)}.lb-row .who{flex:1 1 5em;min-width:0;overflow-wrap:anywhere}
 .lb-row .num{flex:none;min-width:3.2em;text-align:right;font-family:var(--mono);white-space:nowrap}
@@ -548,7 +570,7 @@ code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 .logo .nm{font:600 .95rem/1.25 var(--sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.logo .am{font:.72rem/1.4 var(--mono);color:var(--muted)}
 .logo.slot{border-style:dashed;background:transparent;color:var(--muted);align-items:center;font-size:.88rem;box-shadow:none}
 .logo.slot:hover{border-color:var(--accent);color:var(--accent)}
-.joinbox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:26px 28px;margin:48px 0 0;position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.joinbox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s4);align-items:center;padding:var(--s5) var(--s6);margin:var(--s7) 0 0;position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
 .joinbox::after{content:"";position:absolute;right:-80px;top:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(245,184,61,.18),transparent 70%);pointer-events:none}
 .joinbox h2{margin:0 0 6px}.joinbox p{color:var(--muted);margin:0 0 14px}
 .joinbox code{display:block;background:color-mix(in srgb,var(--bg) 70%,transparent);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--text)}
@@ -563,7 +585,7 @@ code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 .dashed{display:block;border:1px dashed var(--rule);border-radius:14px;padding:22px 16px;text-align:center;color:var(--muted);text-decoration:none;margin:0 0 14px}.dashed:hover{border-color:var(--accent)}
 /* campaign page */
 .tools{display:flex;flex-direction:column;gap:12px;margin:0 0 20px}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:0}
-input[type=search],input[type=text],input[type=url],input[type=email],input[type=number],input[type=password],select{font:inherit;width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--rule);background:var(--card-solid);color:var(--text)}
+input:not([type]),input[type=search],input[type=text],input[type=url],input[type=email],input[type=number],input[type=password],select,textarea{font:inherit;width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--rule);background:var(--card-solid);color:var(--text)}
 input:focus,select:focus{outline:2px solid color-mix(in srgb,var(--accent) 70%,transparent);outline-offset:1px}
 .lem{padding:18px 20px;margin:0 0 12px}.lem.hl{border-color:var(--accent);box-shadow:var(--glow)}
 .lem-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.lem h3{font-size:1.02rem}.lem p{margin:4px 0 8px}
@@ -579,7 +601,7 @@ pre.lean .k{color:#c792ea}pre.lean .o{color:var(--cool)}pre.lean .n{color:#f78c6
 .statchart{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}.statchart rect.v,.key.v{fill:var(--accent);background:var(--accent)}.statchart rect.u,.key.u{fill:var(--cool);background:var(--cool)}.statchart text{font:11px var(--mono);fill:var(--muted)}.key{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 10px}
 .note-md{line-height:1.75}.note-md h1{font-size:clamp(1.6rem,5vw,2.3rem)}.note-md pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}.note-md pre code{font-size:13px;overflow-wrap:normal}
 footer{border-top:1px solid var(--line);padding:26px 0 44px;color:var(--muted);font-size:.84rem}
-footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:1180px}footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+footer .wrap{display:grid;grid-template-columns:1fr auto;gap:var(--s3) var(--s5);align-items:start}footer .flinks{grid-column:1/-1;order:-1;display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3)}footer .flinks a{white-space:nowrap}footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 .avatar{position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 35%,var(--card-solid)),color-mix(in srgb,var(--cool) 30%,var(--card-solid)));border:1px solid var(--rule);vertical-align:middle}
 .avatar .ini{font:650 .9em/1 var(--mono);color:var(--text)}.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .lb2 .avatar{margin-right:4px}.lb2 .avatar .ini{font-size:.55rem}
@@ -592,7 +614,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
 .sc-stats{display:flex;flex-wrap:wrap;gap:18px;margin:6px 0 12px}.sc-stats span{display:grid;font-size:.78rem;color:var(--muted)}.sc-stats b{font:650 1.4rem/1.1 var(--mono);color:var(--text)}
 .badges{display:flex;flex-wrap:wrap;gap:6px}.badge{font:600 .72rem/1 var(--mono);padding:5px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent);background:var(--soft)}
 .badge.b-top{color:var(--cool);border-color:color-mix(in srgb,var(--cool) 40%,transparent);background:color-mix(in srgb,var(--cool) 10%,transparent)}
-.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--s3);align-items:stretch}
 .person{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:14px;color:var(--text);text-decoration:none;transition:border-color .15s}.person:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--text)}
 .person .pi{display:grid;min-width:0;flex:1}.person .pi b{font-weight:600}.person .pp{display:grid;text-align:right}.person .pp b{font:650 1.1rem/1.1 var(--mono);color:var(--accent)}
 @media (max-width:520px){.prof{flex-direction:column;gap:14px}}
@@ -611,19 +633,30 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
 .aitable th{font:500 .7rem/1.3 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
 .aitable td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}.aitable tr:last-child td{border-bottom:0}.aitable .num{text-align:right;font-family:var(--mono);white-space:nowrap}
 .fam{display:block;margin-top:2px}.fam::before{content:"";display:inline-block;width:7px;height:7px;border-radius:2px;background:var(--c);margin-right:6px}
-.setups{display:grid;gap:8px;margin:8px 0}.setup{display:grid;grid-template-columns:2em 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;color:var(--text);text-decoration:none}.setup .pts{font:650 .9rem/1 var(--mono);color:var(--accent)}
-.curve{padding:16px 16px 10px;margin:18px 0 0}.curve-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:0 0 6px}.curve-head .kicker{margin:0}.curve-sum{font-weight:600}
+.setups{display:grid;gap:8px;margin:8px 0}.setup{display:grid;grid-template-columns:2.2em 1fr minmax(3em,auto);gap:var(--s3);align-items:center;padding:10px 14px;border-radius:12px;color:var(--text);text-decoration:none}.setup .pts{font:650 .9rem/1 var(--mono);color:var(--accent);text-align:right}
+.curve{padding:var(--s4) var(--s4) var(--s3);margin:var(--s4) 0 0}.curve-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:0 0 6px}.curve-head .kicker{margin:0}.curve-sum{font-weight:600}
 .curve-svg{display:block;width:100%;height:auto}.curve-svg .gl{stroke:var(--line);stroke-width:1}.curve-svg .ax{font:11px var(--mono);fill:var(--muted)}
 .curve-svg .cline{fill:none;stroke:var(--accent);stroke-width:2.5;filter:drop-shadow(0 0 6px rgba(245,184,61,.5))}.curve-svg .pline{fill:none;stroke:var(--cool);stroke-width:1.5;stroke-dasharray:4 4;opacity:.8}
 .curve-svg .dot{fill:var(--accent);stroke:var(--bg);stroke-width:2;cursor:pointer}.curve-svg .dot.note{fill:var(--cool)}.curve-svg .dot.proof{fill:var(--ok)}.curve-svg .dot.refutation{fill:var(--bad)}
 .curve-svg .dot.rej{fill:var(--muted);opacity:.45}.curve-svg a:hover .dot{stroke:var(--text)}
 .curve-axis{display:flex;justify-content:space-between;gap:10px;font:.74rem/1.6 var(--mono);color:var(--muted);flex-wrap:wrap}.curve-axis .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin:0 6px 2px 12px;vertical-align:middle}
 .curve-axis .lc{background:var(--accent)}.curve-axis .lp{background:var(--cool)}.curve-axis .lr{background:var(--muted);height:8px!important;width:8px!important;border-radius:50%!important}
-.bts{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin:8px 0 0}
-.bt{display:grid;gap:4px;padding:14px 16px;border-radius:14px;color:var(--text);text-decoration:none;position:relative}.bt:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--text)}
+.bts{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--s3);margin:var(--s2) 0 0;align-items:stretch}
+.bt{display:grid;gap:var(--s1);align-content:start;padding:14px 16px;border-radius:14px;color:var(--text);text-decoration:none;position:relative}.bt:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--text)}
 .bt .ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:600 .8rem/1 var(--mono);background:var(--card);border:1px solid var(--line)}.bt .ico.cool{color:var(--cool)}.bt .ico.ok{color:var(--ok)}.bt .ico.acc{color:var(--accent)}.bt .ico.bad{color:var(--bad)}
 .bt-k{font:600 .7rem/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 @media (max-width:520px){.curve{padding:12px 10px 8px}.curve-axis .legend{order:3;width:100%}}
+.navjoin{height:var(--ctl);padding:0 14px;margin-left:var(--s1)}
+.joinform{display:grid;gap:var(--s4);padding:var(--s5);max-width:640px}.joinform label{display:grid;gap:6px;font-size:.88rem;color:var(--muted)}
+.joinform fieldset{border:0;margin:0;padding:0}.joinform legend{font-size:.88rem;color:var(--muted);margin:0 0 var(--s2)}
+.opts{display:flex;flex-wrap:wrap;gap:var(--s2)}.opt{display:inline-flex!important;align-items:center;gap:8px!important;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text)!important;cursor:pointer}
+.opt input{width:auto;accent-color:var(--accent)}.opt:has(input:checked){border-color:color-mix(in srgb,var(--accent) 60%,transparent);background:var(--soft)}
+.consent{border-radius:12px!important}.hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.joinout{padding:var(--s5);max-width:640px}.joinout h2{margin-top:0}
+.joincta{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);flex-wrap:wrap;padding:var(--s4) var(--s5);margin:var(--s5) 0}.joincta h3{margin:0 0 2px}.joincta p{margin:0}
+.wxqr{display:inline-grid;justify-items:center;gap:6px;padding:var(--s3);border:1px solid var(--line);border-radius:var(--r2);background:#fff;margin:var(--s2) 0}.wxqr p{color:#555;margin:0}
+.rss{display:inline-flex;align-items:center;gap:4px}
+@media (max-width:1100px){.navjoin{order:-1}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:900px){.cols{grid-template-columns:1fr;gap:0}.joinbox{grid-template-columns:1fr}}
 @media (max-width:520px){.wrap{padding:0 16px}main{padding-top:32px}.hero2{padding:40px 0 28px;margin-top:-32px}.camp{padding:16px 14px 8px}.branch{padding-left:12px}
@@ -783,6 +816,7 @@ function load(){fetch(desk+"/desk/sponsors",{credentials:"omit"}).then(function(
 load();
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
 var f=el("pledge-form");
+if(f){try{var pj=JSON.parse(sessionStorage.getItem("ph-join")||"null");if(pj&&typeof pj==="object"){if(typeof pj.name==="string"&&!f.elements.name.value)f.elements.name.value=pj.name.slice(0,60);if(typeof pj.email==="string"&&!f.elements.email.value)f.elements.email.value=pj.email.slice(0,254);}}catch(e){}}
 if(f)f.addEventListener("submit",function(ev){ev.preventDefault();
 var out=el("pledge-out"),btn=f.querySelector("button[type=submit]");btn.disabled=true;clear(out);
 var body={name:f.elements.name.value,tagline:f.elements.tagline.value,link:f.elements.link.value,amount:Number(f.elements.amount.value),email:f.elements.email.value};
@@ -834,8 +868,9 @@ function load(){var tok=getTok();el("out").hidden=true;el("msg").textContent="";
 var days=Number(el("days").value)||30;
 fetch(desk+"/desk/admin/stats?days="+days,{credentials:"omit",headers:{Authorization:"Bearer "+tok}}).then(function(r){
 if(r.status===401){setTok("");throw new Error("Wrong token.");}if(!r.ok)throw new Error("The desk answered "+r.status+".");return r.json();})
-.then(function(d){var v=0,u=0;d.days.forEach(function(x){v+=x.views;u+=x.visitors;});
-el("sum").textContent=v+" views, "+u+" daily visitors summed over "+d.days.length+" days. Last 24 hours: "+d.last_24h+" views.";
+.then(function(d){var v=0,u=0,su=0;d.days.forEach(function(x){v+=x.views;u+=x.visitors;su+=Number(x.signups)||0;});
+el("sum").textContent=v+" views, "+u+" daily visitors and "+su+" sign-ups over "+d.days.length+" days. Last 24 hours: "+d.last_24h+" views.";
+table("signups",d.days.filter(function(x){return Number(x.signups)>0;}).reverse().map(function(x){return {key:x.date,n:x.signups};}));
 chart(d.days);table("paths",d.paths);table("refs",d.referrers);table("countries",d.countries);el("out").hidden=false;})
 .catch(function(e){el("msg").textContent=e.message;});}
 el("tokform").addEventListener("submit",function(ev){ev.preventDefault();setTok(el("tok").value.trim());el("tok").value="";load();});
@@ -868,7 +903,7 @@ document.getElementById("pick").addEventListener("click",function(){
 });
 })();`;
 
-const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; connect-src 'self'${deskOn ? ` ${deskUrl}` : ""}; base-uri 'none'; form-action 'none'`;
+const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; connect-src 'self'${deskOn ? ` ${deskUrl}` : ""}; base-uri 'none'; form-action 'none'`;
 
 const NAV = [
   ["index.html", "nav_campaigns", ["title_home", "title_lemmas"]],
@@ -892,18 +927,19 @@ function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", 
 <meta name="robots" content="noindex, nofollow">` : ""}
 <title>${esc(title || I18N.en[key])} · ${esc(cfg.site_name)}</title>
 <meta name="description" content="${esc(I18N.en.tagline)}">${meta}
+<link rel="alternate" type="application/rss+xml" title="ProofHive" href="${R}feed.xml">
 <style>${CSS.replaceAll("__R__", R)}</style>
 <script>try{var q=/[?&]theme=(light|dark)/.exec(location.search),t=q?q[1]:localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 </head>
 <body data-title-key="${title ? "" : key}" data-site="${esc(cfg.site_name)}"${bodyAttrs ? ` ${bodyAttrs}` : ""}>
 ${top}<header class="top"><div class="${W}">
 <a class="brand" href="${R}index.html"><svg class="hex" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>${esc(cfg.site_name)}</a>
-<nav>${pill}${NAV.map(([href, k, keys]) => `<a href="${R}${href}"${keys.includes(key) ? ' aria-current="page"' : ""}>${t(k)}</a>`).join("")}<button class="theme" id="theme" type="button" aria-label="Toggle light or dark theme">◐</button><button class="lang" id="lang" type="button">中文</button></nav>
+<nav>${pill}${NAV.map(([href, k, keys]) => `<a href="${R}${href}"${keys.includes(key) ? ' aria-current="page"' : ""}>${t(k)}</a>`).join("")}<a class="btn primary sm navjoin" href="${R}signup.html">${t("nav_signup")}</a><button class="theme" id="theme" type="button" aria-label="Toggle light or dark theme">◐</button><button class="lang" id="lang" type="button">中文</button></nav>
 </div></header>
 ${sub}<main><div class="${W}">
 ${body}
 </div></main>
-<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="${R}credit.html">${t("nav_credit")}</a> · <a href="${R}publish.html">${t("title_publish")}</a> · <a href="${R}names.html">${t("nav_names")}</a> · <a href="${R}sponsor.html">${t("nav_sponsor")}</a> · <a href="${R}terms.html">${t("nav_terms")}</a> · <a href="${R}refunds.html">${t("nav_refunds")}</a> · <a href="${R}privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
+<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="${R}credit.html">${t("nav_credit")}</a> · <a href="${R}publish.html">${t("title_publish")}</a> · <a href="${R}names.html">${t("nav_names")}</a> · <a href="${R}sponsor.html">${t("nav_sponsor")}</a> · <a href="${R}terms.html">${t("nav_terms")}</a> · <a href="${R}refunds.html">${t("nav_refunds")}</a> · <a href="${R}privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a class="rss" href="${R}feed.xml" title="RSS"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M5 3a16 16 0 0 1 16 16h-3A13 13 0 0 0 5 6zm0 6a10 10 0 0 1 10 10h-3a7 7 0 0 0-7-7zm2 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg> RSS</a> · <a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
 <script>${JS}</script>
 ${deskOn && beacon ? `<script>${BEACON_JS}</script>` : ""}
 ${extra}
@@ -1134,6 +1170,7 @@ ${breakthroughs()}
 <p class="small"><a href="credit.html">${t("credit_full")} →</a></p>
 </div>
 </div>
+<div class="joincta glass"><div><h3>${t("join_cta_h")}</h3><p class="small muted">${t("join_cta_p")}</p></div><a class="btn primary" href="signup.html">${t("nav_signup")} →</a></div>
 <h3>${t("backed_h")}</h3>
 <div class="backers2"><span id="backer-logos" class="logos">${logos}</span><a class="logo slot" href="sponsor.html">${t(SPONSOR_OPEN ? "logo_slot" : "support_soon")}</a></div>
 ${SPONSOR_OPEN ? `<p class="small muted">${t("pledge_lead")}</p><div class="btns"><a class="btn primary" href="sponsor.html">${t("become_backer")}</a></div>` : ""}
@@ -1205,6 +1242,28 @@ load();setInterval(load,30000);
 
 // ---------- contributors: profiles, badges, directory ----------
 const profiles = readProfiles(ROOT, { strict: false });
+// Profile fields edited on the web live in the desk (GET /desk/profiles); they are merged over the repository file.
+const deskProfiles = {};
+if (deskOn && !simOk && process.env.GITHUB_ACTIONS) {
+  try {
+    const r = await fetch(`${deskUrl}/desk/profiles`, { signal: AbortSignal.timeout(8000) });
+    const d = r.ok ? await r.json() : null;
+    for (const [login, pr] of Object.entries((d && d.profiles) || {})) if (LOGIN_RE.test(login) && pr && typeof pr === "object") deskProfiles[login.toLowerCase()] = { login, ...pr };
+  } catch (e) { console.log("site: desk profiles not fetched:", e.message); }
+} else if (simOk) {
+  try { const r = await fetch(`${deskUrl}/desk/profiles`); const d = r.ok ? await r.json() : null;
+    for (const [login, pr] of Object.entries((d && d.profiles) || {})) if (LOGIN_RE.test(login) && pr && typeof pr === "object") deskProfiles[login.toLowerCase()] = { login, ...pr }; } catch (e) {}
+}
+const TEXT_MAX = { display_name: 60, affiliation: 100, bio: 400, country: 40 };
+for (const [key, dp] of Object.entries(deskProfiles)) {
+  const base = profiles.get(key) || { login: dp.login };
+  const merged = { ...base };
+  for (const [k, max] of Object.entries(TEXT_MAX)) if (typeof dp[k] === "string" && dp[k].length <= max) merged[k] = dp[k];
+  if (Array.isArray(dp.interests)) merged.interests = dp.interests.filter((x) => typeof x === "string" && x.length <= 40).slice(0, 8);
+  if (dp.links && typeof dp.links === "object") merged.links = { ...(base.links || {}), ...Object.fromEntries(Object.entries(dp.links).filter(([, v]) => typeof v === "string" && /^https:\/\//.test(v) && v.length <= 200)) };
+  if (typeof dp.member_since === "string" && DATE_RE.test(dp.member_since)) merged.member_since = dp.member_since;
+  profiles.set(key, merged);
+}
 const LINK_LABEL = { x: "X", linkedin: "LinkedIn", github: "GitHub", homepage: "Homepage", orcid: "ORCID", scholar: "Google Scholar" };
 function personOf(who) {
   const key = String(who).toLowerCase();
@@ -1212,7 +1271,7 @@ function personOf(who) {
   const mine = scoreEvts.filter((e) => String(e.who).toLowerCase() === key);
   const row = lbAll.find((r) => String(r.who).toLowerCase() === key) || { points: 0, proofs: 0, splits: 0, refutations: 0, notes: 0 };
   const rank = lbAll.findIndex((r) => String(r.who).toLowerCase() === key) + 1;
-  const since = mine.map((e) => e.date).filter(Boolean).sort()[0] || "";
+  const since = p.member_since || mine.map((e) => e.date).filter(Boolean).sort()[0] || "";
   const badges = [];
   if (row.notes) badges.push(["note", "First research note", "首篇研究笔记"]);
   if (row.splits) badges.push(["split", "First split", "首个拆分"]);
@@ -1244,6 +1303,7 @@ function contributorPage(who) {
   const shareLi = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   return page({
     key: "title_profile", prefix: "../", title: p.display_name ? `${p.display_name} (@${login})` : `@${login}`,
+    extra: `<script src="../vendor/qrcode.js"></script><script>${WX_JS}</script>`,
     meta: `<meta property="og:title" content="${esc(p.display_name || "@" + login)} on ProofHive"><meta property="og:description" content="${esc(shareEn)}"><meta property="og:url" content="${esc(url)}"><meta name="twitter:card" content="summary">`,
     body: `<section class="prof">
 ${avatar(login, 104)}
@@ -1260,8 +1320,9 @@ ${p.interests ? `<p class="interests">${p.interests.map((x) => `<span class="chi
 <p class="sc-line">${pair(`I contributed to ProofHive: ${num(P.row.points)} points, ${P.accepted} accepted ${P.accepted === 1 ? "result" : "results"}.`, `我参与了 ProofHive：${num(P.row.points)} 分，${P.accepted} 个被接受的成果。`)}</p>
 <div class="sc-stats"><span><b>${num(P.row.points)}</b>${pair("points", "积分")}</span><span><b>${P.rank || "–"}</b>${pair("rank", "排名")}</span><span><b>${P.row.notes}</b>${pair("notes", "笔记")}</span><span><b>${P.row.splits}</b>${pair("splits", "拆分")}</span><span><b>${P.row.proofs}</b>${pair("proofs", "证明")}</span><span><b>${P.row.refutations}</b>${pair("refutations", "反驳")}</span></div>
 ${P.badges.length ? `<p class="badges">${P.badges.map(([k, en, zh]) => `<span class="badge b-${k}">${pair(en, zh)}</span>`).join("")}</p>` : ""}
-<div class="btns"><a class="btn sm" href="${esc(shareX)}" rel="noopener">${pair("Share on X", "分享到 X")}</a><a class="btn sm" href="${esc(shareLi)}" rel="noopener">${pair("Share on LinkedIn", "分享到 LinkedIn")}</a><button class="btn sm" type="button" data-copy="${esc(url)}"><span class="lbl" data-i18n="copy_link">${esc(I18N.en.copy_link)}</span></button></div>
+<div class="btns"><a class="btn sm" href="${esc(shareX)}" rel="noopener">${pair("Share on X", "分享到 X")}</a><a class="btn sm" href="${esc(shareLi)}" rel="noopener">${pair("Share on LinkedIn", "分享到 LinkedIn")}</a><a class="btn sm" href="${esc(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(shareEn)}`)}" rel="noopener">${pair("Share on Weibo", "分享到微博")}</a><button class="btn sm" type="button" id="wxbtn" data-url="${esc(url)}">${pair("WeChat QR", "微信二维码")}</button><button class="btn sm" type="button" data-copy="${esc(url)}"><span class="lbl" data-i18n="copy_link">${esc(I18N.en.copy_link)}</span></button></div>
 </div>
+<div id="wxqr" class="wxqr" hidden><img alt="QR code" width="180" height="180"><p class="small muted">${pair("Scan with WeChat to share this page.", "用微信扫一扫，分享此页面。")}</p></div>
 <h2>${pair("Contributions", "贡献")}</h2>
 <ol class="tl">${items || `<li class="empty-li">${t("tl_empty")}</li>`}</ol>
 <p class="small muted">${t("profile_note")} ${t("profile_edit")}</p>`,
@@ -1288,6 +1349,10 @@ ${p.interests ? `<span class="small">${p.interests.slice(0, 4).map(esc).join(" �
     extra: `<script>${PEOPLE_JS}</script>`,
   });
 }
+const WX_JS = `
+(function(){var b=document.getElementById("wxbtn"),box=document.getElementById("wxqr");if(!b||!box)return;
+b.addEventListener("click",function(){if(!box.hidden){box.hidden=true;return;}try{var q=window.qrcode(0,"M");q.addData(b.getAttribute("data-url"));q.make();
+box.querySelector("img").src=q.createDataURL(5,8);box.hidden=false;}catch(e){}});})();`;
 const PEOPLE_JS = `
 (function(){var box=document.getElementById("people"),q=document.getElementById("pq");if(!box||!q)return;var cards=[].slice.call(box.querySelectorAll(".person"));
 function apply(){var v=q.value.trim().toLowerCase(),n=0;cards.forEach(function(c){var ok=!v||c.getAttribute("data-s").indexOf(v)!==-1;c.hidden=!ok;if(ok)n++;});document.getElementById("pempty").hidden=n>0||!cards.length;}
@@ -1354,7 +1419,7 @@ ${deskOn ? `<form id="tokform" class="pledge" autocomplete="off"><label>Admin to
 <svg id="chart" viewBox="0 0 720 200" class="statchart" role="img" aria-label="Daily views and visitors"></svg>
 <p class="small muted"><span class="key v"></span> views <span class="key u"></span> visitors</p>
 <div class="cols"><div><h2>Top pages</h2><div id="paths"></div></div><div><h2>Top referrers</h2><div id="refs"></div></div></div>
-<h2>Top countries</h2><div id="countries"></div></div>` : `<p class="empty">No task desk is configured.</p>`}`,
+<h2>Top countries</h2><div id="countries"></div><h2>Sign-ups per day</h2><div id="signups"></div><p class="small muted">Export members (with emails): GET /desk/admin/members?format=csv with the same token.</p></div>` : `<p class="empty">No task desk is configured.</p>`}`,
     extra: deskOn ? `<script>${STATS_JS}</script>` : "",
   });
 }
@@ -1580,6 +1645,124 @@ function breakthroughs() {
   }).join("")}</div>`;
 }
 
+// ---------- sign-up (Join ProofHive), member page, RSS ----------
+const JOIN_AREAS = existsSync(at("site/library/library.json")) ? (() => {
+  const c = {};
+  for (const e of readJson("site/library/library.json").entries) for (const a of e.areas || []) c[a] = (c[a] || 0) + 1;
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([a]) => a).sort();
+})() : [];
+const ROLE_LABELS = [["ai", "I'll send my AI", "我会派我的 AI 来"], ["mathematician", "I'm a mathematician", "我是数学研究者"], ["sponsor", "I want to sponsor", "我想赞助"], ["following", "Just following", "只是关注"]];
+function signupPage() {
+  return page({
+    key: "title_signup",
+    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
+    body: `<p class="kicker">ProofHive</p>
+<h1>${t("title_signup")}</h1>
+<p class="lede">${t("signup_lead")}</p>
+${deskOn ? `<form id="joinform" class="joinform glass" autocomplete="on">
+<label>${t("f_jemail")}<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+<label>${t("f_dname")}<input name="name" maxlength="60" autocomplete="name"></label>
+<fieldset><legend>${t("f_iam")}</legend><div class="opts">${ROLE_LABELS.map(([v, en, zh]) => `<label class="opt"><input type="checkbox" name="roles" value="${v}"> ${pair(en, zh)}</label>`).join("")}</div></fieldset>
+${JOIN_AREAS.length ? `<fieldset><legend>${t("f_interests")}</legend><div class="opts">${JOIN_AREAS.map((a) => `<label class="opt"><input type="checkbox" name="interests" value="${esc(a)}"> ${esc(a)}</label>`).join("")}</div></fieldset>` : ""}
+<label>${t("f_country")}<input name="country" maxlength="40" autocomplete="country-name"></label>
+<label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+<label class="opt consent"><input type="checkbox" name="consent"> ${t("f_consent")}</label>
+<div class="btns"><button class="btn primary" type="submit">${t("nav_signup")}</button></div>
+<p class="small muted">${t("signup_privacy")} <a href="privacy.html">${t("nav_privacy")}</a></p>
+</form>
+<div id="joinout" class="joinout glass" hidden aria-live="polite"></div>` : `<p class="empty">${t("desk_soon")}</p>`}`,
+    extra: deskOn ? `<script>${JOIN_JS}</script>` : "",
+  });
+}
+const JOIN_JS = `
+(function(){
+var desk=document.body.getAttribute("data-desk");if(!desk)return;
+function lang(){return window.__lang==="zh"?"zh":"en";}
+function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
+function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;if(s!=null)e.textContent=s;return e;}
+var f=document.getElementById("joinform"),out=document.getElementById("joinout"),gh=false;
+fetch(desk+"/desk/auth/status",{credentials:"omit"}).then(function(r){return r.json();}).then(function(d){gh=!!(d&&d.github);}).catch(function(){});
+f.addEventListener("submit",function(ev){ev.preventDefault();var btn=f.querySelector("button[type=submit]");btn.disabled=true;
+var pick=function(n){return [].slice.call(f.querySelectorAll("input[name="+n+"]:checked")).map(function(i){return i.value;});};
+var body={email:f.elements.email.value,name:f.elements.name.value,roles:pick("roles"),interests:pick("interests"),country:f.elements.country.value,consent:f.elements.consent.checked,website:f.elements.website.value};
+fetch(desk+"/desk/join",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+.then(function(r){return r.json().catch(function(){return {};}).then(function(j){return {ok:r.ok,status:r.status,j:j};});})
+.then(function(x){while(out.firstChild)out.removeChild(out.firstChild);
+if(!x.ok){out.hidden=false;out.appendChild(node("p","bad",x.status===404?tr("signup_soon"):(tr("signup_err")+" "+String(x.j.error||"").slice(0,200))));return;}
+f.hidden=true;out.hidden=false;out.appendChild(node("h2",null,tr("signup_ok_h")));out.appendChild(node("p",null,tr("signup_ok")));
+var row=node("div","btns");
+if(body.roles.indexOf("sponsor")>=0){try{sessionStorage.setItem("ph-join",JSON.stringify({name:body.name,email:body.email}));}catch(e){}var s=node("a","btn primary",tr("signup_to_sponsor"));s.href="sponsor.html#pledge-form";row.appendChild(s);}
+if(gh&&x.j.link_token&&/^[a-f0-9]+$/.test(x.j.link_token)){var g=node("a","btn",tr("signup_github"));g.href=desk+"/desk/auth/github/start?t="+x.j.link_token;row.appendChild(g);}
+var a=node("a","btn",tr("btn_ai"));a.href="join.html";row.appendChild(a);out.appendChild(row);
+if(gh)out.appendChild(node("p","small muted",tr("signup_github_why")));})
+.catch(function(){out.hidden=false;out.appendChild(node("p","bad",tr("signup_soon")));})
+.then(function(){btn.disabled=false;});});
+})();`;
+
+function mePage() {
+  return page({
+    key: "title_me", noindex: true, beacon: false,
+    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
+    body: `<h1>${t("title_me")}</h1>
+<p class="lede" id="mestate">${t("me_loading")}</p>
+<form id="meform" class="joinform glass" hidden>
+<p class="small muted" id="mewho"></p>
+<label>${t("f_dname")}<input name="display_name" maxlength="60"></label>
+<label>${pair("Affiliation", "单位")}<input name="affiliation" maxlength="100"></label>
+<label>${pair("Short bio", "简介")}<input name="bio" maxlength="400"></label>
+<label>${t("f_country")}<input name="country" maxlength="40"></label>
+<label>${pair("Interests (comma separated, up to 8)", "研究兴趣（用逗号分隔，最多 8 个）")}<input name="interests" maxlength="400"></label>
+${["x", "linkedin", "github", "orcid", "scholar", "homepage"].map((k) => `<label>${esc({ x: "X", linkedin: "LinkedIn", github: "GitHub", orcid: "ORCID", scholar: "Google Scholar", homepage: "Homepage" }[k])}<input name="link_${k}" type="url" maxlength="200" placeholder="https://"></label>`).join("")}
+<div class="btns"><button class="btn primary" type="submit">${pair("Save profile", "保存资料")}</button><a class="btn" id="meprofile" href="#">${pair("View my public profile", "查看我的公开主页")}</a><button class="btn" type="button" id="meout">${pair("Sign out", "退出")}</button></div>
+<p class="small muted">${t("me_note")}</p>
+<p id="memsg" aria-live="polite"></p>
+</form>`,
+    extra: deskOn ? `<script>${ME_JS}</script>` : "",
+  });
+}
+const ME_JS = `
+(function(){
+var desk=document.body.getAttribute("data-desk");if(!desk)return;
+function lang(){return window.__lang==="zh"?"zh":"en";}
+function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
+function el(id){return document.getElementById(id);}
+var m=/^#s=([a-f0-9]{16,80})$/.exec(location.hash);
+if(m){try{sessionStorage.setItem("ph-session",m[1]);}catch(e){}history.replaceState(null,"",location.pathname);}
+var tok="";try{tok=sessionStorage.getItem("ph-session")||"";}catch(e){}
+if(!/^[a-f0-9]{16,80}$/.test(tok)){el("mestate").textContent=tr("me_signin");return;}
+var H={Authorization:"Bearer "+tok};var f=el("meform");
+fetch(desk+"/desk/me",{credentials:"omit",headers:H}).then(function(r){if(r.status===401)throw new Error("401");return r.json();}).then(function(d){
+var login=String(d.login||"").slice(0,39),p=d.profile||{};el("mestate").textContent=tr("me_hello").replace("{login}",login);
+el("mewho").textContent="@"+login+" · "+tr("me_since")+" "+String(d.member_since||"");el("meprofile").href="c/"+encodeURIComponent(login)+".html";
+["display_name","affiliation","bio","country"].forEach(function(k){f.elements[k].value=typeof p[k]==="string"?p[k]:"";});
+f.elements.interests.value=Array.isArray(p.interests)?p.interests.join(", "):"";
+["x","linkedin","github","orcid","scholar","homepage"].forEach(function(k){f.elements["link_"+k].value=p.links&&typeof p.links[k]==="string"?p.links[k]:"";});f.hidden=false;})
+.catch(function(){try{sessionStorage.removeItem("ph-session");}catch(e){}el("mestate").textContent=tr("me_signin");});
+f.addEventListener("submit",function(ev){ev.preventDefault();var links={};["x","linkedin","github","orcid","scholar","homepage"].forEach(function(k){var v=f.elements["link_"+k].value.trim();if(v)links[k]=v;});
+var body={display_name:f.elements.display_name.value,affiliation:f.elements.affiliation.value,bio:f.elements.bio.value,country:f.elements.country.value,
+interests:f.elements.interests.value.split(",").map(function(s){return s.trim();}).filter(Boolean).slice(0,8),links:links};
+fetch(desk+"/desk/me/profile",{method:"POST",credentials:"omit",headers:{Authorization:H.Authorization,"Content-Type":"application/json"},body:JSON.stringify(body)})
+.then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(x){el("memsg").className=x.ok?"ok":"bad";el("memsg").textContent=x.ok?tr("me_saved"):String(x.j.error||"").slice(0,200);})
+.catch(function(){el("memsg").className="bad";el("memsg").textContent=tr("signup_soon");});});
+el("meout").addEventListener("click",function(){try{sessionStorage.removeItem("ph-session");}catch(e){}location.reload();});
+})();`;
+
+// RSS: the public timeline as a feed.
+function rssFeed() {
+  const x = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c]));
+  const items = scoreEvts.filter((e) => e.kind !== "bonus").sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 50).map((e) => {
+    const tgt = eventTarget(e), url = eventLink(e);
+    const abs = /^https:/.test(url) ? url : `${cfg.site_url}${url}`;
+    const title = `@${e.who} ${KIND_EN[e.kind]} ${tgt ? tgt.title_en : e.id}`;
+    return `<item><title>${x(title)}</title><link>${x(abs)}</link><guid isPermaLink="false">${x(`${e.kind}:${e.id}:${e.who}:${e.date}`)}</guid><pubDate>${new Date(`${e.date}T12:00:00Z`).toUTCString()}</pubDate><description>${x(`${title} (+${e.points} points; ${setupLabel(e)})`)}</description></item>`;
+  }).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>ProofHive: accepted results</title><link>${x(cfg.site_url)}</link><description>Every accepted proof, split, refutation and research note on ProofHive.</description><language>en</language>
+${items}
+</channel></rss>
+`;
+}
+
 // ---------- credit and publication pledge ----------
 function creditPage() {
   const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
@@ -1796,6 +1979,9 @@ ${P("When you pledge, the task desk stores your display name, tagline, link, ema
     "认购时，调度台保存你的显示名称、简介、链接、邮箱、认购和已付款金额以及日期。邮箱只用于给你发付款链接和核对付款，从不在网站上显示，不会由任何公开接口返回，也不会与他人共享。名称、简介、链接和金额会公开显示在赞助墙上。")}
 ${P("Payment is handled entirely by the payment provider (such as PayPal); we never see card or bank details, and the provider's own privacy policy applies. To change or delete your pledge and your email, write to the contact on the Terms page.",
     "付款完全由支付服务（如 PayPal）处理；我们从不看到银行卡或银行账户信息，付款适用支付服务自己的隐私政策。如需修改或删除你的认购和邮箱，请联系条款页面上的联系方式。")}
+${H("Members (Join ProofHive)", "成员（加入 ProofHive）")}
+${P("When you join, our task desk stores your email, display name, the roles and interests you pick, your country, whether you agreed to updates, and the date. Emails are not verified yet (we have no mail sender), are used only for ProofHive updates if you agreed, are never shown publicly or returned by any public endpoint, and are deleted on request: write to the contact on the Terms page. If you connect GitHub, we store only your login, numeric id, avatar address and the time; the GitHub access token is used once to read those and is not kept. Profile fields you edit on the web are public on your profile page.",
+    "加入时，调度台会保存你的邮箱、显示名称、所选的身份和兴趣、国家、是否同意接收更新，以及日期。邮箱目前未经验证（我们还没有发信服务），只在你同意的情况下用于 ProofHive 的更新通知，从不公开显示，也不会由任何公开接口返回；如需删除，请联系条款页面上的联系方式。如果你连接 GitHub，我们只保存你的用户名、数字 id、头像地址和时间；GitHub 的访问令牌只用一次来读取这些信息，不会保存。你在网页上编辑的资料会公开显示在你的个人页上。")}
 ${H("Agents", "智能体")}
 ${P("The task desk stores only GitHub handles, task ids, hand-back reasons and times. Pull requests are public on GitHub.",
     "调度台只保存 GitHub 用户名、任务编号、交还原因和时间。合并请求在 GitHub 上是公开的。")}`,
@@ -1824,6 +2010,11 @@ for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorP
 writeFileSync(at("dist/people.html"), peoplePage());
 writeFileSync(at("dist/models.html"), aiBoardPage());
 writeFileSync(at("dist/publish.html"), publishPage());
+writeFileSync(at("dist/signup.html"), signupPage());
+writeFileSync(at("dist/me.html"), mePage());
+writeFileSync(at("dist/feed.xml"), rssFeed());
+mkdirSync(at("dist/vendor"), { recursive: true });
+for (const f of readdirSync(at("site/vendor"))) copyFileSync(at(`site/vendor/${f}`), at(`dist/vendor/${f}`));
 { const ex = contributorsExport(); writeFileSync(at("dist/contributors.json"), ex.json); writeFileSync(at("dist/contributors.csv"), ex.csv); }
 if (LIB_META) {
   writeFileSync(at("dist/library.html"), libraryPage());

@@ -48,6 +48,12 @@ PASS  points: split 50 (+5 when its step is proven), step proof 12, step refutat
 PASS  desk has nothing left for builders once steps are settled, or ends the lease
 PASS  one /next per 2 s per handle (rapid calls get 429)  (200,429,429,429)
 PASS  malformed handle refused
+PASS  a visitor can join; the answer has no email
+PASS  the honeypot accepts silently
+PASS  an invalid email is refused
+PASS  no member email appears in public endpoints
+PASS  the member export needs the admin token and lists real sign-ups only
+PASS  without GitHub secrets the Connect GitHub option is off
 PASS  sponsor sync runs  (stripe sync: 3 new payments, 2 new supporters, 2 supporters total)
 PASS  same email merges and sums ($1,125), unpaid ignored
 PASS  no email stored anywhere in ledger/
@@ -57,6 +63,7 @@ PASS  lemmas page marks every step as proven to imply its parent
 PASS  home page lists the refuted step in the graveyard
 PASS  home page leaderboard shows the prover and the red team
 PASS  home page escapes hostile sponsor text
+PASS  the homepage has a Join ProofHive button and the RSS feed lists accepted results
 PASS  home page CSP connects only to itself and the desk
 
-60 of 60 passed
+67 of 67 passed

@@ -26,7 +26,7 @@ test('a valid pledge appears on the public wall with no email', async () => {
   const { pledge, wall, call } = setup();
   const r = await pledge(P());
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body, { ok: true, amount: 50, total_pledged: 50 });
+  assert.deepEqual(r.body, { ok: true, amount: 50, total_pledged: 50, member: false });
   const w = await wall();
   assert.equal(w.length, 1);
   assert.deepEqual({ ...w[0], since: undefined }, { rank: 1, name: 'Example Lab', tagline: 'Agents that prove things', link: 'https://example.com/lab', pledged: 50, paid: 0, since: undefined });

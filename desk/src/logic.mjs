@@ -51,6 +51,49 @@ export const VOTE_IDS_CAP = 5000;
 export const VOTES_PER_IP_DAY = 50;
 const VOTE_ID_RE = /^(fc|ph):[A-Za-z0-9_.'-]{1,120}$/;
 
+// Members (sign-up) and GitHub sessions
+export const MEMBER_ROLES = ['ai', 'mathematician', 'sponsor', 'following'];
+export const JOIN_IP_LIMIT = 5; // per hour
+export const MAX_MEMBERS = 20000;
+export const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
+const PROFILE_TEXT = { display_name: 60, affiliation: 100, bio: 400, country: 40 };
+const PROFILE_LINK_HOSTS = { x: ['x.com', 'twitter.com'], linkedin: ['linkedin.com'], github: ['github.com'], orcid: ['orcid.org'], scholar: ['scholar.google.com'], homepage: null };
+/** Same rules as checker/profiles.mjs, for profile fields edited on the web. */
+export function checkMemberProfile(d) {
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return { ok: false, why: 'send a JSON object' };
+  const allowed = new Set([...Object.keys(PROFILE_TEXT), 'interests', 'links']);
+  for (const k of Object.keys(d)) if (!allowed.has(k)) return { ok: false, why: `unknown field ${k}` };
+  const out = {};
+  for (const [k, max] of Object.entries(PROFILE_TEXT)) {
+    if (d[k] === undefined) continue;
+    const v = cleanText(d[k], max);
+    if (v === null) return { ok: false, why: `${k} must be text of at most ${max} characters` };
+    if (v) out[k] = v;
+  }
+  if (d.interests !== undefined) {
+    if (!Array.isArray(d.interests) || d.interests.length > 8) return { ok: false, why: 'interests: at most 8' };
+    const list = d.interests.map((x) => cleanText(x, 40));
+    if (list.some((x) => !x)) return { ok: false, why: 'each interest is 1 to 40 characters' };
+    if (list.length) out.interests = list;
+  }
+  if (d.links !== undefined) {
+    if (!d.links || typeof d.links !== 'object' || Array.isArray(d.links)) return { ok: false, why: 'links must be an object' };
+    const links = {};
+    for (const [k, v] of Object.entries(d.links)) {
+      if (!(k in PROFILE_LINK_HOSTS)) return { ok: false, why: `unknown link ${k}` };
+      if (v === '' || v === null) continue;
+      let u;
+      try { u = new URL(String(v)); } catch (e) { return { ok: false, why: `link ${k} is not a valid address` }; }
+      if (u.protocol !== 'https:' || u.username || u.password || String(v).length > 200) return { ok: false, why: `link ${k} must be https` };
+      const hosts = PROFILE_LINK_HOSTS[k];
+      if (hosts && !hosts.some((h) => u.hostname === h || u.hostname.endsWith('.' + h))) return { ok: false, why: `link ${k} must go to ${hosts.join(' or ')}` };
+      links[k] = u.href;
+    }
+    if (Object.keys(links).length) out.links = links;
+  }
+  return { ok: true, profile: out };
+}
+
 // Sponsor pledges
 export const PLEDGE_MIN = 5;
 export const PLEDGE_MAX = 10000;
@@ -131,6 +174,9 @@ export class Desk {
     repo = DEFAULT_REPO,
     githubApi = 'https://api.github.com',
     adminToken = '',
+    githubClientId = '',
+    githubClientSecret = '',
+    origin = '',
   } = {}) {
     if (!store) throw new Error('Desk: store is required');
     this.store = store;
@@ -149,6 +195,9 @@ export class Desk {
     this.ipHits = new Map();
     this.pledgeHits = new Map();
     this.hitHits = new Map();
+    this.joinHits = new Map();
+    this.github = { id: typeof githubClientId === 'string' ? githubClientId : '', secret: typeof githubClientSecret === 'string' ? githubClientSecret : '' };
+    this.origin = String(origin || '').replace(/\/+$/, '');
     this.adminToken = typeof adminToken === 'string' && adminToken.length >= 16 ? adminToken : '';
     // Every request runs one at a time, so lease assignment is atomic even
     // when a request is waiting on the feed fetch.
@@ -190,6 +239,14 @@ export class Desk {
     if (!route) return { status: 404, body: { error: 'not found' } };
     if (typeof body === 'string' && body.length > BODY_MAX) throw new HttpError(413, 'request body too large');
     if (route === 'hit') return this.hit(now, body, ip, ua, country);
+    if (route === 'join') return this.join(now, body, ip);
+    if (route === 'admin-members') return this.members(searchParams, auth);
+    if (route === 'auth-status') return this.authStatus();
+    if (route === 'gh-start') return this.githubStart(now, searchParams);
+    if (route === 'gh-callback') return this.githubCallback(now, searchParams);
+    if (route === 'me') return this.me(now, auth);
+    if (route === 'me-profile') return this.saveProfile(now, body, auth);
+    if (route === 'profiles') return this.publicProfiles();
     if (route === 'vote') return this.vote(now, body, ip);
     if (route === 'votes') return { status: 200, body: { votes: (await this.store.get('votes')) || {} } };
     if (route === 'admin-stats') return this.stats(now, searchParams, auth);
@@ -253,6 +310,8 @@ export class Desk {
     await this.rollDay(day);
     const key = `stats:${day}`;
     const s = (await this.store.get(key)) || { views: 0, visitors: 0, paths: {}, refs: {}, countries: {}, hours: {} };
+    for (const k of ['paths', 'refs', 'countries', 'hours']) s[k] = s[k] || {};
+    s.views = s.views || 0; s.visitors = s.visitors || 0;
     const bump = (obj, k, cap) => { const kk = Object.prototype.hasOwnProperty.call(obj, k) || Object.keys(obj).length < cap ? k : 'other'; obj[kk] = (obj[kk] || 0) + 1; };
     s.views += 1;
     bump(s.paths, path, STATS_CAP);
@@ -311,7 +370,8 @@ export class Desk {
     for (let i = days - 1; i >= 0; i--) {
       const day = iso(now - i * 864e5).slice(0, 10);
       const s = (await this.store.get(`stats:${day}`)) || { views: 0, visitors: 0, paths: {}, refs: {}, countries: {}, hours: {} };
-      out.push({ date: day, views: s.views, visitors: s.visitors });
+      s.paths = s.paths || {}; s.refs = s.refs || {}; s.countries = s.countries || {}; s.hours = s.hours || {};
+      out.push({ date: day, views: s.views, visitors: s.visitors, signups: s.signups || 0 });
       for (const [k, n] of Object.entries(s.paths)) paths[k] = (paths[k] || 0) + n;
       for (const [k, n] of Object.entries(s.refs)) refs[k] = (refs[k] || 0) + n;
       for (const [k, n] of Object.entries(s.countries)) countries[k] = (countries[k] || 0) + n;
@@ -319,6 +379,175 @@ export class Desk {
     }
     const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 25).map(([key, n]) => ({ key, n }));
     return { status: 200, body: { days: out, last_24h: last24, paths: top(paths), referrers: top(refs), countries: top(countries) } };
+  }
+
+
+  // ---- members: sign-up, optional GitHub connection, profile edits -------------
+  // A member is stored under member:<sha256 of the lowercased email> (or member:gh:<github id> for someone who
+  // only connected GitHub). The email is never returned by a public endpoint; only /desk/admin/members shows it.
+  // Sessions are random server-side tokens (ss:<token>), handed to the site in the URL fragment of the redirect
+  // and kept by the page in sessionStorage; they are sent back as "Authorization: Bearer". A desk cookie would
+  // be a third-party cookie for the site, which browsers block, so the token approach is the CSP-safe one.
+
+  async emailHash(email) {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(email.toLowerCase()));
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  limit(map, ip, now, max, window) {
+    const hits = (map.get(ip) || []).filter((t) => now - t < window);
+    if (hits.length >= max) throw new HttpError(429, 'too many requests from this address; try again later', { retry_after_s: Math.ceil((hits[0] + window - now) / 1000) });
+    hits.push(now);
+    map.set(ip, hits);
+    if (map.size > 5000) for (const [k, v] of map) if (!v.length || now - v[v.length - 1] >= window) map.delete(k);
+  }
+
+  async join(now, body, ip) {
+    let d;
+    try { d = JSON.parse(body || ''); } catch (e) { throw new HttpError(400, 'send a JSON object'); }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) throw new HttpError(400, 'send a JSON object');
+    // Honeypot: a hidden field people never fill. Pretend success, store nothing.
+    if (typeof d.website === 'string' && d.website.trim()) return { status: 200, body: { ok: true } };
+    const email = typeof d.email === 'string' ? d.email.trim() : '';
+    if (email.length > EMAIL_MAX || !EMAIL_RE.test(email)) throw new HttpError(400, 'email must be a valid address');
+    const name = cleanText(d.name, NAME_MAX);
+    if (name === null) throw new HttpError(400, `name must be at most ${NAME_MAX} characters`);
+    const country = cleanText(d.country, 40);
+    if (country === null) throw new HttpError(400, 'country must be at most 40 characters');
+    const roles = Array.isArray(d.roles) ? d.roles : [];
+    if (roles.length > MEMBER_ROLES.length || roles.some((r) => !MEMBER_ROLES.includes(r))) throw new HttpError(400, `roles must be among: ${MEMBER_ROLES.join(', ')}`);
+    const interests = Array.isArray(d.interests) ? d.interests : [];
+    if (interests.length > 8) throw new HttpError(400, 'at most 8 interests');
+    const ints = interests.map((x) => cleanText(x, 60));
+    if (ints.some((x) => !x)) throw new HttpError(400, 'each interest is 1 to 60 characters of text');
+    if (d.consent !== undefined && typeof d.consent !== 'boolean') throw new HttpError(400, 'consent must be true or false');
+    this.limit(this.joinHits, ip || 'local', now, JOIN_IP_LIMIT, HOUR);
+
+    const key = `member:${await this.emailHash(email)}`;
+    let m = await this.store.get(key);
+    const fresh = !m;
+    if (fresh) {
+      if ((await this.store.list('member:')).length >= MAX_MEMBERS) throw new HttpError(503, 'sign-ups are full; try again later');
+      m = { email, joined: now, github: null, profile: null, sponsor: false };
+    }
+    Object.assign(m, { email, name: name || m.name || '', roles: [...new Set(roles)], interests: ints, country: country || '', consent: d.consent === true, updated: now });
+    if (await this.store.get(`pledge:${key.slice(7)}`)) m.sponsor = true;
+    await this.store.put(key, m);
+    if (fresh) await this.bumpStat(now, 'signups');
+    const link = this.newId().replace(/-/g, '') + this.newId().replace(/-/g, '');
+    await this.store.put(`lt:${link}`, { member: key, exp: now + HOUR });
+    return { status: 200, body: { ok: true, new: fresh, link_token: link } };
+  }
+
+  async bumpStat(now, field) {
+    const day = iso(now).slice(0, 10);
+    const key = `stats:${day}`;
+    const s = (await this.store.get(key)) || { views: 0, visitors: 0, paths: {}, refs: {}, countries: {}, hours: {} };
+    s[field] = (s[field] || 0) + 1;
+    await this.store.put(key, s);
+  }
+
+  async members(searchParams, auth) {
+    this.checkAdmin(auth);
+    const all = (await this.store.list('member:')).map(([, m]) => m).sort((a, b) => a.joined - b.joined);
+    const rows = all.map((m) => ({ email: m.email || '', name: m.name || '', roles: (m.roles || []).join(' '), interests: (m.interests || []).join('; '),
+      country: m.country || '', consent: !!m.consent, sponsor: !!m.sponsor, github: m.github ? m.github.login : '', joined: iso(m.joined) }));
+    if (searchParams.get('format') === 'csv') {
+      const cols = ['email', 'name', 'roles', 'interests', 'country', 'consent', 'sponsor', 'github', 'joined'];
+      const cell = (v) => { const x = String(v); const safe = /^[=+\-@\t\r]/.test(x) ? "'" + x : x; return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe; };
+      return { status: 200, body: null, text: [cols.join(','), ...rows.map((r) => cols.map((c) => cell(r[c])).join(','))].join('\n') + '\n', headers: { 'Content-Type': 'text/csv; charset=utf-8' } };
+    }
+    return { status: 200, body: { count: rows.length, members: rows } };
+  }
+
+  authStatus() {
+    return { status: 200, body: { github: !!(this.github.id && this.github.secret) } };
+  }
+
+  async githubStart(now, searchParams) {
+    if (!this.github.id || !this.github.secret) throw new HttpError(404, 'not found');
+    const t = searchParams.get('t') || '';
+    let member = null;
+    if (t) {
+      const lt = /^[a-f0-9]{16,80}$/.test(t) ? await this.store.get(`lt:${t}`) : null;
+      if (!lt || lt.exp < now) throw new HttpError(400, 'this link has expired; sign up again');
+      member = lt.member;
+    }
+    const state = this.newId().replace(/-/g, '') + this.newId().replace(/-/g, '');
+    await this.store.put(`os:${state}`, { member, exp: now + 10 * MINUTE });
+    const u = new URL('https://github.com/login/oauth/authorize');
+    u.searchParams.set('client_id', this.github.id);
+    u.searchParams.set('redirect_uri', `${this.origin}/desk/auth/github/callback`);
+    u.searchParams.set('scope', 'read:user');
+    u.searchParams.set('state', state);
+    u.searchParams.set('allow_signup', 'true');
+    return { status: 302, body: null, headers: { Location: u.toString() } };
+  }
+
+  async githubCallback(now, searchParams) {
+    if (!this.github.id || !this.github.secret) throw new HttpError(404, 'not found');
+    const state = searchParams.get('state') || '', code = searchParams.get('code') || '';
+    const st = /^[a-f0-9]{16,80}$/.test(state) ? await this.store.get(`os:${state}`) : null;
+    if (st) await this.store.delete(`os:${state}`); // one-time, whatever happens next
+    if (!st || st.exp < now) throw new HttpError(400, 'invalid or expired sign-in attempt; start again');
+    if (!/^[A-Za-z0-9_-]{4,100}$/.test(code)) throw new HttpError(400, 'missing authorization code');
+    const tok = await this.fetchFn('https://github.com/login/oauth/access_token', {
+      method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'proofhive-desk' },
+      body: JSON.stringify({ client_id: this.github.id, client_secret: this.github.secret, code, redirect_uri: `${this.origin}/desk/auth/github/callback` }),
+    });
+    const tj = tok && tok.ok ? await tok.json() : null;
+    if (!tj || typeof tj.access_token !== 'string') throw new HttpError(502, 'GitHub did not accept the sign-in');
+    const ur = await this.fetchFn('https://api.github.com/user', { headers: { Authorization: `Bearer ${tj.access_token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'proofhive-desk' } });
+    const u = ur && ur.ok ? await ur.json() : null; // the access token is not kept
+    if (!u || !HANDLE_RE.test(String(u.login || '')) || !Number.isInteger(u.id)) throw new HttpError(502, 'could not read the GitHub account');
+    const gh = { login: u.login, id: u.id, avatar: /^https:\/\/avatars\.githubusercontent\.com\//.test(u.avatar_url || '') ? String(u.avatar_url).slice(0, 200) : '', at: now };
+    const indexKey = `gh:${u.login.toLowerCase()}`;
+    let key = st.member || (await this.store.get(indexKey)) || `member:gh:${u.id}`;
+    const m = (await this.store.get(key)) || { email: '', name: u.login, roles: [], interests: [], country: '', consent: false, joined: now, sponsor: false, profile: null };
+    const old = m.github && m.github.login && m.github.login.toLowerCase() !== u.login.toLowerCase() ? m.github.login.toLowerCase() : null;
+    m.github = gh;
+    m.updated = now;
+    await this.store.put(key, m);
+    if (old) await this.store.delete(`gh:${old}`);
+    await this.store.put(indexKey, key);
+    const session = this.newId().replace(/-/g, '') + this.newId().replace(/-/g, '');
+    await this.store.put(`ss:${session}`, { member: key, login: u.login, exp: now + SESSION_TTL });
+    return { status: 302, body: null, headers: { Location: `${this.site}/me.html#s=${session}` } };
+  }
+
+  async sessionOf(now, auth) {
+    const m = /^Bearer ([a-f0-9]{16,80})$/.exec(typeof auth === 'string' ? auth : '');
+    const s = m ? await this.store.get(`ss:${m[1]}`) : null;
+    if (!s || s.exp < now) throw new HttpError(401, 'not signed in');
+    const member = await this.store.get(s.member);
+    if (!member || !member.github) throw new HttpError(401, 'not signed in');
+    return { s, member, key: s.member };
+  }
+
+  async me(now, auth) {
+    const { member } = await this.sessionOf(now, auth);
+    return { status: 200, body: { login: member.github.login, avatar: member.github.avatar, member_since: iso(member.joined).slice(0, 10), profile: member.profile || {} } };
+  }
+
+  async saveProfile(now, body, auth) {
+    const { member, key } = await this.sessionOf(now, auth);
+    let d;
+    try { d = JSON.parse(body || ''); } catch (e) { throw new HttpError(400, 'send a JSON object'); }
+    const r = checkMemberProfile(d);
+    if (!r.ok) throw new HttpError(400, r.why);
+    member.profile = r.profile;
+    member.updated = now;
+    await this.store.put(key, member);
+    return { status: 200, body: { ok: true, profile: r.profile } };
+  }
+
+  async publicProfiles() {
+    const out = {};
+    for (const [, m] of await this.store.list('member:')) {
+      if (!m || !m.github) continue;
+      out[m.github.login] = { ...(m.profile || {}), member_since: iso(m.joined).slice(0, 10) };
+    }
+    return { status: 200, body: { profiles: out } };
   }
 
   // ---- sponsor pledges ------------------------------------------------------
@@ -386,7 +615,10 @@ export class Desk {
     if (link) p.link = link;
     p.last = now;
     await this.store.put(key, p);
-    return { status: 200, body: { ok: true, amount: cents / 100, total_pledged: p.pledged_cents / 100 } };
+    const mk = key.replace(/^pledge:/, 'member:');
+    const member = await this.store.get(mk);
+    if (member && !member.sponsor) { member.sponsor = true; member.updated = now; await this.store.put(mk, member); }
+    return { status: 200, body: { ok: true, amount: cents / 100, total_pledged: p.pledged_cents / 100, member: !!member } };
   }
 
   async sponsors() {
@@ -792,6 +1024,14 @@ function routeOf(method, pathname) {
   if (method === 'POST' && pathname === '/desk/release') return 'release';
   if (method === 'GET' && pathname === '/desk/status') return 'status';
   if (method === 'POST' && pathname === '/desk/hit') return 'hit';
+  if (method === 'POST' && pathname === '/desk/join') return 'join';
+  if (method === 'GET' && pathname === '/desk/admin/members') return 'admin-members';
+  if (method === 'GET' && pathname === '/desk/auth/status') return 'auth-status';
+  if (method === 'GET' && pathname === '/desk/auth/github/start') return 'gh-start';
+  if (method === 'GET' && pathname === '/desk/auth/github/callback') return 'gh-callback';
+  if (method === 'GET' && pathname === '/desk/me') return 'me';
+  if (method === 'POST' && pathname === '/desk/me/profile') return 'me-profile';
+  if (method === 'GET' && pathname === '/desk/profiles') return 'profiles';
   if (method === 'POST' && pathname === '/desk/vote') return 'vote';
   if (method === 'GET' && pathname === '/desk/votes') return 'votes';
   if (method === 'GET' && pathname === '/desk/admin/stats') return 'admin-stats';

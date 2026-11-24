@@ -249,7 +249,7 @@ async function main() {
   const site = spawn(process.execPath, ["site/serve.mjs", String(SITE_PORT)], { cwd: WS, stdio: "ignore" });
   const deskProc = spawn(process.execPath, [join(REPO_ROOT, "desk/server.mjs")], { stdio: "ignore", env: { ...process.env,
     PORT: String(DESK_PORT), SITE: `http://127.0.0.1:${SITE_PORT}`, LEMMAS_URL: `http://127.0.0.1:${SITE_PORT}/Lemmas.lean`,
-    GITHUB_API: `http://127.0.0.1:${GH_PORT}`, REPO, SIM_IP_HEADER: "1" } });
+    GITHUB_API: `http://127.0.0.1:${GH_PORT}`, REPO, SIM_IP_HEADER: "1", ADMIN_TOKEN: "sim-admin-token-0123456789" } });
   const stop = () => { site.kill(); deskProc.kill(); ghServer.close(); stripeServer.close(); };
   process.on("exit", () => { if (!KEEP) stop(); });
   await sleep(1200);
@@ -447,6 +447,25 @@ async function main() {
   const bad = await next("sim-ivan<script>");
   check("malformed handle refused", bad.status === 400);
 
+  // ---- members: sign-up on the real desk (GitHub OAuth is covered by desk/test/members.test.mjs with a mocked GitHub)
+  log("\n== Round 2b: members");
+  const post = (path, body, h = "visitor-1") => fetch(`${DESK}${path}`, { method: "POST", headers: { "x-sim-ip": ipOf.get(h) || "10.9.0.1", "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  ipOf.set("visitor-1", "10.9.0.1"); ipOf.set("visitor-2", "10.9.0.2");
+  const j1 = await post("/desk/join", { email: "member@example.org", name: "Sim Member", roles: ["mathematician", "sponsor"], interests: ["Number theory"], consent: true });
+  const j1b = await j1.json();
+  check("a visitor can join; the answer has no email", j1.status === 200 && j1b.ok && !JSON.stringify(j1b).includes("@"));
+  const hp = await post("/desk/join", { email: "bot@example.org", website: "http://spam" }, "visitor-2");
+  check("the honeypot accepts silently", hp.status === 200);
+  const badJoin = await post("/desk/join", { email: "not-an-email" }, "visitor-2");
+  check("an invalid email is refused", badJoin.status === 400);
+  const pub = JSON.stringify([await (await fetch(`${DESK}/desk/profiles`)).json(), await (await fetch(`${DESK}/desk/status`)).json()]);
+  check("no member email appears in public endpoints", !pub.includes("member@example.org") && !pub.includes("bot@example.org"));
+  const exNo = await fetch(`${DESK}/desk/admin/members`);
+  const ex = await (await fetch(`${DESK}/desk/admin/members?format=csv`, { headers: { Authorization: "Bearer sim-admin-token-0123456789" } })).text();
+  check("the member export needs the admin token and lists real sign-ups only", exNo.status === 401 && /member@example\.org/.test(ex) && !/bot@example\.org/.test(ex));
+  const auth = await (await fetch(`${DESK}/desk/auth/status`)).json();
+  check("without GitHub secrets the Connect GitHub option is off", auth.github === false);
+
   // ---- 3. Sponsors (mock Stripe -> real sync -> real site)
   log("\n== Round 3: sponsors");
   pay("cs_1", "founder@ai-startup.example", 1000, "Example AI Lab", "Agents that prove things", "https://example.com/lab");
@@ -474,6 +493,7 @@ async function main() {
   check("home page lists the refuted step in the graveyard", home.includes(wsJson(`records/collatz/${falseId}.json`).title_en.replace(/&/g, "&amp;")));
   check("home page leaderboard shows the prover and the red team", home.includes("sim-grace") && home.includes(realWho));
   check("home page escapes hostile sponsor text", !home.includes("<script>alert(1)</script>") && !home.includes("javascript:alert"));
+  check("the homepage has a Join ProofHive button and the RSS feed lists accepted results", /signup\.html/.test(home) && /<item><title>@sim-/.test(wsRead("dist/feed.xml")));
   check("home page CSP connects only to itself and the desk", new RegExp(`connect-src 'self' ${DESK.replace(/[.]/g, "\\.")}`).test(home));
 
   const failed = results.filter((r) => !r.ok);

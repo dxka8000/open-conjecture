@@ -31,7 +31,7 @@ test('page views are counted per day, path, referrer host and country, with dist
   await hit('/', '', { ip: '198.51.100.9', ua: UA + ' other' }); // same IP, other browser: a second visitor
   const r = await stats(1);
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body.days, [{ date: '2026-11-24', views: 4, visitors: 3 }]);
+  assert.deepEqual(r.body.days, [{ date: '2026-11-24', views: 4, visitors: 3, signups: 0 }]);
   assert.deepEqual(r.body.paths, [{ key: '/', n: 3 }, { key: '/lemmas.html', n: 1 }]);
   assert.deepEqual(r.body.referrers, [{ key: '(direct)', n: 2 }, { key: 'news.ycombinator.com', n: 2 }]);
   assert.deepEqual(r.body.countries, [{ key: 'NZ', n: 3 }, { key: 'US', n: 1 }]);

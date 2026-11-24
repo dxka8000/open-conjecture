@@ -8,11 +8,14 @@ const PORT = Number(process.env.PORT) || 8787;
 
 const desk = new Desk({
   store: new MemStore(),
-  fetchFn: (url) => fetch(url),
+  fetchFn: (url, opts) => fetch(url, opts),
   now: () => Date.now(),
   site: process.env.SITE,
   lemmasUrl: process.env.LEMMAS_URL,
   adminToken: process.env.ADMIN_TOKEN || '',
+  githubClientId: process.env.GITHUB_CLIENT_ID || '',
+  githubClientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+  origin: process.env.DESK_ORIGIN || `http://127.0.0.1:${PORT}`,
   ...(process.env.GITHUB_API ? { githubApi: process.env.GITHUB_API } : {}),
   ...(process.env.REPO ? { repo: process.env.REPO } : {}),
 });
@@ -44,6 +47,11 @@ const server = http.createServer(async (req, res) => {
     ip: (process.env.SIM_IP_HEADER === '1' && req.headers['x-sim-ip']) || req.socket.remoteAddress,
   });
   const headers = { ...CORS, ...(result.headers || {}) };
+  if (typeof result.text === 'string') {
+    res.writeHead(result.status, { ...headers, 'Cache-Control': 'no-store' });
+    res.end(result.text);
+    return;
+  }
   if (result.body === null || result.body === undefined) {
     res.writeHead(result.status, headers);
     res.end();

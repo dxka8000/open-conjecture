@@ -9,8 +9,9 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-function respond({ status, body, headers = {} }) {
+function respond({ status, body, headers = {}, text }) {
   const h = { ...CORS, ...headers };
+  if (typeof text === 'string') return new Response(text, { status, headers: { ...h, 'Cache-Control': 'no-store' } });
   if (body === null || body === undefined) return new Response(null, { status, headers: h });
   return new Response(JSON.stringify(body), {
     status,
@@ -29,11 +30,14 @@ export class DeskDO extends DurableObject {
         delete: (key) => storage.delete(key),
         list: async (prefix) => [...(await storage.list({ prefix })).entries()],
       },
-      fetchFn: (url) => fetch(url),
+      fetchFn: (url, opts) => fetch(url, opts),
       now: () => Date.now(),
       site: env.SITE,
       lemmasUrl: env.LEMMAS_URL,
       adminToken: env.ADMIN_TOKEN || '',
+      githubClientId: env.GITHUB_CLIENT_ID || '',
+      githubClientSecret: env.GITHUB_CLIENT_SECRET || '',
+      origin: env.DESK_ORIGIN || '',
     });
   }
 
