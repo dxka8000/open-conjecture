@@ -9,10 +9,10 @@ PASS  the review role is gone (400)
 PASS  an outside proposal of a new step is never merged
 PASS  a pull request that edits a split file is never merged  (**REJECTED** by the Lean checker at ef33a7b. The reason is in the run log: http:)
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
-PASS  desk gives a builder a step  (step-cycle-floor-low)
-PASS  a second builder gets a different step  (step-reach-count-mul3)
+PASS  desk gives a builder a step  (step-reach-count-mul3)
+PASS  a second builder gets a different step  (step-below80-mul3)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_ReachCount_Mul3.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_Below80_Mul3.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged

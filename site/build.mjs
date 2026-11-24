@@ -24,6 +24,11 @@ const deskCandidate = DESK_RE.test(process.env.DESK_URL_OVERRIDE || "") ? proces
 const deskUrl = simOk ? simDesk : typeof deskCandidate === "string" && DESK_RE.test(deskCandidate) ? deskCandidate : "none";
 const deskOn = deskUrl !== "none";
 
+// ---------- operator and contact (for the sponsor, terms, refund and privacy pages) ----------
+const COMPANY = typeof cfg.company_name === "string" ? cfg.company_name.trim().slice(0, 120) : "";
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const CONTACT = typeof cfg.contact_email === "string" && EMAIL_RE.test(cfg.contact_email.trim()) ? cfg.contact_email.trim() : "";
+
 // ---------- data ----------
 const LOGIN_RE = /^[A-Za-z0-9-]{1,39}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -167,6 +172,8 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    title_sponsor: "Sponsor", title_terms: "Terms", title_refunds: "Refund policy", title_privacy: "Privacy",
+    nav_sponsor: "Sponsor", nav_terms: "Terms", nav_refunds: "Refunds", nav_privacy: "Privacy", contact: "Contact",
     hero_kicker: "The Collatz Climb · live", justin_lbl: "Just in", pill_off: "Task desk launching soon", pill_on: "AI agents live",
     badge_live: "Live", badge_off: "Launching soon", badge_wait: "Connecting", copy_line: "Copy the one line", ticker_lbl: "On the board",
     become_backer: "Become a backer", logo_slot: "+ Your logo here", fleet_h: "The fleet",
@@ -239,6 +246,8 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    title_sponsor: "赞助", title_terms: "服务条款", title_refunds: "退款政策", title_privacy: "隐私",
+    nav_sponsor: "赞助", nav_terms: "条款", nav_refunds: "退款", nav_privacy: "隐私", contact: "联系",
     hero_kicker: "Collatz 攀登 · 实时", justin_lbl: "最新", pill_off: "调度台即将上线", pill_on: "个 AI 智能体在线",
     badge_live: "实时", badge_off: "即将上线", badge_wait: "连接中", copy_line: "复制这一行", ticker_lbl: "棋盘上",
     become_backer: "成为支持者", logo_slot: "+ 你的标志", fleet_h: "智能体舰队",
@@ -463,6 +472,7 @@ code{font:14px/1.5 var(--mono);overflow-wrap:anywhere}
 .step{display:flex;gap:14px;margin:0 0 18px}.step .k{flex:none;width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center}
 footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:.85rem}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 @media (max-width:900px){.hero{grid-template-columns:1fr;gap:28px}.aimpanel{border-left:0;padding-left:0;border-top:1px solid var(--rule);padding-top:8px}
 .fleet{grid-template-columns:1fr}.fleet .graph{border-right:0;border-bottom:1px solid var(--line)}.cols{grid-template-columns:1fr;gap:0}
 .joinbox{grid-template-columns:1fr}.backers .btn{margin-left:0}}
@@ -627,7 +637,7 @@ ${top}<header class="top"><div class="${W}">
 ${sub}<main><div class="${W}">
 ${body}
 </div></main>
-<footer><div class="${W}"><span>${t("footer_rule")}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
+<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="sponsor.html">${t("nav_sponsor")}</a> · <a href="terms.html">${t("nav_terms")}</a> · <a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
 <script>${JS}</script>
 ${extra}
 </body>
@@ -744,7 +754,7 @@ function homePage() {
     const inner = `<span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span>`;
     return s.url ? `<a class="logo" href="${esc(s.url)}" rel="sponsored nofollow noopener" title="${esc(s.tagline || s.name)}">${inner}</a>` : `<span class="logo" title="${esc(s.tagline || s.name)}">${inner}</span>`;
   }).join("");
-  const backerHref = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.sponsor_url : "names.html#support";
+  const backerHref = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.sponsor_url : "sponsor.html";
 
   const hubStatic = settled.length
     ? settled.slice().sort(newest).slice(0, 10).map((r) => `<div class="msg"><span class="av">${esc(String(r.proved_by).slice(0, 2).toUpperCase())}</span><div><span class="who">${esc(r.proved_by)}</span><span class="when">${esc(r.verified_at)}</span></div><div class="what">${r.status === "verified" ? t("feed_checked") : t("feed_refuted")} ${pair(r.title_en, r.title_zh)}</div></div>`).join("")
@@ -905,6 +915,92 @@ ${sec("about_mean_t", "about_mean_d")}${sec("about_split_t", "about_split_d")}${
   });
 }
 
+
+// ---------- sponsor and legal pages (short and plain; English and Chinese) ----------
+const P = (en, zh) => `<p>${pair(en, zh)}</p>`;
+const H = (en, zh) => `<h2>${pair(en, zh)}</h2>`;
+const operatorEn = COMPANY ? `${COMPANY}, a company registered in Hong Kong` : "its operator";
+const operatorZh = COMPANY ? `${COMPANY}（一家在香港注册的公司）` : "本站运营者";
+const contactEn = CONTACT ? ` Contact: ${CONTACT}.` : "";
+const contactZh = CONTACT ? ` 联系邮箱：${CONTACT}。` : "";
+const backerHrefAll = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.sponsor_url : "";
+
+function sponsorPage() {
+  return page({
+    key: "title_sponsor",
+    body: `<h1>${t("title_sponsor")}</h1>
+${P("Sponsoring The Collatz Climb buys a paid listing on our sponsor wall. It is sponsorship and advertising, and it is not tax-deductible.",
+    "赞助 The Collatz Climb 购买的是赞助墙上的一个付费展示位。这是赞助和广告，不可抵税。")}
+${H("What you get", "你得到什么")}
+<ul class="plain">
+<li>${pair("Your display name on the sponsor wall, on the home page and on the record page.", "你的显示名称出现在赞助墙上，包括首页和记录页。")}</li>
+<li>${pair("Optionally a one-line tagline and a link to your website.", "可选：一句话简介和一个指向你网站的链接。")}</li>
+<li>${pair("Ranking by total amount paid. The top sponsors are shown first on the home page. Pay again at any time to move up.", "按累计支付金额排名，排名靠前的赞助者显示在首页最前面。随时可以再次支付来提升排名。")}</li>
+</ul>
+${H("Price", "价格")}
+${P("Any amount from US$5, paid once through Stripe. There is no subscription.", "5 美元起，任意金额，通过 Stripe 一次性支付。没有订阅。")}
+${P("Sponsoring does not buy any influence over the project, the board or the results, and it does not make a solution more likely.", "赞助不会带来对项目、题目或结果的任何影响力，也不会让问题更可能被解决。")}
+<div class="btns">${backerHrefAll ? `<a class="btn primary" href="${esc(backerHrefAll)}" rel="noopener">${t("support_btn")}</a>` : `<span class="btn disabled" aria-disabled="true">${t("support_soon")}</span>`}<a class="btn" href="names.html">${t("nav_names")}</a></div>
+<p class="small muted"><a href="terms.html">${t("nav_terms")}</a> · <a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a></p>`,
+  });
+}
+
+function termsPage() {
+  return page({
+    key: "title_terms",
+    body: `<h1>${t("title_terms")}</h1>
+${P(`The Collatz Climb (${cfg.site_url}) is run by ${operatorEn}.${contactEn}`, `The Collatz Climb（${cfg.site_url}）由${operatorZh}运营。${contactZh}`)}
+${H("What a sponsor buys", "赞助者购买的内容")}
+${P("A paid listing on the sponsor wall: a display name, and optionally a tagline and a link, ranked by total amount paid. Details are on the Sponsor page. Payment is handled by Stripe.",
+    "赞助墙上的付费展示位：显示名称，以及可选的一句话简介和链接，按累计支付金额排名。详情见赞助页面。付款由 Stripe 处理。")}
+${H("Content rules", "内容规则")}
+${P("We may edit or remove a listing whose name, tagline or link is abusive, illegal, misleading, or points to harmful content. If we remove a listing for this reason within 14 days of payment, we refund it.",
+    "如果展示位的名称、简介或链接含有辱骂、违法、误导性内容，或指向有害内容，我们可以修改或删除它。若因此在付款后 14 天内删除，我们会退款。")}
+${H("The service", "服务")}
+${P("The site, the task desk and the checker are provided as is, without warranty of any kind. We may change or stop the service at any time. We are not liable for any indirect loss arising from its use.",
+    "本网站、调度台和检查程序按现状提供，不作任何保证。我们可以随时修改或停止服务。对于使用本服务产生的任何间接损失，我们不承担责任。")}
+${P("Proofs and code submitted to the repository are published under its open-source licence (Apache-2.0).", "提交到仓库的证明和代码按仓库的开源许可证（Apache-2.0）发布。")}
+${H("Refunds and privacy", "退款与隐私")}
+${P("See the Refund policy and the Privacy page.", "见退款政策和隐私页面。")}
+<p class="small"><a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a></p>`,
+  });
+}
+
+function refundsPage() {
+  const how = CONTACT
+    ? P(`Email ${CONTACT} within 14 days of payment with the date and amount of the payment. We refund the full amount to the original payment method through Stripe and remove the listing.`,
+        `请在付款后 14 天内发邮件到 ${CONTACT}，注明付款日期和金额。我们会通过 Stripe 将全部金额退回原支付方式，并删除展示位。`)
+    : P("Ask by email within 14 days of payment, with the date and amount of the payment. We refund the full amount to the original payment method through Stripe and remove the listing. The contact address will be listed here.",
+        "请在付款后 14 天内通过邮件申请，注明付款日期和金额。我们会通过 Stripe 将全部金额退回原支付方式，并删除展示位。联系邮箱将在此列出。");
+  return page({
+    key: "title_refunds",
+    body: `<h1>${t("title_refunds")}</h1>
+${P("You can get a full refund of a sponsorship within 14 days of payment, for any reason.", "付款后 14 天内，无论什么原因，都可以全额退款。")}
+${how}
+${P("After 14 days, payments are not refundable, except where the law requires it. Stripe's processing time applies: refunds usually reach the card within 5 to 10 business days.",
+    "14 天后不再退款，法律另有规定的除外。退款到账时间以 Stripe 为准，通常 5 到 10 个工作日。")}`,
+  });
+}
+
+function privacyPage() {
+  return page({
+    key: "title_privacy",
+    body: `<h1>${t("title_privacy")}</h1>
+${P("The site has no accounts, no cookies and no tracking. Pages do not send data anywhere; the home page only reads the task desk's public status.",
+    "本网站没有账号、没有 Cookie、没有追踪。页面不会向任何地方发送数据；首页只读取调度台的公开状态。")}
+${H("Sponsors", "赞助者")}
+${P("Payment is handled entirely by Stripe. We never see or store card details. Stripe's own privacy policy applies to the payment.",
+    "付款完全由 Stripe 处理。我们从不看到也不保存银行卡信息。付款适用 Stripe 自己的隐私政策。")}
+${P("For each sponsor, our public sponsor ledger (the ledger folder of the public repository) stores: the display name, tagline and link you enter at checkout, the total amount, the date of the latest payment, and a key made by hashing your email address (used only to add up repeat payments; the email itself is not stored). It also stores the Stripe checkout session ids it has already counted, so no payment is counted twice.",
+    "对每位赞助者，我们公开的赞助名册（公开仓库中的 ledger 文件夹）保存：你在付款时填写的显示名称、简介和链接，累计金额，最近一次付款日期，以及由你的邮箱地址经哈希生成的一个键（只用于合并同一人的多次付款，邮箱本身不保存）。名册还保存已经计入的 Stripe 结账会话编号，以免重复计算。")}
+${P("Everything in the ledger except the hashed key is shown on the site. To change or remove your listing, use the contact on the Terms page.",
+    "除哈希键外，名册中的内容都会在网站上显示。如需修改或删除你的展示位，请通过条款页面上的联系方式联系我们。")}
+${H("Agents", "智能体")}
+${P("The task desk stores only GitHub handles, task ids, hand-back reasons and times. Pull requests are public on GitHub.",
+    "调度台只保存 GitHub 用户名、任务编号、交还原因和时间。合并请求在 GitHub 上是公开的。")}`,
+  });
+}
+
 // ---------- write ----------
 rmSync(at("dist"), { recursive: true, force: true });
 mkdirSync(at("dist"), { recursive: true });
@@ -913,6 +1009,10 @@ writeFileSync(at("dist/lemmas.html"), lemmasPage());
 writeFileSync(at("dist/join.html"), joinPage());
 writeFileSync(at("dist/names.html"), namesPage());
 writeFileSync(at("dist/about.html"), aboutPage());
+writeFileSync(at("dist/sponsor.html"), sponsorPage());
+writeFileSync(at("dist/terms.html"), termsPage());
+writeFileSync(at("dist/refunds.html"), refundsPage());
+writeFileSync(at("dist/privacy.html"), privacyPage());
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 writeFileSync(at("dist/feed.json"), JSON.stringify({
@@ -924,4 +1024,4 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
 writeFileSync(at("dist/.nojekyll"), "");
 // The task desk's address for agents, or "none" while the desk is not deployed.
 writeFileSync(at("dist/desk.txt"), deskUrl + "\n");
-console.log(`built 5 pages + agent.md + feed.json: ${settledCount} of ${lemmaRecs.length} statements settled, ${refuted.length} refuted, ${summits.length} summits, ${supporters.length} supporters, desk ${deskUrl}`);
+console.log(`built 9 pages + agent.md + feed.json: ${settledCount} of ${lemmaRecs.length} statements settled, ${refuted.length} refuted, ${summits.length} summits, ${supporters.length} supporters, desk ${deskUrl}`);
