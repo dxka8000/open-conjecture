@@ -342,7 +342,7 @@ test("the generated supporters.json is accepted by site/build.mjs", async () => 
   ]);
   const copy = mkdtempSync(join(tmpdir(), "stripe-build-"));
   try {
-    for (const d of ["site", "records"]) cpSync(join(ROOT, d), join(copy, d), { recursive: true });
+    for (const d of ["site", "records", "OpenConjecture"]) cpSync(join(ROOT, d), join(copy, d), { recursive: true });
     cpSync(join(ROOT, "AGENTS.md"), join(copy, "AGENTS.md"));
     mkdirSync(join(copy, "tools"), { recursive: true });
     cpSync(join(ROOT, "tools", "scoring.mjs"), join(copy, "tools", "scoring.mjs"));
