@@ -267,6 +267,28 @@ test("missing display_name falls back to Anonymous", async () => {
   }
 });
 
+test("Dashboard-made fields are matched by derived key or by label", async () => {
+  const s = session({ email: "dash@example.com" });
+  s.custom_fields = [
+    { key: "displayname", type: "text", label: { type: "custom", custom: "Display name" }, text: { value: "Ada" } },
+    { key: "abc123", type: "text", label: { type: "custom", custom: "Tagline" }, text: { value: "Hello" } },
+    { key: "link", type: "text", label: { type: "custom", custom: "Link" }, text: { value: "https://example.com" } },
+  ];
+  const mock = await startMock([s]);
+  try {
+    await withEnv(async ({ dir }) => {
+      const r = await runSync({ api: mock.api, dir });
+      assert.equal(r.code, 0, r.stderr);
+      const [e] = readLedger(dir);
+      assert.equal(e.name, "Ada");
+      assert.equal(e.tagline, "Hello");
+      assert.equal(e.url, "https://example.com");
+    });
+  } finally {
+    mock.server.close();
+  }
+});
+
 test("HTTP 500 mid-pagination exits 1 and writes nothing", async () => {
   const sessions = [];
   for (let i = 0; i < 150; i++) sessions.push(session({ email: `p${i}@example.com`, name: `P${i}` }));

@@ -19,8 +19,16 @@ const CONTROL_RE = /[\u0000-\u001f\u007f-\u009f]/g;
 const clean = (value, max) =>
   Array.from(String(value ?? "").replace(CONTROL_RE, "").trim()).slice(0, max).join("").trim();
 
+// Payment Links made in the Stripe Dashboard derive each field's key from its label, so the key may be
+// "displayname" or similar rather than exactly "display_name". Match the exact key first, then the key or
+// the label with case, spaces and punctuation ignored.
+const norm = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const fieldText = (session, key) => {
-  const field = (session.custom_fields || []).find((f) => f && f.key === key);
+  const fields = (session.custom_fields || []).filter((f) => f && (f.type === "text" || f.text));
+  const want = norm(key);
+  const field = fields.find((f) => f.key === key)
+    || fields.find((f) => norm(f.key) === want)
+    || fields.find((f) => f.label && norm(f.label.custom) === want);
   const value = field && field.text ? field.text.value : null;
   return typeof value === "string" ? value : "";
 };
