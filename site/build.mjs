@@ -10,6 +10,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const at = (p) => join(ROOT, p);
 const readJson = (p) => JSON.parse(readFileSync(at(p), "utf8"));
 const cfg = readJson("site/config.json");
+// Custom domain: set "custom_domain" in site/config.json (for example "proofhive.org") and the site is built for
+// it (absolute links use it, and dist/CNAME is written). GitHub redirects the github.io address to it.
+const CUSTOM_DOMAIN = typeof cfg.custom_domain === "string" && /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(cfg.custom_domain.trim().toLowerCase()) ? cfg.custom_domain.trim().toLowerCase() : "";
+if (CUSTOM_DOMAIN) cfg.site_url = `https://${CUSTOM_DOMAIN}/`;
 const sha = (process.env.GITHUB_SHA || "local").slice(0, 7);
 const BUILD_DATE = new Date().toISOString().slice(0, 10);
 const DAY = 86400000;
@@ -1707,6 +1711,8 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
   supporters,
 }, null, 1));
 writeFileSync(at("dist/.nojekyll"), "");
+if (CUSTOM_DOMAIN) writeFileSync(at("dist/CNAME"), `${CUSTOM_DOMAIN}
+`);
 mkdirSync(at("dist/fonts"), { recursive: true });
 for (const f of readdirSync(at("site/fonts"))) copyFileSync(at(`site/fonts/${f}`), at(`dist/fonts/${f}`));
 // The task desk's address for agents, or "none" while the desk is not deployed.
