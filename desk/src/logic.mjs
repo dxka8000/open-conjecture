@@ -46,6 +46,11 @@ const BOT_RE = /bot|crawler|spider|crawl|slurp|headless|preview|monitor|curl|wge
 const PATH_RE = /^\/[A-Za-z0-9/._-]{0,119}$/;
 const REF_RE = /^[a-z0-9.-]{1,100}$/;
 
+// Library votes ("want this attacked")
+export const VOTE_IDS_CAP = 5000;
+export const VOTES_PER_IP_DAY = 50;
+const VOTE_ID_RE = /^(fc|ph):[A-Za-z0-9_.'-]{1,120}$/;
+
 // Sponsor pledges
 export const PLEDGE_MIN = 5;
 export const PLEDGE_MAX = 10000;
@@ -185,6 +190,8 @@ export class Desk {
     if (!route) return { status: 404, body: { error: 'not found' } };
     if (typeof body === 'string' && body.length > BODY_MAX) throw new HttpError(413, 'request body too large');
     if (route === 'hit') return this.hit(now, body, ip, ua, country);
+    if (route === 'vote') return this.vote(now, body, ip);
+    if (route === 'votes') return { status: 200, body: { votes: (await this.store.get('votes')) || {} } };
     if (route === 'admin-stats') return this.stats(now, searchParams, auth);
     if (route === 'pledge') return this.pledge(now, body, ip);
     if (route === 'sponsors') return this.sponsors();
@@ -219,6 +226,7 @@ export class Desk {
     if (cur === day) return;
     for (const [k] of await this.store.list('uv:')) await this.store.delete(k);
     for (const [k] of await this.store.list('salt:')) await this.store.delete(k);
+    for (const [k] of await this.store.list('vt:')) await this.store.delete(k);
     const cutoff = iso(Date.parse(day + 'T00:00:00Z') - STATS_KEEP_DAYS * 864e5).slice(0, 10);
     for (const [k] of await this.store.list('stats:')) if (k.slice(6) < cutoff) await this.store.delete(k);
     await this.store.put(`salt:${day}`, this.newId() + this.newId());
@@ -264,6 +272,34 @@ export class Desk {
     }
     await this.store.put(key, s);
     return { status: 204, body: null };
+  }
+
+  // One "want this attacked" vote per IP, per library entry, per day. Only the totals are kept; the
+  // daily-salted hashes that prevent double votes are deleted when the day changes.
+  async vote(now, body, ip) {
+    let d = {};
+    try { d = JSON.parse(body || '{}') || {}; } catch (e) { d = {}; }
+    const id = typeof d.id === 'string' ? d.id : '';
+    if (!VOTE_ID_RE.test(id)) throw new HttpError(400, 'id must be a library entry id');
+    const day = iso(now).slice(0, 10);
+    await this.rollDay(day);
+    const salt = (await this.store.get(`salt:${day}`)) || '';
+    const hash = async (x) => [...new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(x)))].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('');
+    const ipKey = `vt:${day}:ip:${await hash(`${salt}|${ip || ''}`)}`;
+    const used = (await this.store.get(ipKey)) || 0;
+    const votes = (await this.store.get('votes')) || {};
+    if (used >= VOTES_PER_IP_DAY) return { status: 200, body: { ok: false, counted: false, votes: votes[id] || 0, reason: 'daily limit' } };
+    const v = await hash(`${salt}|${ip || ''}|${id}`);
+    const bucketKey = `vt:${day}:${v.slice(0, 2)}`;
+    const bucket = (await this.store.get(bucketKey)) || [];
+    if (bucket.includes(v)) return { status: 200, body: { ok: true, counted: false, votes: votes[id] || 0 } };
+    if (!(id in votes) && Object.keys(votes).length >= VOTE_IDS_CAP) throw new HttpError(503, 'vote list is full');
+    bucket.push(v);
+    await this.store.put(bucketKey, bucket);
+    await this.store.put(ipKey, used + 1);
+    votes[id] = (votes[id] || 0) + 1;
+    await this.store.put('votes', votes);
+    return { status: 200, body: { ok: true, counted: true, votes: votes[id] } };
   }
 
   async stats(now, searchParams, auth) {
@@ -756,6 +792,8 @@ function routeOf(method, pathname) {
   if (method === 'POST' && pathname === '/desk/release') return 'release';
   if (method === 'GET' && pathname === '/desk/status') return 'status';
   if (method === 'POST' && pathname === '/desk/hit') return 'hit';
+  if (method === 'POST' && pathname === '/desk/vote') return 'vote';
+  if (method === 'GET' && pathname === '/desk/votes') return 'votes';
   if (method === 'GET' && pathname === '/desk/admin/stats') return 'admin-stats';
   if (method === 'POST' && pathname === '/desk/pledge') return 'pledge';
   if (method === 'GET' && pathname === '/desk/sponsors') return 'sponsors';

@@ -474,7 +474,7 @@ async function main() {
   check("home page lists the refuted step in the graveyard", home.includes(wsJson(`records/collatz/${falseId}.json`).title_en.replace(/&/g, "&amp;")));
   check("home page leaderboard shows the prover and the red team", home.includes("sim-grace") && home.includes(realWho));
   check("home page escapes hostile sponsor text", !home.includes("<script>alert(1)</script>") && !home.includes("javascript:alert"));
-  check("home page CSP allows only the desk", new RegExp(`connect-src ${DESK.replace(/[.]/g, "\\.")}`).test(home));
+  check("home page CSP connects only to itself and the desk", new RegExp(`connect-src 'self' ${DESK.replace(/[.]/g, "\\.")}`).test(home));
 
   const failed = results.filter((r) => !r.ok);
   log(`\n${results.length - failed.length} of ${results.length} checks passed.`);

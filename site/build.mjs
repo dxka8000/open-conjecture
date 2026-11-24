@@ -174,6 +174,12 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    title_library: "Open-problem library", library_lead: "Open problems from across mathematics, many already stated in Lean. Search them, and vote for the ones you want attacked: the most wanted become campaigns.",
+    library_search: "Search problems: words, areas, names (e.g. erdos, primes, tensor)", all_areas: "All areas", all_sources: "All sources",
+    sort_votes: "Most wanted", sort_board: "On the board first", sort_title: "Title", only_board: "On the board", only_lean: "Stated in Lean",
+    library_loading: "Loading the library…", library_failed: "The library could not be loaded.", library_count: "{n} of {t} problems",
+    show_more: "Show more", show_lean: "Lean statement", vote_title: "Want this attacked: one vote per day", vote_later: "Try later", on_board: "On the board",
+    library_votes_note: "Votes: one per problem per day from each address; only the totals are kept. The maintainers promote the most wanted problems to campaigns.",
     title_people: "People", people_lead: "Everyone with accepted work on ProofHive, with their profiles. Search by name, affiliation, interest or country.",
     people_search: "Search people", sort_points: "Points", sort_name: "Name", sort_new: "Newest",
     profile_edit: "Add or edit a profile with a pull request that adds profiles/<your GitHub login>.json (see agent.md).",
@@ -285,6 +291,12 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    title_library: "未解决问题库", library_lead: "来自数学各领域的未解决问题，很多已经用 Lean 写成。可以搜索，也可以为想被攻打的问题投票：票数最多的会成为新的战役。",
+    library_search: "搜索问题：关键词、领域、名称（如 erdos、primes、tensor）", all_areas: "全部领域", all_sources: "全部来源",
+    sort_votes: "最受期待", sort_board: "棋盘上的优先", sort_title: "标题", only_board: "在棋盘上", only_lean: "已用 Lean 表述",
+    library_loading: "正在加载问题库…", library_failed: "问题库加载失败。", library_count: "共 {t} 个问题，匹配 {n} 个",
+    show_more: "显示更多", show_lean: "Lean 表述", vote_title: "想让它被攻打：每天一票", vote_later: "稍后再试", on_board: "在棋盘上",
+    library_votes_note: "投票：每个地址每天对每个问题一票，只保存总数。维护者会把最受期待的问题升级为战役。",
     title_people: "贡献者", people_lead: "所有在 ProofHive 有被接受工作的人，以及他们的个人资料。可按姓名、单位、研究兴趣或国家搜索。",
     people_search: "搜索贡献者", sort_points: "积分", sort_name: "姓名", sort_new: "最新",
     profile_edit: "通过提交 profiles/<你的 GitHub 用户名>.json 的合并请求来添加或修改个人资料（见 agent.md）。",
@@ -565,6 +577,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
 .person{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:14px;color:var(--text);text-decoration:none;transition:border-color .15s}.person:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--text)}
 .person .pi{display:grid;min-width:0;flex:1}.person .pi b{font-weight:600}.person .pp{display:grid;text-align:right}.person .pp b{font:650 1.1rem/1.1 var(--mono);color:var(--accent)}
 @media (max-width:520px){.prof{flex-direction:column;gap:14px}}
+.libtools{padding:16px;display:grid;gap:12px;margin:0 0 14px}
+.librow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:.88rem;color:var(--muted);margin-right:14px;cursor:pointer}.chk input{width:auto;accent-color:var(--accent)}
+.libcard{padding:16px 18px;margin:0 0 12px}.lc-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.lc-top h3{margin:0}
+.libcard .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.libcard .stmt{color:color-mix(in srgb,var(--text) 85%,var(--muted));font-size:.93rem;margin:0 0 8px;overflow-wrap:anywhere}
+.libcard .chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.75rem;color:var(--muted)}
+.lean-chip{color:var(--cool)}.vote{flex:none;font-family:var(--mono)}
+@media (max-width:520px){.librow{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:900px){.cols{grid-template-columns:1fr;gap:0}.joinbox{grid-template-columns:1fr}}
 @media (max-width:520px){.wrap{padding:0 16px}main{padding-top:32px}.hero2{padding:40px 0 28px;margin-top:-32px}.camp{padding:16px 14px 8px}.branch{padding-left:12px}
@@ -809,7 +829,7 @@ document.getElementById("pick").addEventListener("click",function(){
 });
 })();`;
 
-const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; connect-src ${deskOn ? deskUrl : "'none'"}; base-uri 'none'; form-action 'none'`;
+const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; connect-src 'self'${deskOn ? ` ${deskUrl}` : ""}; base-uri 'none'; form-action 'none'`;
 
 const NAV = [
   ["index.html", "nav_campaigns", ["title_home", "title_lemmas"]],
@@ -1291,6 +1311,80 @@ ${deskOn ? `<form id="tokform" class="pledge" autocomplete="off"><label>Admin to
   });
 }
 
+// ---------- open-problem library ----------
+// A prebuilt JSON index (tools/build_library.mjs) searched in the browser; votes come from the desk.
+const LIB_META = existsSync(at("site/library/library.json")) ? (() => { const d = readJson("site/library/library.json"); return { n: d.entries.length, generated: d.generated, attribution: d.attribution }; })() : null;
+function libraryPage() {
+  const fc = LIB_META && LIB_META.attribution && LIB_META.attribution["formal-conjectures"];
+  return page({
+    key: "title_library",
+    bodyAttrs: `data-desk="${deskOn ? esc(deskUrl) : ""}"`,
+    body: `<p class="kicker">${t("nav_library")}</p>
+<h1>${t("title_library")}</h1>
+<p class="lede">${t("library_lead")}</p>
+<div class="libtools glass">
+<input type="search" id="lq" data-i18n-ph="library_search" placeholder="${esc(I18N.en.library_search)}" aria-label="${esc(I18N.en.library_search)}">
+<div class="librow">
+<select id="larea" aria-label="Area"><option value="">${esc(I18N.en.all_areas)}</option></select>
+<select id="lsrc" aria-label="Source"><option value="">${esc(I18N.en.all_sources)}</option></select>
+<select id="lsort" aria-label="Sort"><option value="votes">${esc(I18N.en.sort_votes)}</option><option value="board">${esc(I18N.en.sort_board)}</option><option value="title">${esc(I18N.en.sort_title)}</option></select>
+</div>
+<div class="filters"><label class="chk"><input type="checkbox" id="lboard"> ${t("only_board")}</label><label class="chk"><input type="checkbox" id="llean"> ${t("only_lean")}</label></div>
+</div>
+<p class="small muted" id="lcount" aria-live="polite">${t("library_loading")}</p>
+<div id="lib"></div>
+<div class="btns"><button class="btn" type="button" id="lmore" hidden>${t("show_more")}</button></div>
+<p class="small muted">${t("library_votes_note")}</p>
+${fc ? `<p class="small muted">${pair(`Most entries come from google-deepmind/formal-conjectures (commit ${fc.commit.slice(0, 7)}), © The Formal Conjectures Authors, Apache License 2.0; statements shortened and reformatted. Erdős problems and other sources are linked, not copied.`, `大部分条目来自 google-deepmind/formal-conjectures（提交 ${fc.commit.slice(0, 7)}），© The Formal Conjectures Authors，Apache 2.0 许可证；陈述有删节和重排。Erdős 问题等来源只链接，不复制。`)} <a href="${esc(fc.repo)}" rel="noopener">GitHub</a> · <a href="library/NOTICE.txt">NOTICE</a></p>` : ""}`,
+    extra: `<script>${LIBRARY_JS}</script>`,
+  });
+}
+const LIBRARY_JS = `
+(function(){
+var desk=document.body.getAttribute("data-desk")||"";
+function lang(){return window.__lang==="zh"?"zh":"en";}
+function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
+function el(id){return document.getElementById(id);}
+function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;if(s!=null)e.textContent=s;return e;}
+function str(v,n){return typeof v==="string"?v.slice(0,n):"";}
+var all=[],votes={},shown=40,mine={};
+try{mine=JSON.parse(sessionStorage.getItem("ph-voted")||"{}")||{};}catch(e){}
+var KW=/(\\b(?:fun|if|then|else|let|in|by|Prop|Finset|Set|Filter)\\b)|([∀∃λ→↔∧∨¬≤≥≠<>=+*\\/^%∣]|:=)|(\\b\\d+\\b)|(ℕ|ℝ|ℤ|ℚ|ℂ)/g;
+function lean(src){var pre=node("pre","lean"),code=node("code");var last=0,m;KW.lastIndex=0;
+while((m=KW.exec(src))){if(m.index>last)code.appendChild(document.createTextNode(src.slice(last,m.index)));var s=node("span",m[1]?"k":m[2]?"o":m[3]?"n":"t",m[0]);code.appendChild(s);last=m.index+m[0].length;}
+code.appendChild(document.createTextNode(src.slice(last)));pre.appendChild(code);return pre;}
+function hay(e){return (str(e.title,300)+" "+str(e.title_zh,300)+" "+str(e.statement,800)+" "+(e.areas||[]).join(" ")+" "+str(e.source,60)+" "+str(e.id,140)).toLowerCase();}
+function card(e){var c=node("article","libcard glass");
+var top=node("div","lc-top");var h=node("h3",null,lang()==="zh"&&e.title_zh?e.title_zh:str(e.title,200));top.appendChild(h);
+var vb=node("button","btn sm vote");vb.type="button";var n=votes[e.id]||0;vb.textContent="▲ "+n;vb.title=tr("vote_title");if(mine[e.id])vb.setAttribute("aria-pressed","true");
+vb.addEventListener("click",function(){if(!desk||mine[e.id])return;vb.disabled=true;fetch(desk+"/desk/vote",{method:"POST",credentials:"omit",headers:{"Content-Type":"text/plain"},body:JSON.stringify({id:e.id})})
+.then(function(r){return r.json();}).then(function(d){if(d&&typeof d.votes==="number"){votes[e.id]=d.votes;vb.textContent="▲ "+d.votes;}mine[e.id]=1;vb.setAttribute("aria-pressed","true");try{sessionStorage.setItem("ph-voted",JSON.stringify(mine));}catch(x){}})
+.catch(function(){vb.textContent=tr("vote_later");}).then(function(){vb.disabled=false;});});
+if(!desk)vb.hidden=true;top.appendChild(vb);c.appendChild(top);
+var tags=node("p","tags");if(e.on_board)tags.appendChild(node("span","badge",tr("on_board")));tags.appendChild(node("span","chip",str(e.source,60)));
+(e.areas||[]).slice(0,3).forEach(function(a){tags.appendChild(node("span","chip",str(a,60)));});if(e.formalized)tags.appendChild(node("span","chip lean-chip","Lean"));c.appendChild(tags);
+c.appendChild(node("p","stmt",lang()==="zh"&&e.statement_zh?e.statement_zh:str(e.statement,800)));
+if(e.lean){var d=node("details");d.appendChild(node("summary",null,tr("show_lean")));d.appendChild(lean(str(e.lean,1600)));c.appendChild(d);}
+var lk=node("p","small");(e.links||[]).forEach(function(l,i){var u=str(l.url,300);if(!/^https:\\/\\//.test(u)&&!/^lemmas\\.html#/.test(u))return;if(i)lk.appendChild(document.createTextNode(" · "));var a=node("a",null,str(l.label,60)+" ↗");a.href=u;a.rel="noopener nofollow";lk.appendChild(a);});c.appendChild(lk);
+return c;}
+function apply(){var q=el("lq").value.trim().toLowerCase().split(/\\s+/).filter(Boolean),ar=el("larea").value,sr=el("lsrc").value,ob=el("lboard").checked,ll=el("llean").checked,so=el("lsort").value;
+var res=all.filter(function(e){if(ar&&(e.areas||[]).indexOf(ar)<0)return false;if(sr&&e.source!==sr)return false;if(ob&&!e.on_board)return false;if(ll&&!e.formalized)return false;
+for(var i=0;i<q.length;i++)if(e._h.indexOf(q[i])<0)return false;return true;});
+res.sort(function(a,b){if(so==="title")return a.title<b.title?-1:1;if(so==="board")return (b.on_board?1:0)-(a.on_board?1:0)||(votes[b.id]||0)-(votes[a.id]||0);return (votes[b.id]||0)-(votes[a.id]||0)||(b.on_board?1:0)-(a.on_board?1:0);});
+var box=el("lib");while(box.firstChild)box.removeChild(box.firstChild);res.slice(0,shown).forEach(function(e){box.appendChild(card(e));});
+el("lcount").textContent=tr("library_count").replace("{n}",res.length.toLocaleString()).replace("{t}",all.length.toLocaleString());el("lmore").hidden=res.length<=shown;}
+function fill(sel,vals){vals.forEach(function(v){var o=node("option",null,v);o.value=v;sel.appendChild(o);});}
+fetch("library/library.json",{credentials:"omit"}).then(function(r){return r.json();}).then(function(d){all=(d&&Array.isArray(d.entries)?d.entries:[]).filter(function(e){return e&&typeof e.id==="string";});
+all.forEach(function(e){e._h=hay(e);});var areas={},srcs={};all.forEach(function(e){(e.areas||[]).forEach(function(a){areas[a]=(areas[a]||0)+1;});srcs[e.source]=(srcs[e.source]||0)+1;});
+fill(el("larea"),Object.keys(areas).sort());fill(el("lsrc"),Object.keys(srcs).sort());apply();
+if(desk)fetch(desk+"/desk/votes",{credentials:"omit"}).then(function(r){return r.json();}).then(function(v){if(v&&v.votes&&typeof v.votes==="object"){votes=v.votes;apply();}}).catch(function(){});})
+.catch(function(){el("lcount").textContent=tr("library_failed");});
+var t0;el("lq").addEventListener("input",function(){clearTimeout(t0);t0=setTimeout(function(){shown=40;apply();},120);});
+["larea","lsrc","lsort","lboard","llean"].forEach(function(id){el(id).addEventListener("change",function(){shown=40;apply();});});
+el("lmore").addEventListener("click",function(){shown+=40;apply();});
+var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(all.length)apply();});
+})();`;
+
 // ---------- credit and publication pledge ----------
 function creditPage() {
   const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
@@ -1533,6 +1627,11 @@ for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: tr
 const contributors = people.map((P) => P.login);
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 writeFileSync(at("dist/people.html"), peoplePage());
+if (LIB_META) {
+  writeFileSync(at("dist/library.html"), libraryPage());
+  mkdirSync(at("dist/library"), { recursive: true });
+  for (const f of ["library.json", "NOTICE.txt"]) copyFileSync(at(`site/library/${f}`), at(`dist/library/${f}`));
+}
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 writeFileSync(at("dist/feed.json"), JSON.stringify({

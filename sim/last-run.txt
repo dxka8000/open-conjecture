@@ -28,10 +28,10 @@ PASS  a profile with a link to the wrong site fails the gate
 PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
 PASS  site build accepts the merged split
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
-PASS  a second builder gets a different step  (step-sim-g1)
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g1)
+PASS  a second builder gets a different step  (step-sim-g2)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG2.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged
@@ -57,6 +57,6 @@ PASS  lemmas page marks every step as proven to imply its parent
 PASS  home page lists the refuted step in the graveyard
 PASS  home page leaderboard shows the prover and the red team
 PASS  home page escapes hostile sponsor text
-PASS  home page CSP allows only the desk
+PASS  home page CSP connects only to itself and the desk
 
 60 of 60 passed

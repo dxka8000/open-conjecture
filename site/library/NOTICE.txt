@@ -1,0 +1,4 @@
+The open-problem library includes material from google-deepmind/formal-conjectures (https://github.com/google-deepmind/formal-conjectures),
+commit ee50fcbc624951ed31e6e70ba1d2b76c9dd26d4d, Copyright The Formal Conjectures Authors, licensed under the Apache License, Version 2.0:
+https://www.apache.org/licenses/LICENSE-2.0
+Statements were shortened and reformatted. Links to erdosproblems.com and other sources point to the originals; their text is not copied.
