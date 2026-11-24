@@ -6,29 +6,32 @@ PASS  a step that restates its parent word for word is rejected by the gate  (RE
 PASS  a step that is just another statement's name is rejected  (REJECTED: Step_Alias is just the statement Open_DensityOne)
 PASS  the review role is gone (400)
 PASS  desk gives a thinker a note task first (no notes yet): kind note and the note file  (notes/open-coefficient-stopping/<your GitHub login>-<slug>.md)
-PASS  a valid split passes the checks, gets needs-review and is not merged yet  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s))
+PASS  a valid split passes the checks, gets needs-review and is not merged yet  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s), 0 prof)
 PASS  an outsider cannot self-apply review-ok (label and verdict ignored)
 PASS  a review-ok for a different commit does not count
 PASS  a genuine split merges after the owner's review-ok for its commit
-PASS  the merged tree still passes the real gate (1 split checked)  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s))
+PASS  the merged tree still passes the real gate (1 split checked)  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s), 0 profile(s))
 PASS  a disguised restatement passes the mechanical checks
 PASS  the AI review rejects the restatement and it is not merged
 PASS  a split with a trivial step fails CI (triviality check, scripted) and is not merged
 PASS  a second split of the same statement is never merged  (The Lean checker passed, but this pull request can't be merged automatically: a )
-PASS  a well-formed research note passes the gate and waits for the AI review  (records ok; 0 settled result(s), 1 split(s) to check, 1 research note(s))
+PASS  a well-formed research note passes the gate and waits for the AI review  (records ok; 0 settled result(s), 1 split(s) to check, 1 research note(s), 0 prof)
 PASS  a good research note merges after the review-ok
 PASS  a note with a fake citation passes the format check
 PASS  the AI review rejects the fake citation and the note is not merged
 PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
 PASS  a note with a non-https link fails the gate
 PASS  a note filed under someone else's name is never merged
+PASS  a contributor's own profile merges with no review
+PASS  nobody can set someone else's profile
+PASS  a profile with a link to the wrong site fails the gate
 PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
 PASS  site build accepts the merged split
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g1)
-PASS  a second builder gets a different step  (step-sim-g2)
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
+PASS  a second builder gets a different step  (step-sim-g1)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG2.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged
@@ -38,6 +41,7 @@ PASS  a proof Lean accepts is ACCEPTED and merged
 PASS  a second proof of a settled step is not merged
 PASS  a refutation is ACCEPTED and the step goes to the graveyard
 PASS  site build after results
+PASS  the profile page shows the escaped display name and the directory lists it
 PASS  points: a research note on an open problem scores 10  (nina 10)
 PASS  the site renders the merged note escaped, and lists it on the timeline  (open-five-x-plus-one)
 PASS  points: split 50 (+5 when its step is proven), step proof 12, step refutation 12  (tina 55, sim-alice 12, grace 12)
@@ -55,4 +59,4 @@ PASS  home page leaderboard shows the prover and the red team
 PASS  home page escapes hostile sponsor text
 PASS  home page CSP allows only the desk
 
-56 of 56 passed
+60 of 60 passed

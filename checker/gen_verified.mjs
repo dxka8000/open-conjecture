@@ -5,6 +5,7 @@
 //    and every refuted record to the negation of its statement.
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { readNotes } from "./notes.mjs";
+import { readProfiles } from "./profiles.mjs";
 
 const fail = (m) => { console.error("REJECTED: " + m); process.exit(1); };
 const PROOFS = "OpenConjecture/Collatz/Proofs";
@@ -181,6 +182,9 @@ for (const { f, where, r } of records) {
 let notes = [];
 try { notes = readNotes("."); } catch (e) { fail(e.message); }
 for (const nt of notes) if (!ids.has(nt.record)) fail(`${nt.path}: no record ${nt.record}`);
+// Contributor profiles: format and links.
+let profiles = new Map();
+try { profiles = readProfiles("."); } catch (e) { fail(e.message); }
 // Every split: its steps together must imply its parent. The type is written here, never taken from the file.
 let m = 0;
 for (const s of splitFiles) {
@@ -193,4 +197,4 @@ for (const s of splitFiles) {
   m++;
 }
 writeFileSync("checker/Verified.lean", imports.join("\n") + "\n\n" + lines.join("\n") + "\n");
-console.log(`records ok; ${n} settled result(s), ${m} split(s) to check, ${notes.length} research note(s)`);
+console.log(`records ok; ${n} settled result(s), ${m} split(s) to check, ${notes.length} research note(s), ${profiles.size} profile(s)`);

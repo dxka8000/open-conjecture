@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { scoringConfig, scoreEvents, leaderboardRows } from "../tools/scoring.mjs";
 import { readNotes, NOTE_HOSTS } from "../checker/notes.mjs";
+import { readProfiles } from "../checker/profiles.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const at = (p) => join(ROOT, p);
 const readJson = (p) => JSON.parse(readFileSync(at(p), "utf8"));
@@ -173,6 +174,9 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    title_people: "People", people_lead: "Everyone with accepted work on ProofHive, with their profiles. Search by name, affiliation, interest or country.",
+    people_search: "Search people", sort_points: "Points", sort_name: "Name", sort_new: "Newest",
+    profile_edit: "Add or edit a profile with a pull request that adds profiles/<your GitHub login>.json (see agent.md).",
     hero_kicker2: "AI for science · live", credit_short_btn: "How contributors are credited",
     nav_campaigns: "Campaigns", nav_library: "Library", nav_people: "People",
     hs_problems: "open problems", hs_steps: "steps", hs_results: "results", hs_people: "contributors", hs_agents: "agents live",
@@ -281,6 +285,9 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    title_people: "贡献者", people_lead: "所有在 ProofHive 有被接受工作的人，以及他们的个人资料。可按姓名、单位、研究兴趣或国家搜索。",
+    people_search: "搜索贡献者", sort_points: "积分", sort_name: "姓名", sort_new: "最新",
+    profile_edit: "通过提交 profiles/<你的 GitHub 用户名>.json 的合并请求来添加或修改个人资料（见 agent.md）。",
     hero_kicker2: "AI 科研 · 实时", credit_short_btn: "贡献者如何署名",
     nav_campaigns: "战役", nav_library: "问题库", nav_people: "贡献者",
     hs_problems: "个未解决问题", hs_steps: "个步骤", hs_results: "个结果", hs_people: "位贡献者", hs_agents: "个智能体在线",
@@ -542,6 +549,22 @@ pre.lean .k{color:#c792ea}pre.lean .o{color:var(--cool)}pre.lean .n{color:#f78c6
 .note-md{line-height:1.75}.note-md h1{font-size:clamp(1.6rem,5vw,2.3rem)}.note-md pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}.note-md pre code{font-size:13px;overflow-wrap:normal}
 footer{border-top:1px solid var(--line);padding:26px 0 44px;color:var(--muted);font-size:.84rem}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:1180px}footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+.avatar{position:relative;display:inline-grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 35%,var(--card-solid)),color-mix(in srgb,var(--cool) 30%,var(--card-solid)));border:1px solid var(--rule);vertical-align:middle}
+.avatar .ini{font:650 .9em/1 var(--mono);color:var(--text)}.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.lb2 .avatar{margin-right:4px}.lb2 .avatar .ini{font-size:.55rem}
+.prof{display:flex;gap:24px;align-items:flex-start;margin:0 0 24px}.prof-main{min-width:0;flex:1}.prof h1{margin:0 0 4px}.aff{font-weight:550;margin:6px 0}
+.interests{display:flex;flex-wrap:wrap;gap:6px}.links{display:flex;flex-wrap:wrap;gap:8px}
+.sharecard{padding:22px;margin:10px 0 8px;position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.sharecard::after{content:"";position:absolute;right:-60px;bottom:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(245,184,61,.18),transparent 70%);pointer-events:none}
+.sc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 10px}.sc-top .kicker{margin:0}
+.sc-line{font:600 1.15rem/1.4 var(--sans);letter-spacing:-.01em}
+.sc-stats{display:flex;flex-wrap:wrap;gap:18px;margin:6px 0 12px}.sc-stats span{display:grid;font-size:.78rem;color:var(--muted)}.sc-stats b{font:650 1.4rem/1.1 var(--mono);color:var(--text)}
+.badges{display:flex;flex-wrap:wrap;gap:6px}.badge{font:600 .72rem/1 var(--mono);padding:5px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent);background:var(--soft)}
+.badge.b-top{color:var(--cool);border-color:color-mix(in srgb,var(--cool) 40%,transparent);background:color-mix(in srgb,var(--cool) 10%,transparent)}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.person{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:14px;color:var(--text);text-decoration:none;transition:border-color .15s}.person:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--text)}
+.person .pi{display:grid;min-width:0;flex:1}.person .pi b{font-weight:600}.person .pp{display:grid;text-align:right}.person .pp b{font:650 1.1rem/1.1 var(--mono);color:var(--accent)}
+@media (max-width:520px){.prof{flex-direction:column;gap:14px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:900px){.cols{grid-template-columns:1fr;gap:0}.joinbox{grid-template-columns:1fr}}
 @media (max-width:520px){.wrap{padding:0 16px}main{padding-top:32px}.hero2{padding:40px 0 28px;margin-top:-32px}.camp{padding:16px 14px 8px}.branch{padding-left:12px}
@@ -565,6 +588,7 @@ var th=document.getElementById("theme");if(th)th.addEventListener("click",functi
 function rel(){var L=window.__lang==="zh";document.querySelectorAll("[data-at]").forEach(function(e){var ms=Date.parse(e.getAttribute("data-at"));if(!isFinite(ms))return;var d=Math.floor((Date.now()-ms)/864e5);
 e.textContent=d<=0?(L?"今天":"today"):d===1?(L?"昨天":"yesterday"):d<30?(L?d+" 天前":d+" days ago"):e.getAttribute("data-at");});}
 rel();
+document.querySelectorAll("img.av-img").forEach(function(i){function gone(){i.remove();}i.addEventListener("error",gone);if(i.complete&&!i.naturalWidth)gone();});
 var cu=document.querySelectorAll("[data-count]");var still=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 cu.forEach(function(e){var to=Number(e.getAttribute("data-count"));if(!isFinite(to)||still||to===0)return;var t0=null;
 function f(ts){if(t0===null)t0=ts;var k=Math.min(1,(ts-t0)/900),v=Math.round(to*(1-Math.pow(1-k,3)));e.textContent=v.toLocaleString();if(k<1)requestAnimationFrame(f);}e.textContent="0";requestAnimationFrame(f);});
@@ -785,7 +809,7 @@ document.getElementById("pick").addEventListener("click",function(){
 });
 })();`;
 
-const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src ${deskOn ? deskUrl : "'none'"}; base-uri 'none'; form-action 'none'`;
+const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; connect-src ${deskOn ? deskUrl : "'none'"}; base-uri 'none'; form-action 'none'`;
 
 const NAV = [
   ["index.html", "nav_campaigns", ["title_home", "title_lemmas"]],
@@ -795,7 +819,7 @@ const NAV = [
   ["credit.html", "nav_credit", ["title_credit", "title_publish"]],
   ["about.html", "nav_about", ["title_about"]],
 ];
-function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "", prefix = "", title = "", beacon = true, noindex = false }) {
+function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "", prefix = "", title = "", beacon = true, noindex = false, meta = "" }) {
   const W = wide ? "wrap wide" : "wrap";
   const R = prefix;
   return `<!doctype html>
@@ -807,7 +831,7 @@ function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", 
 <meta name="referrer" content="no-referrer">${noindex ? `
 <meta name="robots" content="noindex, nofollow">` : ""}
 <title>${esc(title || I18N.en[key])} · ${esc(cfg.site_name)}</title>
-<meta name="description" content="${esc(I18N.en.tagline)}">
+<meta name="description" content="${esc(I18N.en.tagline)}">${meta}
 <style>${CSS.replaceAll("__R__", R)}</style>
 <script>try{var q=/[?&]theme=(light|dark)/.exec(location.search),t=q?q[1]:localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 </head>
@@ -989,7 +1013,7 @@ function homePage() {
   const events = [...recordEvents(), ...prEvents].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 80);
   const tlStatic = events.map((e) => `<li><span class="ico ${esc((e.ico || ["•", ""])[1])}">${esc((e.ico || ["•"])[0])}</span><span class="what">${e.html}${e.url ? ` <a class="src" href="${esc(e.url)}" rel="noopener">↗</a>` : ""}</span><span class="when" data-at="${esc(String(e.at).slice(0, 10))}">${esc(String(e.at).slice(0, 10))}</span></li>`).join("");
 
-  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${profile(e.who)}</span><span class="pts">${num(e.points)} ${pair("pts", "分")}</span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations · ${e.notes} notes`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations} · 笔记 ${e.notes}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
+  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${avatar(e.who, 22)} ${profile(e.who)}</span><span class="pts">${num(e.points)} ${pair("pts", "分")}</span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations · ${e.notes} notes`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations} · 笔记 ${e.notes}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
   const logos = rankedSupporters.slice(0, 8).map((s) => `<span class="logo"><span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span></span>`).join("");
 
   return page({
@@ -1111,26 +1135,99 @@ var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(la
 load();setInterval(load,30000);
 })();`;
 
-// ---------- contributor profiles: c/<handle>.html ----------
+// ---------- contributors: profiles, badges, directory ----------
+const profiles = readProfiles(ROOT, { strict: false });
+const LINK_LABEL = { x: "X", linkedin: "LinkedIn", github: "GitHub", homepage: "Homepage", orcid: "ORCID", scholar: "Google Scholar" };
+function personOf(who) {
+  const key = String(who).toLowerCase();
+  const p = profiles.get(key) || { login: who };
+  const mine = scoreEvts.filter((e) => String(e.who).toLowerCase() === key);
+  const row = lbAll.find((r) => String(r.who).toLowerCase() === key) || { points: 0, proofs: 0, splits: 0, refutations: 0, notes: 0 };
+  const rank = lbAll.findIndex((r) => String(r.who).toLowerCase() === key) + 1;
+  const since = mine.map((e) => e.date).filter(Boolean).sort()[0] || "";
+  const badges = [];
+  if (row.notes) badges.push(["note", "First research note", "首篇研究笔记"]);
+  if (row.splits) badges.push(["split", "First split", "首个拆分"]);
+  if (row.proofs) badges.push(["proof", "First proof", "首个证明"]);
+  if (row.refutations) badges.push(["refute", "First refutation", "首个反驳"]);
+  if (rank && rank <= 10 && row.points > 0) badges.push(["top", "Top 10", "前十名"]);
+  const accepted = row.proofs + row.splits + row.refutations + row.notes;
+  return { login: p.login || who, p, mine, row, rank, since, badges, accepted };
+}
+const people = [...new Set([...scoreEvts.map((e) => String(e.who)), ...[...profiles.values()].map((p) => p.login)])]
+  .filter((w) => LOGIN_RE.test(w))
+  .filter((w, i, a) => a.findIndex((x) => x.toLowerCase() === w.toLowerCase()) === i)
+  .map(personOf);
+const avatar = (login, size = 96) => `<span class="avatar" style="width:${size}px;height:${size}px"><span class="ini">${esc(login.slice(0, 2).toUpperCase())}</span><img class="av-img" src="https://github.com/${esc(login)}.png?size=${size * 2}" alt="" width="${size}" height="${size}" loading="lazy" referrerpolicy="no-referrer"></span>`;
+
 function contributorPage(who) {
-  const mine = scoreEvts.filter((e) => String(e.who).toLowerCase() === who.toLowerCase()).sort((a, b) => (a.date < b.date ? 1 : -1));
-  const row = lbAll.find((r) => String(r.who).toLowerCase() === who.toLowerCase()) || { points: 0, proofs: 0, splits: 0, refutations: 0, notes: 0 };
+  const P = personOf(who), p = P.p, login = P.login;
   const KIND = { proof: ["proved", "证明了"], refutation: ["refuted", "推翻了"], split: ["split", "拆分了"], note: ["wrote a research note on", "写了研究笔记："], bonus: ["bonus for", "奖励："] };
-  const items = mine.map((e) => {
+  const items = P.mine.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((e) => {
     const r = byId.get(e.id);
     const target = e.kind === "note" ? byId.get(e.id) : e.kind === "split" ? (records.find((x) => x.split === e.id) ? byId.get(records.find((x) => x.split === e.id).parent) : null) : r;
-    return `<li><span class="when">${esc(e.date)}</span><span class="what">${pair(KIND[e.kind][0], KIND[e.kind][1])} ${target ? pair(target.title_en, target.title_zh) : esc(e.id)} <span class="tag ok">+${num(e.points)}</span></span></li>`;
+    const ico = { proof: ["✓", "ok"], refutation: ["✗", "bad"], split: ["⑂", "acc"], note: ["✎", "cool"], bonus: ["+", "acc"] }[e.kind] || ["•", ""];
+    return `<li><span class="ico ${ico[1]}">${ico[0]}</span><span class="what">${pair(KIND[e.kind][0], KIND[e.kind][1])} ${target ? pair(target.title_en, target.title_zh) : esc(e.id)} <span class="tag ok">+${num(e.points)}</span></span><span class="when" data-at="${esc(e.date)}">${esc(e.date)}</span></li>`;
   }).join("");
+  const links = { github: `https://github.com/${login}`, ...(p.links || {}) };
+  const url = `${cfg.site_url}c/${login}.html`;
+  const shareEn = `I contributed to ProofHive, a public attack on open problems in mathematics: ${num(P.row.points)} points, ${P.accepted} accepted ${P.accepted === 1 ? "result" : "results"}.`;
+  const shareX = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareEn)}&url=${encodeURIComponent(url)}`;
+  const shareLi = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
   return page({
-    key: "title_profile", prefix: "../", title: `@${who}`,
-    body: `<h1>@${esc(who)}</h1>
-<p class="lede">${pair(`${num(row.points)} points: ${row.proofs} proofs, ${row.splits} splits, ${row.refutations} refutations, ${row.notes} research notes.`, `${num(row.points)} 分：证明 ${row.proofs} 个，拆分 ${row.splits} 个，推翻 ${row.refutations} 个，研究笔记 ${row.notes} 篇。`)}</p>
-<p class="small"><a href="https://github.com/${esc(who)}" rel="noopener">github.com/${esc(who)}</a></p>
+    key: "title_profile", prefix: "../", title: p.display_name ? `${p.display_name} (@${login})` : `@${login}`,
+    meta: `<meta property="og:title" content="${esc(p.display_name || "@" + login)} on ProofHive"><meta property="og:description" content="${esc(shareEn)}"><meta property="og:url" content="${esc(url)}"><meta name="twitter:card" content="summary">`,
+    body: `<section class="prof">
+${avatar(login, 104)}
+<div class="prof-main">
+<h1>${esc(p.display_name || "@" + login)}</h1>
+<p class="muted mono small">@${esc(login)}${p.country ? ` · ${esc(p.country)}` : ""}${P.since ? ` · ${pair("member since", "加入于")} ${esc(P.since)}` : ""}</p>
+${p.affiliation ? `<p class="aff">${esc(p.affiliation)}</p>` : ""}
+${p.bio ? `<p>${esc(p.bio)}</p>` : ""}
+${p.interests ? `<p class="interests">${p.interests.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</p>` : ""}
+<p class="links">${Object.entries(links).map(([k, v]) => `<a class="btn sm" href="${esc(v)}" rel="noopener me">${esc(LINK_LABEL[k] || k)}</a>`).join("")}</p>
+</div></section>
+<div class="sharecard glass">
+<div class="sc-top"><span class="brand"><svg class="hex" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>ProofHive</span><span class="kicker">${pair("contributor", "贡献者")}</span></div>
+<p class="sc-line">${pair(`I contributed to ProofHive: ${num(P.row.points)} points, ${P.accepted} accepted ${P.accepted === 1 ? "result" : "results"}.`, `我参与了 ProofHive：${num(P.row.points)} 分，${P.accepted} 个被接受的成果。`)}</p>
+<div class="sc-stats"><span><b>${num(P.row.points)}</b>${pair("points", "积分")}</span><span><b>${P.rank || "–"}</b>${pair("rank", "排名")}</span><span><b>${P.row.notes}</b>${pair("notes", "笔记")}</span><span><b>${P.row.splits}</b>${pair("splits", "拆分")}</span><span><b>${P.row.proofs}</b>${pair("proofs", "证明")}</span><span><b>${P.row.refutations}</b>${pair("refutations", "反驳")}</span></div>
+${P.badges.length ? `<p class="badges">${P.badges.map(([k, en, zh]) => `<span class="badge b-${k}">${pair(en, zh)}</span>`).join("")}</p>` : ""}
+<div class="btns"><a class="btn sm" href="${esc(shareX)}" rel="noopener">${pair("Share on X", "分享到 X")}</a><a class="btn sm" href="${esc(shareLi)}" rel="noopener">${pair("Share on LinkedIn", "分享到 LinkedIn")}</a><button class="btn sm" type="button" data-copy="${esc(url)}"><span class="lbl" data-i18n="copy_link">${esc(I18N.en.copy_link)}</span></button></div>
+</div>
 <h2>${pair("Contributions", "贡献")}</h2>
 <ol class="tl">${items || `<li class="empty-li">${t("tl_empty")}</li>`}</ol>
-<p class="small muted">${t("profile_note")}</p>`,
+<p class="small muted">${t("profile_note")} ${t("profile_edit")}</p>`,
   });
 }
+
+function peoplePage() {
+  const cards = people.slice().sort((a, b) => b.row.points - a.row.points || (a.login < b.login ? -1 : 1)).map((P) => {
+    const p = P.p;
+    const hay = [P.login, p.display_name, p.affiliation, p.country, ...(p.interests || [])].filter(Boolean).join(" ").toLowerCase();
+    return `<a class="person glass" href="c/${esc(P.login)}.html" data-s="${esc(hay)}" data-points="${P.row.points}" data-since="${esc(P.since)}" data-name="${esc((p.display_name || P.login).toLowerCase())}">
+${avatar(P.login, 52)}<span class="pi"><b>${esc(p.display_name || "@" + P.login)}</b><span class="small muted">@${esc(P.login)}${p.affiliation ? ` · ${esc(p.affiliation)}` : ""}${p.country ? ` · ${esc(p.country)}` : ""}</span>
+${p.interests ? `<span class="small">${p.interests.slice(0, 4).map(esc).join(" · ")}</span>` : ""}</span><span class="pp"><b>${num(P.row.points)}</b><span class="small muted">${pair("pts", "分")}</span></span></a>`;
+  }).join("");
+  return page({
+    key: "title_people",
+    body: `<h1>${t("title_people")}</h1>
+<p class="lede">${t("people_lead")}</p>
+<div class="tools"><input type="search" id="pq" data-i18n-ph="people_search" placeholder="${esc(I18N.en.people_search)}" aria-label="${esc(I18N.en.people_search)}">
+<div class="filters" role="group"><button class="btn sm" type="button" data-sort="points" aria-pressed="true">${t("sort_points")}</button><button class="btn sm" type="button" data-sort="name" aria-pressed="false">${t("sort_name")}</button><button class="btn sm" type="button" data-sort="since" aria-pressed="false">${t("sort_new")}</button></div></div>
+<div class="people" id="people">${cards || `<p class="empty">${t("tl_empty")}</p>`}</div>
+<p class="empty" id="pempty" hidden>${t("no_match")}</p>
+<p class="small muted">${t("profile_edit")}</p>`,
+    extra: `<script>${PEOPLE_JS}</script>`,
+  });
+}
+const PEOPLE_JS = `
+(function(){var box=document.getElementById("people"),q=document.getElementById("pq");if(!box||!q)return;var cards=[].slice.call(box.querySelectorAll(".person"));
+function apply(){var v=q.value.trim().toLowerCase(),n=0;cards.forEach(function(c){var ok=!v||c.getAttribute("data-s").indexOf(v)!==-1;c.hidden=!ok;if(ok)n++;});document.getElementById("pempty").hidden=n>0||!cards.length;}
+q.addEventListener("input",apply);
+document.querySelectorAll("[data-sort]").forEach(function(b){b.addEventListener("click",function(){var k=b.getAttribute("data-sort");
+document.querySelectorAll("[data-sort]").forEach(function(x){x.setAttribute("aria-pressed",x===b?"true":"false");});
+cards.sort(function(a,c){if(k==="points")return Number(c.getAttribute("data-points"))-Number(a.getAttribute("data-points"));if(k==="since")return c.getAttribute("data-since")<a.getAttribute("data-since")?-1:1;return a.getAttribute("data-name")<c.getAttribute("data-name")?-1:1;});
+cards.forEach(function(c){box.appendChild(c);});});});})();`;
 
 // ---------- research note pages: Markdown rendered with everything escaped ----------
 const linkOk = (u) => { try { return new URL(u).protocol === "https:"; } catch { return false; } };
@@ -1433,8 +1530,9 @@ writeFileSync(at("dist/stats.html"), statsPage());
 if (ALIPAY_QR) { mkdirSync(dirname(at(`dist/${ALIPAY_QR}`)), { recursive: true }); copyFileSync(at(`site/${ALIPAY_QR}`), at(`dist/${ALIPAY_QR}`)); }
 mkdirSync(at("dist/c"), { recursive: true });
 for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: true }); writeFileSync(at(`dist/${notePage(n)}`), notePageHtml(n)); }
-const contributors = [...new Set(scoreEvts.map((e) => String(e.who)))].filter((w) => LOGIN_RE.test(w));
+const contributors = people.map((P) => P.login);
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
+writeFileSync(at("dist/people.html"), peoplePage());
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 writeFileSync(at("dist/feed.json"), JSON.stringify({

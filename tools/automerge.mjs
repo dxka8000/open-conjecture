@@ -16,10 +16,12 @@
 //               when the repository owner's account has applied review-ok AND posted the verdict comment
 //               "AI review: review-ok for <head sha>" for the exact commit. Labels applied by anyone else,
 //               or a verdict for an older commit, do not count.
+//   profile   : exactly one file, profiles/<author>.json (added or changed by that author); format checked, no review.
 //   note      : exactly one file: adds notes/<record id>/<your handle>-<slug>.md (a research note). Format checked
 //               here and in CI; then the same AI review as a split.
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { checkNote } from "../checker/notes.mjs";
+import { checkProfile } from "../checker/profiles.mjs";
 
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
@@ -65,6 +67,7 @@ async function evaluate(pr) {
   const files = await api(`/repos/${REPO}/pulls/${pr.number}/files?per_page=100`);
   if (files && files.some((f) => /^OpenConjecture\/Collatz\/Proposals\//.test(f.filename))) return evaluateSplit(pr, files, author);
   if (files && files.some((f) => /^notes\//.test(f.filename))) return evaluateNote(pr, files, author);
+  if (files && files.some((f) => /^profiles\//.test(f.filename))) return evaluateProfile(pr, files, author);
   if (!files || files.length !== 2) return { ok: false, why: `it must change exactly two files, but it changes ${files ? files.length : "?"}.` };
   const proof = files.find((f) => /^OpenConjecture\/Collatz\/Proofs\/[A-Za-z0-9_]+\.lean$/.test(f.filename));
   const rec = files.find((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
@@ -138,6 +141,18 @@ async function reviewVerdict(pr) {
   if (labels.has(REVIEW.ok) && isOwner(lastLabelBy(REVIEW.ok)) && verdictFor(REVIEW.ok)) return "ok";
   if (labels.has(REVIEW.rejected) && isOwner(lastLabelBy(REVIEW.rejected)) && verdictFor(REVIEW.rejected)) return "rejected";
   return null;
+}
+
+// A contributor profile: exactly one file, profiles/<author>.json, added or changed by that same person.
+async function evaluateProfile(pr, files, author) {
+  const m = files.length === 1 && ["added", "modified"].includes(files[0].status) && /^profiles\/([A-Za-z0-9-]{1,39})\.json$/.exec(files[0].filename);
+  if (!m) return { ok: false, why: "a profile pull request changes exactly one file, profiles/<your GitHub login>.json, and nothing else." };
+  if (m[1].toLowerCase() !== author.toLowerCase()) return { ok: false, why: `you can only set your own profile: the file must be profiles/${author}.json.` };
+  const text = await fileAtHead(pr, files[0].filename);
+  if (text === null) return { ok: false, why: "the profile could not be read." };
+  const r = checkProfile(`${m[1]}.json`, text);
+  if (!r.ok) return { ok: false, why: r.why };
+  return { ok: true, kind: "profile", summary: `Profile of ${author}`, accepted: `**ACCEPTED**. Your profile is on the site within a few minutes, @${author}.` };
 }
 
 // A research note: one new Markdown file, then the AI review.

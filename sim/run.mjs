@@ -173,7 +173,7 @@ async function automerge(mode, pr, conclusion) {
 async function ciCheck(pr, leanAccepts, antiGamingFails = false) {
   const dir = join(tmpdir(), `collatz-sim-pr${pr.number}`);
   rmSync(dir, { recursive: true, force: true });
-  for (const d of ["records", "OpenConjecture", "checker", "notes"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
+  for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
   for (const [f, text] of Object.entries(pr.contents)) { mkdirSync(dirname(join(dir, f)), { recursive: true }); writeFileSync(join(dir, f), text); }
   const g = gate(dir);
   rmSync(dir, { recursive: true, force: true });
@@ -272,7 +272,7 @@ async function main() {
   {
     const dir = join(tmpdir(), "collatz-sim-restate");
     rmSync(dir, { recursive: true, force: true });
-    for (const d of ["records", "OpenConjecture", "checker", "notes"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
+    for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
     const L = join(dir, "OpenConjecture/Collatz/Lemmas.lean");
     const body = /^def Open_DensityOne : Prop := (.*)$/m.exec(readFileSync(L, "utf8"))[1];
     writeFileSync(L, readFileSync(L, "utf8").replace("end OpenConjecture.Collatz", `def Step_Restated : Prop := ${body}\n\nend OpenConjecture.Collatz`));
@@ -356,6 +356,17 @@ async function main() {
   await ciCheck(pO, true);
   check("a note filed under someone else's name is never merged", gh.prs.get(pO.number).state === "open" && /must start with your GitHub login/.test(lastComment(pO)));
 
+  // ---- profiles: contributors set their own, nobody else's
+  const prof = (who, d) => ({ [`profiles/${who}.json`]: JSON.stringify(d) });
+  const pPf = openPr({ author: "sim-nina", title: "Profile", files: prof("sim-nina", { display_name: "Nina <i>Sim</i>", affiliation: "Simulated University", interests: ["Collatz"], links: { orcid: "https://orcid.org/0000-0002-1825-0097" } }) });
+  await ciCheck(pPf, true);
+  check("a contributor's own profile merges with no review", gh.prs.get(pPf.number).state === "merged");
+  const pPx = openPr({ author: "sim-mallory", title: "Profile", files: prof("sim-nina", { display_name: "Hacked" }) });
+  await ciCheck(pPx, true);
+  check("nobody can set someone else's profile", gh.prs.get(pPx.number).state === "open" && /your own profile/.test(lastComment(pPx)));
+  const pPl = openPr({ author: "sim-mallory", title: "Profile", files: prof("sim-mallory", { links: { x: "https://evil.example.com/" } }) });
+  check("a profile with a link to the wrong site fails the gate", (await ciCheck(pPl, true)).conclusion === "failure");
+
   // outsiders cannot change fixed statements or in-house split files
   const pS = openPr({ author: "sim-mallory", title: "Prove open-density-one", files: {
     "OpenConjecture/Collatz/Splits/Split_Open_DensityOne.lean": "import OpenConjecture.Collatz.Lemmas\n\nnamespace OpenConjecture.Collatz.Splits.Split_Open_DensityOne\n\ntheorem main : True := trivial\n\nend OpenConjecture.Collatz.Splits.Split_Open_DensityOne\n",
@@ -417,6 +428,7 @@ async function main() {
     const proven = wsJson(`records/collatz/${realId}.json`), refutedRec = wsJson(`records/collatz/${falseId}.json`);
     const tinaWant = 50 + (proven.proposed_by === "sim-tina" ? 5 : 0);
     const ninaRec = wsJson(`records/collatz/${NR}.json`);
+    check("the profile page shows the escaped display name and the directory lists it", /Nina &lt;i&gt;Sim&lt;\/i&gt;/.test(wsRead("dist/c/sim-nina.html")) && /sim-nina/.test(wsRead("dist/people.html")));
     check("points: a research note on an open problem scores 10", pts("sim-nina") === 10, `nina ${pts("sim-nina")}`);
     check("the site renders the merged note escaped, and lists it on the timeline", existsSync(join(WS, `dist/notes/${NR}/sim-nina-survey.html`)) && /wrote a research note on/.test(wsRead("dist/index.html")) && !/<script>alert/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)), ninaRec.id);
     check("points: split 50 (+5 when its step is proven), step proof 12, step refutation 12",
