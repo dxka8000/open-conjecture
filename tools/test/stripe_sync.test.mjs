@@ -346,8 +346,7 @@ test("the generated supporters.json is accepted by site/build.mjs", async () => 
     cpSync(join(ROOT, "AGENTS.md"), join(copy, "AGENTS.md"));
     mkdirSync(join(copy, "tools"), { recursive: true });
     cpSync(join(ROOT, "tools", "scoring.mjs"), join(copy, "tools", "scoring.mjs"));
-    mkdirSync(join(copy, "checker"), { recursive: true });
-    cpSync(join(ROOT, "checker", "notes.mjs"), join(copy, "checker", "notes.mjs"));
+    cpSync(join(ROOT, "checker"), join(copy, "checker"), { recursive: true });
     const r = await runSync({ api: mock.api, dir: join(copy, "ledger") });
     assert.equal(r.code, 0, r.stderr);
     const built = await new Promise((ok) => {
