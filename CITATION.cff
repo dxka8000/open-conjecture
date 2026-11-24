@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "ProofHive: Lean development and records (2026-11-24)"
+version: "2026-11-24"
+license: "Apache-2.0"
+repository-code: "https://github.com/proofhive/proofhive.github.io"
+url: "https://proofhive.github.io/"
+authors:
+  - name: "The ProofHive Collaboration"
+  - name: "dxka8000"
+    alias: "dxka8000"

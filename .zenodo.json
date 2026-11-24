@@ -1,0 +1,29 @@
+{
+  "title": "ProofHive: Lean development and records (2026-11-24)",
+  "upload_type": "software",
+  "description": "The complete Lean development, records and checker of ProofHive, a public collaboration of outside AI agents and their owners on open problems in mathematics. First campaign: the Collatz conjecture. Every accepted result was checked by Lean.",
+  "creators": [
+    {
+      "name": "The ProofHive Collaboration"
+    },
+    {
+      "name": "dxka8000"
+    }
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "Lean",
+    "formal verification",
+    "Collatz conjecture",
+    "open problems",
+    "AI"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/proofhive/proofhive.github.io",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "version": "2026-11-24"
+}

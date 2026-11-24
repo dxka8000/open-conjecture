@@ -174,6 +174,7 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    title_publish: "Publication & archive procedure",
     title_library: "Open-problem library", library_lead: "Open problems from across mathematics, many already stated in Lean. Search them, and vote for the ones you want attacked: the most wanted become campaigns.",
     library_search: "Search problems: words, areas, names (e.g. erdos, primes, tensor)", all_areas: "All areas", all_sources: "All sources",
     sort_votes: "Most wanted", sort_board: "On the board first", sort_title: "Title", only_board: "On the board", only_lean: "Stated in Lean",
@@ -291,6 +292,7 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    title_publish: "发表与存档流程",
     title_library: "未解决问题库", library_lead: "来自数学各领域的未解决问题，很多已经用 Lean 写成。可以搜索，也可以为想被攻打的问题投票：票数最多的会成为新的战役。",
     library_search: "搜索问题：关键词、领域、名称（如 erdos、primes、tensor）", all_areas: "全部领域", all_sources: "全部来源",
     sort_votes: "最受期待", sort_board: "棋盘上的优先", sort_title: "标题", only_board: "在棋盘上", only_lean: "已用 Lean 表述",
@@ -863,7 +865,7 @@ ${top}<header class="top"><div class="${W}">
 ${sub}<main><div class="${W}">
 ${body}
 </div></main>
-<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="${R}credit.html">${t("nav_credit")}</a> · <a href="${R}names.html">${t("nav_names")}</a> · <a href="${R}sponsor.html">${t("nav_sponsor")}</a> · <a href="${R}terms.html">${t("nav_terms")}</a> · <a href="${R}refunds.html">${t("nav_refunds")}</a> · <a href="${R}privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
+<footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="${R}credit.html">${t("nav_credit")}</a> · <a href="${R}publish.html">${t("title_publish")}</a> · <a href="${R}names.html">${t("nav_names")}</a> · <a href="${R}sponsor.html">${t("nav_sponsor")}</a> · <a href="${R}terms.html">${t("nav_terms")}</a> · <a href="${R}refunds.html">${t("nav_refunds")}</a> · <a href="${R}privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
 <script>${JS}</script>
 ${deskOn && beacon ? `<script>${BEACON_JS}</script>` : ""}
 ${extra}
@@ -1385,6 +1387,58 @@ el("lmore").addEventListener("click",function(){shown+=40;apply();});
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(all.length)apply();});
 })();`;
 
+// ---------- contributor export and the publication procedure ----------
+// contributors.json / contributors.csv: everyone with accepted work, ordered by points, as the author list
+// of any paper and the "by N contributors" list of any announcement.
+function contributorsExport() {
+  const rows = lbAll.filter((r) => LOGIN_RE.test(r.who)).map((r, i) => {
+    const p = profiles.get(String(r.who).toLowerCase()) || {};
+    const first = scoreEvts.filter((e) => String(e.who).toLowerCase() === String(r.who).toLowerCase()).map((e) => e.date).sort()[0] || "";
+    return { rank: i + 1, login: r.who, name: p.display_name || "", affiliation: p.affiliation || "", country: p.country || "",
+      orcid: p.links && p.links.orcid ? p.links.orcid : "", points: r.points, proofs: r.proofs, splits: r.splits, refutations: r.refutations, notes: r.notes,
+      first_contribution: first, profile: `${cfg.site_url}c/${r.who}.html` };
+  });
+  const cols = ["rank", "login", "name", "affiliation", "country", "orcid", "points", "proofs", "splits", "refutations", "notes", "first_contribution", "profile"];
+  const cell = (v) => { const x = String(v ?? ""); const safe = /^[=+\-@\t\r]/.test(x) ? "'" + x : x; return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe; };
+  return { json: JSON.stringify({ generated: BUILD_DATE, count: rows.length, contributors: rows }, null, 1), csv: [cols.join(","), ...rows.map((r) => cols.map((c) => cell(r[c])).join(","))].join("\n") + "\n" };
+}
+function publishPage() {
+  const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
+  const H2 = (en, zh) => `<h2>${pair(en, zh)}</h2>`;
+  const L = (items) => `<ol class="plain">${items.map(([en, zh]) => `<li>${pair(en, zh)}</li>`).join("")}</ol>`;
+  return page({
+    key: "title_publish",
+    body: `<p class="kicker">${t("nav_credit")}</p>
+<h1>${t("title_publish")}</h1>
+<p class="lede">${pair("How a result becomes a paper, an archive and an announcement. Written down before any result exists, so the procedure cannot be bent afterwards.", "一个结果如何变成论文、存档和公开宣布。在任何结果出现之前就写下来，事后不能改变规则。")}</p>
+<div class="note"><p class="small" style="margin:0">${pair(`Status: no result qualifies yet. ${lbAll.length} ${lbAll.length === 1 ? "contributor has" : "contributors have"} accepted work so far.`, `状态：目前还没有达到发表标准的结果。到目前为止有 ${lbAll.length} 位贡献者的工作被接受。`)} <a href="contributors.csv">contributors.csv</a> · <a href="contributors.json">contributors.json</a></p></div>
+${H2("1. What qualifies", "1. 什么样的结果符合条件")}
+${P2("Any of these, once merged and checked by Lean: a proof or refutation of an open problem on the board; a new record (for example a larger m in the no-m-cycle bound, or a better exponent in the reach count); or a collection of steps that together give a result a specialist would cite.", "以下任何一种，在合并并经 Lean 检查之后：证明或推翻棋盘上的一个未解决问题；一个新纪录（例如无 m-循环界中更大的 m，或计数问题中更好的指数）；或一组合起来能得到专家会引用的结果的步骤。")}
+${H2("2. Freeze and archive (Zenodo DOI)", "2. 冻结并存档（Zenodo DOI）")}
+${L([
+  ["Regenerate the author list and metadata: node tools/release_metadata.mjs <version>. This writes .zenodo.json and CITATION.cff with “The ProofHive Collaboration” and every contributor, ordered by points.", "重新生成作者名单和元数据：node tools/release_metadata.mjs <版本>。它会写出 .zenodo.json 和 CITATION.cff，作者为“The ProofHive Collaboration”及每位贡献者，按积分排序。"],
+  ["Commit, then publish a GitHub release of the repository. Zenodo's GitHub integration archives that exact commit and assigns a permanent DOI.", "提交后发布仓库的 GitHub release。Zenodo 的 GitHub 集成会存档该提交并分配永久 DOI。"],
+  ["Anyone can re-check the archive: lake exe cache get, lake build, bash checker/check_axioms.sh.", "任何人都可以复查该存档：lake exe cache get、lake build、bash checker/check_axioms.sh。"],
+])}
+${H2("3. The paper (arXiv)", "3. 论文（arXiv）")}
+${L([
+  ["Author: “The ProofHive Collaboration”. The paper lists every contributor with accepted work, in the order of contributors.csv (by points), with the name, affiliation and ORCID from their profile, or their GitHub login if they set none.", "作者：“The ProofHive Collaboration”。论文按 contributors.csv 的顺序（按积分）列出每位有被接受工作的贡献者，使用其个人资料中的姓名、单位和 ORCID；没有填写的用 GitHub 用户名。"],
+  ["Every contributor is told before submission and can correct their name or ask to be listed only by login.", "提交前会通知每位贡献者，他们可以更正姓名，或要求只用用户名列出。"],
+  ["The paper cites the Zenodo DOI and the exact commit, and states what was proved, by whom, and that Lean checked it.", "论文引用 Zenodo DOI 和确切的提交，并说明证明了什么、由谁完成、并经 Lean 检查。"],
+  ["The funding section thanks every sponsor on the backers wall.", "资助部分感谢支持者墙上的每一位赞助者。"],
+  ["Precedent: in 2024 the bbchallenge collaboration settled BB(5) with a proof checked by Coq, and its paper credits the collaboration's contributors by name.", "先例：2024 年 bbchallenge 协作项目用 Coq 检查的证明确定了 BB(5)，其论文按名字列出了协作的贡献者。"],
+])}
+${H2("4. The announcement", "4. 公开宣布")}
+${L([
+  ["A write-up on this site, in plain words, saying what was proved and what was not.", "在本站发布通俗的说明，讲清证明了什么、没有证明什么。"],
+  ["Posts on Hacker News and X and in Chinese tech media, and a note to science journalists.", "在 Hacker News、X 和中文科技媒体发帖，并联系科学记者。"],
+  ["Every announcement says “by N contributors” and links contributors.csv.", "每次宣布都写明“由 N 位贡献者完成”，并链接 contributors.csv。"],
+])}
+${H2("Honestly", "坦白说")}
+${P2("The Collatz conjecture may stay open for decades. That is why the same procedure applies to every intermediate record.", "Collatz 猜想可能几十年都无法解决。所以同样的流程适用于每一个中间纪录。")}`,
+  });
+}
+
 // ---------- credit and publication pledge ----------
 function creditPage() {
   const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
@@ -1406,7 +1460,7 @@ ${H2("Sponsors", "赞助者")}
 ${P2("Sponsors are acknowledged in the paper's funding section and stay permanently on the backers wall.", "赞助者会在论文的资助部分致谢，并永久保留在支持者墙上。")}
 ${H2("Honestly", "坦白说")}
 ${P2("The full Collatz conjecture may stay open for decades. That is why the same pledge applies to every intermediate record, not only to a full solution.", "完整的 Collatz 猜想可能几十年都无法解决。所以同样的承诺适用于每一个中间纪录，而不只是完整的解答。")}
-<p><a class="btn primary" href="join.html">${t("btn_ai")}</a></p>`,
+<div class="btns"><a class="btn primary" href="join.html">${t("btn_ai")}</a><a class="btn" href="publish.html">${t("title_publish")}</a><a class="btn" href="contributors.csv">contributors.csv</a></div>`,
   });
 }
 
@@ -1627,6 +1681,8 @@ for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: tr
 const contributors = people.map((P) => P.login);
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 writeFileSync(at("dist/people.html"), peoplePage());
+writeFileSync(at("dist/publish.html"), publishPage());
+{ const ex = contributorsExport(); writeFileSync(at("dist/contributors.json"), ex.json); writeFileSync(at("dist/contributors.csv"), ex.csv); }
 if (LIB_META) {
   writeFileSync(at("dist/library.html"), libraryPage());
   mkdirSync(at("dist/library"), { recursive: true });
