@@ -5,7 +5,7 @@
 // Every attempt runs under a small heartbeat limit, and each file under a wall-clock cap. A timeout
 // counts as "not proven", which is the passing direction. Control statements check the mechanism.
 // These checks block obvious filler and restatements, not every disguised one.
-import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
 const TRIVIAL = ["decide", "simp", "norm_num", "omega"];
@@ -26,9 +26,12 @@ const NAME = /^[A-Za-z0-9_]+$/;
 for (const n of [...steps, ...[...splits.values()].flatMap((s) => [s.parent, ...s.steps])]) if (!NAME.test(n)) throw new Error("bad name " + n);
 
 mkdirSync("checker/anti_gaming", { recursive: true });
+const PROP = "OpenConjecture/Collatz/Proposals";
+const stepImports = (existsSync(PROP) ? readdirSync(PROP) : []).map((f) => /^(Step_[A-Za-z0-9_]+)\.lean$/.exec(f)).filter(Boolean)
+  .map((m) => `import OpenConjecture.Collatz.Proposals.${m[1]}`);
 // One attempt per line: Lean reports errors as <file>:<line>:<col>: error, so the line says which failed.
 function run(name, defs, tests) {
-  const head = ["import OpenConjecture.Collatz.Lemmas", "", "namespace OpenConjecture.Collatz", ...defs];
+  const head = ["import OpenConjecture.Collatz.Lemmas", ...stepImports, "", "namespace OpenConjecture.Collatz", ...defs];
   const lines = [...head, ...tests.map((t) => `set_option maxHeartbeats ${HEARTBEATS} in example : ${t.goal} := by ${t.tac}`), "end OpenConjecture.Collatz", ""];
   const file = `checker/anti_gaming/${name}.lean`;
   writeFileSync(file, lines.join("\n"));
@@ -66,6 +69,8 @@ for (const s of steps) {
 }
 for (const [name, sp] of [...splits].sort()) {
   const k = sp.steps.length;
+  // A one-step split is "it suffices to prove this step": the step implying the parent easily is the point.
+  if (k === 1) { console.log(`${name}: one step, no filler check`); continue; }
   const sets = sp.steps.map((x) => [x]);
   if (k > 2) for (const drop of sp.steps) sets.push(sp.steps.filter((x) => x !== drop));
   const r = run(name, [], sets.flatMap((h) => fillerTests(h, sp.parent)));

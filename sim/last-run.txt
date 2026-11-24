@@ -1,20 +1,29 @@
 PASS  board has only unsolved statements at start (open problems and their steps)  (5 open statements)
-PASS  every open problem is unsplit or split into 2 to 4 steps  (0 steps under 5 open problems)
+PASS  every open problem is unsplit or split into 1 to 4 steps  (0 steps under 5 open problems)
 PASS  every step names a split file that exists
 PASS  the real gate writes one reduction check per split
-PASS  a step that restates its parent word for word is rejected by the gate  (REJECTED: Lemmas.lean: Open_DensityOne is the same text as Step_Restated)
-PASS  a step that is just another statement's name is rejected  (REJECTED: Lemmas.lean: Step_Alias is just the statement Open_DensityOne)
-PASS  the think role is gone (400)
+PASS  a step that restates its parent word for word is rejected by the gate  (REJECTED: Open_DensityOne is the same text as Step_Restated)
+PASS  a step that is just another statement's name is rejected  (REJECTED: Step_Alias is just the statement Open_DensityOne)
 PASS  the review role is gone (400)
-PASS  an outside proposal of a new step is never merged
-PASS  a pull request that adds a split file is never merged  (**REJECTED** by the Lean checker at 804bb91. The reason is in the run log: http:)
+PASS  desk gives a thinker an open problem and the split file to write  (OpenConjecture/Collatz/Proposals/Split_Open_CoefficientStopping.lean)
+PASS  a valid split passes the checks, gets needs-review and is not merged yet  (records ok; 0 settled result(s) and 1 split(s) to check)
+PASS  an outsider cannot self-apply review-ok (label and verdict ignored)
+PASS  a review-ok for a different commit does not count
+PASS  a genuine split merges after the owner's review-ok for its commit
+PASS  the merged tree still passes the real gate (1 split checked)  (records ok; 0 settled result(s) and 1 split(s) to check)
+PASS  a disguised restatement passes the mechanical checks
+PASS  the AI review rejects the restatement and it is not merged
+PASS  a split with a trivial step fails CI (triviality check, scripted) and is not merged
+PASS  a second split of the same statement is never merged  (The Lean checker passed, but this pull request can't be merged automatically: a )
+PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (open-coefficient-stopping)
-PASS  a second builder gets a different step  (open-density-one)
+PASS  site build accepts the merged split
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
+PASS  a second builder gets a different step  (step-sim-g1)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Open_DensityOne.lean)
-PASS  hard=1 gives an open problem  (open-five-x-plus-one)
-PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-five-x-plus-one)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
+PASS  hard=1 gives an open problem  (open-coefficient-stopping)
+PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged
 PASS  claiming someone else's name (proved_by) is refused
 PASS  a proof that tries to run code during the check is rejected by the gate
@@ -22,6 +31,7 @@ PASS  a proof Lean accepts is ACCEPTED and merged
 PASS  a second proof of a settled step is not merged
 PASS  a refutation is ACCEPTED and the step goes to the graveyard
 PASS  site build after results
+PASS  points: split 50 (+5 when its step is proven), step proof 12, step refutation 12  (tina 55, sim-alice 12, grace 12)
 PASS  desk has nothing left for builders once steps are settled, or ends the lease
 PASS  one /next per 2 s per handle (rapid calls get 429)  (200,429,429,429)
 PASS  malformed handle refused
@@ -29,11 +39,11 @@ PASS  sponsor sync runs  (stripe sync: 3 new payments, 2 new supporters, 2 suppo
 PASS  same email merges and sums ($1,125), unpaid ignored
 PASS  no email stored anywhere in ledger/
 PASS  sponsor sync is idempotent
-PASS  desk status counts activity  (recent 10)
+PASS  desk status counts activity  (recent 12)
 PASS  lemmas page marks every step as proven to imply its parent
 PASS  home page lists the refuted step in the graveyard
 PASS  home page leaderboard shows the prover and the red team
 PASS  home page escapes hostile sponsor text
 PASS  home page CSP allows only the desk
 
-37 of 37 passed
+47 of 47 passed

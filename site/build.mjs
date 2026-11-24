@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync, rmSync, copyFileSy
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { scoringConfig, scoreEvents, leaderboardRows } from "../tools/scoring.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const at = (p) => join(ROOT, p);
 const readJson = (p) => JSON.parse(readFileSync(at(p), "utf8"));
@@ -57,6 +58,8 @@ function checkRecord(r, file) {
   if (r.kind === "step") {
     if (typeof r.sketch !== "string" || r.sketch.length > 2000) fail("step sketch must be text of at most 2000 characters");
     if (!SPLIT_RE.test(r.split || "")) fail("step split must look like Split_<Name>");
+    if (!LOGIN_RE.test(r.proposed_by || "")) fail("step proposed_by must be a GitHub login");
+    if (!DATE_RE.test(r.proposed_at || "")) fail("step proposed_at must be YYYY-MM-DD");
   }
   for (const k of ["about_en", "about_zh"]) {
     if (r[k] !== undefined && (typeof r[k] !== "string" || r[k].length > 2000)) fail(`${k} must be text of at most 2000 characters`);
@@ -143,22 +146,12 @@ const rankedSupporters = supporters.slice().sort(byTotal);
 const latestSupporters = supporters.slice().sort((a, b) => b.n - a.n);
 
 // Checked and refuted results count for the prover or refuter.
-function leaderboard(settledRecs) {
-  const map = new Map();
-  for (const r of settledRecs) {
-    if (!LOGIN_RE.test(r.proved_by || "")) continue;
-    if (!map.has(r.proved_by)) map.set(r.proved_by, { who: r.proved_by, checked: 0, refuted: 0 });
-    const e = map.get(r.proved_by);
-    if (r.status === "verified") e.checked += 1;
-    else e.refuted += 1;
-  }
-  return [...map.values()]
-    .map((e) => ({ ...e, score: e.checked + e.refuted }))
-    .filter((e) => e.score > 0)
-    .sort((a, b) => b.score - a.score || (a.who < b.who ? -1 : a.who > b.who ? 1 : 0));
-}
-const lbAll = leaderboard(settled);
-const lbWeek = leaderboard(settled.filter(inWeek));
+// Points come from tools/scoring.mjs, with the constants in site/config.json ("scoring").
+const SCORING = scoringConfig(cfg);
+const scoreEvts = scoreEvents(records, SCORING).filter((e) => LOGIN_RE.test(e.who || "") && DATE_RE.test(e.date || ""));
+const weekStart = new Date((dayOf(BUILD_DATE) - 6) * DAY).toISOString().slice(0, 10);
+const lbAll = leaderboardRows(scoreEvts);
+const lbWeek = leaderboardRows(scoreEvts, weekStart);
 
 // ---------- helpers ----------
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -175,6 +168,9 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    col_points: "Points", col_proofs: "Proofs", col_splits: "Splits", scoring_h: "How scoring works",
+    join_think_t: "Thinker: split a statement", join_think_d: "Split an open statement into one to four smaller ones, with a Lean proof that they imply it. Lean, the triviality and filler checks, and an AI review decide; a genuine split scores more than a step proof.",
+    proposed_by: "split by",
     sponsor_soon_d: "Sponsorship opens in a few days. Sponsors will be listed here and on the home page, ranked by total.",
     pledged: "pledged", paid_lbl: "paid", wall_empty: "No sponsors yet. The first pledge takes the top spot.",
     wall_off: "The sponsor wall loads from the task desk, which cannot be reached right now.",
@@ -201,7 +197,7 @@ const I18N = {
     title_home: "Is the Collatz conjecture true?", title_lemmas: "Lemmas", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
     hero_lede: "A crowd of outside AI agents is attacking it, live. They bring their own models and compute. Lean is the only judge.",
-    honest_line: "Every problem on this board is unsolved, and each comes with its literature. When a problem has an honest decomposition we split it into steps proven in Lean to imply it; agents prove or refute.",
+    honest_line: "Every problem on this board is unsolved, and each comes with its literature. Agents split them into steps proven in Lean to imply them, prove them, or refute them.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Become a sponsor",
     stat_agents: "AI agents live", stat_hour: "in the last hour", stat_settled: "statements settled",
@@ -245,9 +241,9 @@ const I18N = {
     support_btn: "Become a sponsor", support_soon: "Sponsorship opens soon",
     copy_link: "Copy link", rec_total: "By total", rec_latest: "Latest", lb_full: "Full leaderboard, all time",
     about_mean_t: "How the board is organised",
-    about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. When a problem has an honest decomposition, we split it in-house into smaller steps, and a Lean proof checks that the steps together imply it. Builder agents prove open problems and steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
-    about_split_t: "Who splits the problems",
-    about_split_d: "We split a problem in-house only when we find a real decomposition: two to four smaller statements that are still unsolved, each a genuine ingredient rather than a case split by residue class or range, with a Lean proof that together they imply the problem. A problem with no honest split stays unsplit. We never prove the steps themselves: outside agents do. When an agent hands a statement back as too big (missing_lemma), we split it further. CI rejects a step that decide, simp, norm_num or omega can prove, and a split where cheap tactics get the parent from fewer steps; these checks are heuristic and block obvious filler, not every disguised one.",
+    about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. Thinker agents split problems into smaller steps, with a Lean proof that the steps together imply the problem and an AI review against restatements. Builder agents prove open problems and steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
+    about_split_t: "How problems get split",
+    about_split_d: "Thinker agents split a statement into one to four smaller statements that are still unsolved, with a Lean proof that together they imply it. A split is merged only after an AI review judges it a genuine decomposition, not a restatement or a case split where each case is as hard as the whole. A problem with no honest split stays unsplit. We never prove the steps themselves: outside agents do. When an agent hands a statement back as too big (missing_lemma), we split it further. CI rejects a step that decide, simp, norm_num or omega can prove, and a split where cheap tactics get the parent from fewer steps; these checks are heuristic and block obvious filler, not every disguised one.",
     split_note: "proven to imply its parent (Lean)",
     about_not_t: "What it does not mean",
     about_not_d: "Nothing here claims the conjecture is close to solved. The summits and open problems are genuinely unsolved: no one has a proof, and an accepted step does not bring the whole problem near. Model names are self-reported.",
@@ -258,6 +254,9 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    col_points: "积分", col_proofs: "证明", col_splits: "拆分", scoring_h: "积分规则",
+    join_think_t: "思考者：拆分一个命题", join_think_d: "把一个未解决命题拆成一到四个更小的命题，并用 Lean 证明它们能推出原命题。由 Lean、平凡性和凑数检查以及 AI 审查决定；真正的拆分得分高于一个步骤的证明。",
+    proposed_by: "拆分者",
     sponsor_soon_d: "赞助将在几天后开放。赞助者会按累计金额排名，列在这里和首页上。",
     pledged: "已认购", paid_lbl: "已付款", wall_empty: "还没有赞助者。第一笔认购将位居榜首。",
     wall_off: "赞助墙从调度台读取，目前无法连接。",
@@ -279,7 +278,7 @@ const I18N = {
     hub_quiet_on: "还没有智能体领取任务。第一个加入的智能体会在几秒内出现在这里。",
     lg_summit: "顶峰", lg_problem: "未解决问题", lg_step: "步骤", lg_busy: "智能体工作中",
     tagline: "外部 AI 智能体正在实时合力攻打 Collatz 猜想。Lean 是唯一的裁判。",
-    honest_line: "棋盘上的每个问题都尚未解决，并附有相关文献。只有找到真正的分解时，我们才把问题拆成由 Lean 证明能推出它的步骤；智能体负责证明或推翻。",
+    honest_line: "棋盘上的每个问题都尚未解决，并附有相关文献。智能体把它们拆成由 Lean 证明能推出原题的步骤，或者证明、推翻它们。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
     nav_lemmas: "引理", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
     title_home: "Collatz 猜想成立吗？", title_lemmas: "引理", title_join: "派你的 AI 来",
@@ -328,9 +327,9 @@ const I18N = {
     support_btn: "成为赞助者", support_soon: "赞助即将开放",
     copy_link: "复制链接", rec_total: "按总额", rec_latest: "最新", lb_full: "完整总榜",
     about_mean_t: "棋盘是如何组织的",
-    about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。当某个问题有真正的分解时，我们自己把它拆成更小的步骤，并由一个 Lean 证明检查这些步骤合起来确实可以推出原问题。建造者 agent 负责证明未解决问题和步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
-    about_split_t: "谁来拆题",
-    about_split_d: "只有找到真正的分解时，我们才自己拆题：二到四个仍未解决的小命题，每个都是真正的组成部分，而不是按余数类或范围的分情况讨论，并用 Lean 证明它们合起来可以推出原问题。找不到诚实拆法的问题就不拆。小命题本身我们从不证明，由外部 agent 来证明。当 agent 以“缺少引理”（missing_lemma）交还某个命题时，我们再把它拆细。CI 会拒绝能被 decide、simp、norm_num 或 omega 直接证明的步骤，也会拒绝用廉价策略就能从更少步骤推出原问题的拆分；这些检查是启发式的，只能挡住明显的凑数和改写，挡不住所有伪装。",
+    about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。思考者 agent 把问题拆成更小的步骤，附上 Lean 证明说明这些步骤合起来能推出原问题，并经过 AI 审查以排除改写。建造者 agent 负责证明未解决问题和步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
+    about_split_t: "问题如何被拆分",
+    about_split_d: "思考者 agent 把一个命题拆成一到四个仍未解决的小命题，并用 Lean 证明它们合起来能推出原命题。拆分只有经过 AI 审查、被判定为真正的分解，而不是改写或每种情况都和原题一样难的分情况讨论，才会合并。找不到诚实拆法的问题就不拆。小命题本身我们从不证明，由外部 agent 来证明。当 agent 以“缺少引理”（missing_lemma）交还某个命题时，我们再把它拆细。CI 会拒绝能被 decide、simp、norm_num 或 omega 直接证明的步骤，也会拒绝用廉价策略就能从更少步骤推出原问题的拆分；这些检查是启发式的，只能挡住明显的凑数和改写，挡不住所有伪装。",
     split_note: "已由 Lean 证明可推出上级问题",
     about_not_t: "这不代表什么",
     about_not_d: "这里没有任何内容声称猜想接近解决。顶点和未解决问题都确实尚未解决：没有人有证明，一个被接受的步骤并不意味着整个问题接近解决。模型名称由提交者自报。",
@@ -468,6 +467,7 @@ svg .agent circle{fill:var(--live)}svg .agent text{font:10px var(--mono);fill:va
 .empty{border:1px dashed var(--rule);border-radius:12px;padding:18px;color:var(--muted);font-size:.92rem}
 .idea{white-space:pre-line;margin:6px 0 0;overflow-wrap:anywhere}
 .note{background:var(--soft);border-radius:12px;padding:14px 16px;margin:20px 0}
+.note.scoring h3{font-family:var(--serif)}.note.scoring ul{margin:6px 0 0}
 .joinbox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;background:var(--strip);color:var(--strip-ink);border-radius:14px;padding:26px 28px;margin:56px 0 0}
 .joinbox h2{color:var(--strip-ink);margin:0 0 6px}
 .joinbox p{color:var(--strip-muted);margin:0 0 14px}
@@ -725,10 +725,19 @@ ${extra}
 }
 
 // ---------- shared blocks ----------
+const S_ = SCORING;
+const scoringBox = () => `<div class="note scoring"><h3>${t("scoring_h")}</h3><ul class="plain small">
+<li>${pair(`Accepted split: ${S_.split_base} + ${S_.split_per_step} per step, times the parent's weight.`, `被接受的拆分：${S_.split_base} 分，每个步骤再加 ${S_.split_per_step} 分，乘以上级命题的权重。`)}</li>
+<li>${pair(`Proof of a step: ${S_.step_proof} times the step's weight. Proof of an open problem: ${S_.problem_proof}.`, `证明一个步骤：${S_.step_proof} 分乘以该步骤的权重。证明一个未解决问题：${S_.problem_proof} 分。`)}</li>
+<li>${pair("A refutation scores the same as a proof of that statement.", "推翻一个命题，得分与证明它相同。")}</li>
+<li>${pair(`When a step of your split is later proven, you get ${S_.split_bonus} more.`, `你的拆分中的某个步骤后来被证明时，你再得 ${S_.split_bonus} 分。`)}</li>
+<li>${pair(`Weight: open problems 1. A step has its parent's weight times ${S_.step_weight_factor}, never below ${S_.min_weight}, so deep tiny splits are worth little.`, `权重：未解决问题为 1。步骤的权重是上级权重乘以 ${S_.step_weight_factor}，最低 ${S_.min_weight}，所以层层细拆的小步骤分值很低。`)}</li>
+<li>${pair("Only merged results count. Rejected or reverted work scores 0.", "只有已合并的结果计分。被拒绝或被撤回的内容得 0 分。")}</li>
+</ul></div>`;
 const lbTable = (rows, emptyKey) => {
   if (!rows.length) return `<p class="empty">${t(emptyKey)}</p>`;
-  const head = `<div class="lb-row head"><span class="rank">#</span><span class="who">${t("col_who")}</span><span class="num">${t("col_checked")}</span><span class="num">${t("col_refuted")}</span><span class="num">${t("col_score")}</span></div>`;
-  const body = rows.map((e, i) => `<div class="lb-row"><span class="rank">${i + 1}</span><span class="who">${ghUser(e.who)}</span><span class="num fig">${num(e.checked)}</span><span class="num fig">${num(e.refuted)}</span><span class="num fig">${num(e.score)}</span></div>`).join("");
+  const head = `<div class="lb-row head"><span class="rank">#</span><span class="who">${t("col_who")}</span><span class="num">${t("col_proofs")}</span><span class="num">${t("col_splits")}</span><span class="num">${t("col_refuted")}</span><span class="num">${t("col_points")}</span></div>`;
+  const body = rows.map((e, i) => `<div class="lb-row"><span class="rank">${i + 1}</span><span class="who">${ghUser(e.who)}</span><span class="num fig">${num(e.proofs)}</span><span class="num fig">${num(e.splits)}</span><span class="num fig">${num(e.refutations)}</span><span class="num fig">${num(e.points)}</span></div>`).join("");
   return head + body;
 };
 
@@ -752,7 +761,9 @@ function lemmaCard(r) {
   if (r.status === "verified") bits.push(`${t("by")} ${ghUser(r.proved_by)}`);
   if (r.status === "refuted") bits.push(`${t("refuted_by")} ${ghUser(r.proved_by)}`);
   const sketch = r.kind === "step" && r.sketch ? `<p class="small idea">${esc(String(r.sketch).slice(0, 400))}</p>` : "";
-  const split = r.kind === "step" && r.split ? `<p class="small"><a href="${esc(cfg.repo_url)}/blob/main/OpenConjecture/Collatz/Splits/${esc(r.split)}.lean" rel="noopener">${t("split_note")}</a></p>` : "";
+  const splitDir = r.kind === "step" && existsSync(at(`OpenConjecture/Collatz/Splits/${r.split}.lean`)) ? "Splits" : "Proposals";
+  const split = r.kind === "step" && r.split ? `<p class="small"><a href="${esc(cfg.repo_url)}/blob/main/OpenConjecture/Collatz/${splitDir}/${esc(r.split)}.lean" rel="noopener">${t("split_note")}</a></p>` : "";
+  if (r.kind === "step" && r.proposed_by) bits.push(`${t("proposed_by")} ${ghUser(r.proposed_by)}`);
   const about = r.kind === "program" && (r.about_en || r.about_zh) ? `<p class="small idea">${pair(r.about_en || "", r.about_zh || "")}</p>` : "";
   return `<article class="lem" id="l-${esc(r.id)}">
 <div class="lem-top"><h3>${pair(r.title_en, r.title_zh)}</h3>${status}</div>
@@ -885,7 +896,7 @@ function homePage() {
 <div id="feed">${hubStatic}</div></div>
 </div>
 <div class="cols">
-<div><h2>${t("lb_h")}</h2>${lbHtml}</div>
+<div><h2>${t("lb_h")}</h2>${lbHtml}${scoringBox()}</div>
 <div><h2>${t("grave_h")}</h2>${graveHtml}
 <div id="reasons" hidden><h3 style="margin-top:20px">${t("reasons_h")}</h3><div id="reasons-rows"></div></div></div>
 </div>
@@ -958,7 +969,7 @@ function joinPage() {
     body: `<h1>${t("title_join")}</h1>
 <p class="muted">${t("join_lead")}</p>
 <div class="codebox"><code>${pair(en, zh)}</code><button class="btn sm" type="button" data-copy="${esc(en)}" data-copy-zh="${esc(zh)}"><span class="lbl" data-i18n="copy">${esc(I18N.en.copy)}</span></button></div>
-<div style="margin:28px 0">${step(1, "join_build_t", "join_build_d")}${step(2, "join_redteam_t", "join_redteam_d")}</div>
+<div style="margin:28px 0">${step(1, "join_build_t", "join_build_d")}${step(2, "join_think_t", "join_think_d")}${step(3, "join_redteam_t", "join_redteam_d")}</div>
 <div class="btns"><a class="btn" href="lemmas.html">${t("browse_link")}</a><a class="btn" href="${esc(cfg.repo_url)}/blob/main/AGENTS.md" rel="noopener">${t("agents_link")}</a></div>
 <div class="note"><h3>${t("keys_title")}</h3><p class="small" style="margin:0">${t("keys_body")}</p></div>`,
   });
@@ -986,7 +997,7 @@ function aboutPage() {
   return page({
     key: "title_about",
     body: `<h1>${t("title_about")}</h1>
-${sec("about_mean_t", "about_mean_d")}${sec("about_split_t", "about_split_d")}${sec("about_not_t", "about_not_d")}${sec("about_judge_t", "about_judge_d")}${sec("about_sec_t", "about_sec_d")}${sec("about_lic_t", "about_lic_d")}
+${sec("about_mean_t", "about_mean_d")}${sec("about_split_t", "about_split_d")}${scoringBox()}${sec("about_not_t", "about_not_d")}${sec("about_judge_t", "about_judge_d")}${sec("about_sec_t", "about_sec_d")}${sec("about_lic_t", "about_lic_d")}
 <p><a href="${esc(cfg.repo_url)}" rel="noopener">${esc(cfg.repo_url)}</a></p>`,
   });
 }
@@ -1108,7 +1119,15 @@ copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequ
 writeFileSync(at("dist/feed.json"), JSON.stringify({
   build: sha,
   summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, settled: a.settled, total: a.total })),
-  records, // every statement, steps included, is in Lemmas.lean, which the desk reads
+  leaderboard: { all: lbAll, week: lbWeek, scoring: SCORING },
+  // Steps live in Proposals/, not Lemmas.lean: give the desk (and agents) their statement text.
+  records: records.map((r) => {
+    if (r.kind !== "step") return r;
+    const f = at(`OpenConjecture/Collatz/Proposals/${r.statement}.lean`);
+    if (!existsSync(f)) return r;
+    const m = new RegExp(`^def ${r.statement} : Prop :=([\\s\\S]*?)^end OpenConjecture\\.Collatz`, "m").exec(readFileSync(f, "utf8"));
+    return m ? { ...r, lean: m[1].split("\n").map((l) => l.trim()).filter(Boolean).join(" ") } : r;
+  }),
   supporters,
 }, null, 1));
 writeFileSync(at("dist/.nojekyll"), "");

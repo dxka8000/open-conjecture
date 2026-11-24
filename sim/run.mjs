@@ -57,9 +57,18 @@ function openPr({ author, title, files }) {
   const head = sha(`${number}:${JSON.stringify(files)}`);
   const list = Object.keys(files).map((f) => ({ filename: f, status: existsSync(join(WS, f)) ? "modified" : "added" }));
   gh.prs.set(number, { number, title, user: { login: author }, head: { sha: head, repo: { full_name: `${author}/open-conjecture` } },
-    files: list, contents: files, reviews: [], comments: [], state: "open", updated_at: new Date().toISOString() });
+    files: list, contents: files, reviews: [], comments: [], commentObjs: [], events: [], labels: [], state: "open", updated_at: new Date().toISOString() });
   return gh.prs.get(number);
 }
+const BOT = "github-actions[bot]";
+// Labels with an issue-events trail, as GitHub keeps it: who applied or removed each label.
+function setLabel(pr, name, actor, on) {
+  const has = pr.labels.some((l) => l.name === name);
+  if (on && !has) pr.labels.push({ name });
+  if (!on && has) pr.labels = pr.labels.filter((l) => l.name !== name);
+  if (on !== has) pr.events.push({ event: on ? "labeled" : "unlabeled", label: { name }, actor: { login: actor } });
+}
+const hasLabel = (pr, name) => pr.labels.some((l) => l.name === name);
 function body(req) { return new Promise((r) => { let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => r(b)); }); }
 const ghServer = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
@@ -68,7 +77,7 @@ const ghServer = http.createServer(async (req, res) => {
   let m;
   if (req.method === "GET" && p === `/repos/${REPO}/pulls`) {
     if (u.searchParams.get("page") && u.searchParams.get("page") !== "1") return send(200, []);
-    return send(200, [...gh.prs.values()].filter((x) => x.state === "open").map(({ contents, files, reviews, comments, ...x }) => x));
+    return send(200, [...gh.prs.values()].filter((x) => x.state === "open").map(({ contents, files, reviews, comments, commentObjs, events, ...x }) => x));
   }
   if (req.method === "GET" && (m = p.match(new RegExp(`^/repos/${REPO}/pulls/(\\d+)/files$`)))) return send(200, gh.prs.get(+m[1])?.files || null);
   if (req.method === "GET" && (m = p.match(new RegExp(`^/repos/${REPO}/pulls/(\\d+)/reviews$`)))) return send(200, gh.prs.get(+m[1])?.reviews || []);
@@ -91,8 +100,24 @@ const ghServer = http.createServer(async (req, res) => {
     return send(200, { merged: true });
   }
   if (req.method === "POST" && (m = p.match(new RegExp(`^/repos/${REPO}/issues/(\\d+)/comments$`)))) {
-    gh.prs.get(+m[1])?.comments.push(JSON.parse(await body(req)).body);
+    const text = JSON.parse(await body(req)).body;
+    gh.prs.get(+m[1])?.comments.push(text);
+    gh.prs.get(+m[1])?.commentObjs.push({ user: { login: BOT }, body: text });
     return send(201, {});
+  }
+  if (req.method === "GET" && (m = p.match(new RegExp(`^/repos/${REPO}/issues/(\\d+)/(comments|events)$`)))) {
+    if (u.searchParams.get("page") && u.searchParams.get("page") !== "1") return send(200, []);
+    const pr = gh.prs.get(+m[1]);
+    return send(200, pr ? (m[2] === "comments" ? pr.commentObjs : pr.events) : []);
+  }
+  if (req.method === "POST" && (m = p.match(new RegExp(`^/repos/${REPO}/issues/(\\d+)/labels$`)))) {
+    const pr = gh.prs.get(+m[1]);
+    for (const name of JSON.parse(await body(req)).labels) setLabel(pr, name, BOT, true);
+    return send(200, pr.labels);
+  }
+  if (req.method === "DELETE" && (m = p.match(new RegExp(`^/repos/${REPO}/issues/(\\d+)/labels/(.+)$`)))) {
+    setLabel(gh.prs.get(+m[1]), decodeURIComponent(m[2]), BOT, false);
+    return send(200, []);
   }
   if (req.method === "POST" && p.startsWith(`/repos/${REPO}/actions/workflows/`)) { gh.dispatches++; return send(204, null); }
   send(404, { message: `mock has no route for ${req.method} ${p}` });
@@ -145,14 +170,14 @@ async function automerge(mode, pr, conclusion) {
   return r.stdout;
 }
 // What GitHub CI does for a pull request: the real gate on the PR's tree, then (simulated) Lean.
-async function ciCheck(pr, leanAccepts) {
+async function ciCheck(pr, leanAccepts, antiGamingFails = false) {
   const dir = join(tmpdir(), `collatz-sim-pr${pr.number}`);
   rmSync(dir, { recursive: true, force: true });
   for (const d of ["records", "OpenConjecture", "checker"]) cpSync(join(WS, d), join(dir, d), { recursive: true });
   for (const [f, text] of Object.entries(pr.contents)) { mkdirSync(dirname(join(dir, f)), { recursive: true }); writeFileSync(join(dir, f), text); }
   const g = gate(dir);
   rmSync(dir, { recursive: true, force: true });
-  const conclusion = g.status !== 0 ? "failure" : leanAccepts ? "success" : "failure";
+  const conclusion = g.status !== 0 ? "failure" : leanAccepts && !antiGamingFails ? "success" : "failure";
   gh.runs.set(pr.head.sha, conclusion);
   await automerge("run", pr, conclusion);
   return { conclusion, gateOut: (g.stderr || g.stdout).trim() };
@@ -171,10 +196,33 @@ const beat = (h, lease) => desk("POST", `/desk/beat?lease=${lease}`, h);
 const release = (h, lease, reason) => desk("POST", `/desk/release?lease=${lease}&reason=${reason}`, h);
 
 const today = new Date().toISOString().slice(0, 10);
+// A thinker's split: steps [{ id, name, def }] under one parent, plus Proposals/Split_<Parent>.lean.
+function splitFiles(author, parent, steps, sketch) {
+  const parentStatement = wsJson(`records/collatz/${parent}.json`).statement;
+  const split = `Split_${parentStatement}`;
+  const files = {};
+  for (const st of steps) {
+    files[`OpenConjecture/Collatz/Proposals/${st.name}.lean`] = `import OpenConjecture.Collatz.Lemmas\n\nnamespace OpenConjecture.Collatz\n\ndef ${st.name} : Prop :=\n  ${st.def}\n\nend OpenConjecture.Collatz\n`;
+    files[`records/collatz/${st.id}.json`] = JSON.stringify({ id: st.id, kind: "step", parent, split, statement: st.name, difficulty: 700,
+      title_en: `Simulated step ${st.id}`, title_zh: `模拟步骤 ${st.id}`, status: "open", sketch: `SIMULATION. ${sketch}`,
+      proposed_by: author, proposed_at: today }, null, 2) + "\n";
+  }
+  const ns = `OpenConjecture.Collatz.Proposals.${split}`;
+  const hyp = steps.map((st) => `OpenConjecture.Collatz.${st.name}`).sort().join(" ∧ ");
+  files[`OpenConjecture/Collatz/Proposals/${split}.lean`] = `${steps.map((st) => `import OpenConjecture.Collatz.Proposals.${st.name}`).join("\n")}\n\nnamespace ${ns}\n\ntheorem main : (${hyp}) → OpenConjecture.Collatz.${parentStatement} := by\n  simulated_reduction\n\nend ${ns}\n`;
+  return files;
+}
+// What the scheduled AI review does, as the owner's account: a verdict comment for the head commit, then the label.
+function aiReview(pr, verdict, actor = OWNER_LOGIN, sha = pr.head.sha) {
+  pr.commentObjs.push({ user: { login: actor }, body: `AI review: ${verdict} for ${sha}\n\nReason: simulated.` });
+  setLabel(pr, "needs-review", actor, false);
+  setLabel(pr, verdict, actor, true);
+}
+const OWNER_LOGIN = REPO.split("/")[0];
 function resultFiles(author, recId, statement, refute = false, body = "  simulated_proof_term", provedBy = author) {
   const rec = wsJson(`records/collatz/${recId}.json`);
   const name = refute ? `Refute_${statement}` : statement;
-  const imp = "import OpenConjecture.Collatz.Lemmas";
+  const imp = statement.startsWith("Step_") ? `import OpenConjecture.Collatz.Proposals.${statement}` : "import OpenConjecture.Collatz.Lemmas";
   return {
     [`OpenConjecture/Collatz/Proofs/${name}.lean`]: `${imp}\n\nnamespace OpenConjecture.Collatz.Proofs.${name}\n\ntheorem main : ${refute ? "¬ " : ""}OpenConjecture.Collatz.${statement} := by\n${body}\n\nend OpenConjecture.Collatz.Proofs.${name}\n`,
     [`records/collatz/${recId}.json`]: JSON.stringify({ ...rec, status: refute ? "refuted" : "verified", proved_by: provedBy, model: "Simulated Agent 1", verified_at: today }, null, 2) + "\n",
@@ -202,9 +250,9 @@ async function main() {
   const recs0 = wsJson("dist/feed.json").records;
   const steps0 = recs0.filter((r) => r.kind === "step");
   const progs0 = recs0.filter((r) => r.kind === "program");
-  check("every open problem is unsplit or split into 2 to 4 steps", progs0.every((p) => {
+  check("every open problem is unsplit or split into 1 to 4 steps", progs0.every((p) => {
     const n = steps0.filter((st) => st.parent === p.id).length;
-    return n === 0 || (n >= 2 && n <= 4);
+    return n === 0 || (n >= 1 && n <= 4);
   }), `${steps0.length} steps under ${progs0.length} open problems`);
   check("every step names a split file that exists", steps0.every((st) => existsSync(join(WS, `OpenConjecture/Collatz/Splits/${st.split}.lean`))));
   check("the real gate writes one reduction check per split", gate(WS).status === 0 && (wsRead("checker/Verified.lean").match(/^theorem OpenConjectureCheck\.s\d+ : \(/gm) || []).length === new Set(steps0.map((st) => st.split)).size);
@@ -224,29 +272,66 @@ async function main() {
     rmSync(dir, { recursive: true, force: true });
   }
   log("   (triviality and filler checks need Lean: they ran in real CI on main, not here)");
-  const s0 = await next("sim-carol", "&role=think");
-  check("the think role is gone (400)", s0.status === 400);
   const r0 = await next("sim-carol", "&role=review");
   check("the review role is gone (400)", r0.status === 400);
 
-  // outsiders cannot add or change statements
-  const stepFile = "OpenConjecture/Collatz/Proposals/Step_Outsider.lean";
-  const pP = openPr({ author: "sim-mallory", title: "Propose step-outsider", files: {
-    [stepFile]: "import OpenConjecture.Collatz.Lemmas\n\nnamespace OpenConjecture.Collatz\n\ndef Step_Outsider : Prop :=\n  True\n\nend OpenConjecture.Collatz\n",
-    "records/collatz/step-outsider.json": JSON.stringify({ id: "step-outsider", kind: "step", parent: "open-density-one", split: "Split_Open_DensityOne", statement: "Step_Outsider",
-      difficulty: 1, title_en: "x", title_zh: "x", status: "open", sketch: "x" }) } });
-  await ciCheck(pP, true);
-  check("an outside proposal of a new step is never merged", gh.prs.get(pP.number).state === "open");
+  // ---- thinkers split, the AI review decides
+  log("\n== Round 1b: thinkers and the AI review");
+  const t0 = await next("sim-tina", "&role=think");
+  check("desk gives a thinker an open problem and the split file to write", t0.status === 200 && t0.body.gap?.role === "think" && /Proposals\/Split_Open_/.test(t0.body.gap.file), t0.body.gap?.file);
+  const P1 = t0.body.gap.id;
+  const pG = openPr({ author: "sim-tina", title: `Split ${P1}`, files: splitFiles("sim-tina", P1, [
+    { id: "step-sim-g1", name: "Step_SimG1", def: "∀ n : ℕ, 0 < n → Reaches (6 * n + 1)" },
+    { id: "step-sim-g2", name: "Step_SimG2", def: "∀ n : ℕ, 0 < n → Reaches (6 * n + 5)" },
+  ], "A genuine split (simulated).") });
+  const cg = await ciCheck(pG, true);
+  check("a valid split passes the checks, gets needs-review and is not merged yet", cg.conclusion === "success" && hasLabel(pG, "needs-review") && gh.prs.get(pG.number).state === "open" && /Waiting for the AI review/.test(lastComment(pG)), cg.gateOut.slice(0, 80));
+  await release("sim-tina", t0.body.lease.id, "submitted");
+  aiReview(pG, "review-ok", "sim-tina"); // the author labels it and posts a fake verdict
+  await automerge("sweep");
+  check("an outsider cannot self-apply review-ok (label and verdict ignored)", gh.prs.get(pG.number).state === "open" && hasLabel(pG, "needs-review") && !hasLabel(pG, "review-ok"));
+  aiReview(pG, "review-ok", OWNER_LOGIN, "0".repeat(40)); // the owner's verdict, but for another commit
+  await automerge("sweep");
+  check("a review-ok for a different commit does not count", gh.prs.get(pG.number).state === "open");
+  aiReview(pG, "review-ok");
+  await automerge("sweep");
+  check("a genuine split merges after the owner's review-ok for its commit", gh.prs.get(pG.number).state === "merged" && existsSync(join(WS, "records/collatz/step-sim-g1.json")) && /ACCEPTED/.test(lastComment(pG)));
+  check("the merged tree still passes the real gate (1 split checked)", /1 split/.test(gate(WS).stdout || ""), (gate(WS).stdout || "").trim());
+
+  const P2 = progs0.find((p) => p.id !== P1).id;
+  const P2st = wsJson(`records/collatz/${P2}.json`).statement;
+  const pR = openPr({ author: "sim-mallory", title: `Split ${P2}`, files: splitFiles("sim-mallory", P2, [
+    { id: "step-restated", name: "Step_Restated", def: `${P2st} ∧ 0 = 0` },
+  ], "A restatement of the parent.") });
+  check("a disguised restatement passes the mechanical checks", (await ciCheck(pR, true)).conclusion === "success" && hasLabel(pR, "needs-review"));
+  aiReview(pR, "review-rejected");
+  await automerge("sweep");
+  check("the AI review rejects the restatement and it is not merged", gh.prs.get(pR.number).state === "open" && hasLabel(pR, "review-rejected"));
+  const pT = openPr({ author: "sim-mallory", title: `Split ${P2}`, files: splitFiles("sim-mallory", P2, [
+    { id: "step-trivial", name: "Step_Trivial", def: "∀ n : ℕ, n + 0 = n" },
+    { id: "step-hard-x", name: "Step_HardX", def: "∀ n : ℕ, 0 < n → Reaches (4 * n + 3)" },
+  ], "padding with a trivial step") });
+  check("a split with a trivial step fails CI (triviality check, scripted) and is not merged", (await ciCheck(pT, true, true)).conclusion === "failure" && gh.prs.get(pT.number).state === "open");
+  const pW = openPr({ author: "sim-mallory", title: `Split ${P1}`, files: splitFiles("sim-mallory", P1, [
+    { id: "step-second-split", name: "Step_SecondSplit", def: "∀ n : ℕ, 0 < n → Reaches (8 * n + 7)" },
+  ], "a second split of an already split statement") });
+  await ciCheck(pW, true);
+  check("a second split of the same statement is never merged", gh.prs.get(pW.number).state === "open", lastComment(pW).slice(0, 80));
+
+  // outsiders cannot change fixed statements or in-house split files
   const pS = openPr({ author: "sim-mallory", title: "Prove open-density-one", files: {
     "OpenConjecture/Collatz/Splits/Split_Open_DensityOne.lean": "import OpenConjecture.Collatz.Lemmas\n\nnamespace OpenConjecture.Collatz.Splits.Split_Open_DensityOne\n\ntheorem main : True := trivial\n\nend OpenConjecture.Collatz.Splits.Split_Open_DensityOne\n",
     "records/collatz/open-density-one.json": JSON.stringify({ ...wsJson("records/collatz/open-density-one.json"), status: "verified", proved_by: "sim-mallory", model: "x", verified_at: today }, null, 2) + "\n" } });
   await ciCheck(pS, true);
-  check("a pull request that adds a split file is never merged", gh.prs.get(pS.number).state === "open" && /REJECTED|Proofs/.test(lastComment(pS)), lastComment(pS).slice(0, 80));
+  check("a pull request that adds an in-house split file is never merged", gh.prs.get(pS.number).state === "open");
   const pL = openPr({ author: "sim-mallory", title: "Prove open-density-one", files: {
     ...resultFiles("sim-mallory", "open-density-one", "Open_DensityOne"),
     "OpenConjecture/Collatz/Lemmas.lean": wsRead("OpenConjecture/Collatz/Lemmas.lean").replace("def Open_DensityOne : Prop :=", "def Open_DensityOne : Prop := True ∨") } });
   await ciCheck(pL, true);
   check("a proof that also weakens the statement in Lemmas.lean is never merged", gh.prs.get(pL.number).state === "open" && /exactly two files/.test(lastComment(pL)));
+  check("site build accepts the merged split", /built/.test(buildSite()));
+  log("   (waiting 62 s for the desk's 60-second feed cache)");
+  await sleep(62000);
 
   // ---- 2. Builders and the red team
   log("\n== Round 2: builders and red team");
@@ -288,6 +373,15 @@ async function main() {
   check("a refutation is ACCEPTED and the step goes to the graveyard", gh.prs.get(ref.number).state === "merged" && wsJson(`records/collatz/${falseId}.json`).status === "refuted");
   await release("sim-grace", g3.body.lease.id, "submitted");
   check("site build after results", /built/.test(buildSite()));
+  {
+    const lb = wsJson("dist/feed.json").leaderboard.all;
+    const pts = (who) => lb.find((r) => r.who === who)?.points ?? 0;
+    const proven = wsJson(`records/collatz/${realId}.json`), refutedRec = wsJson(`records/collatz/${falseId}.json`);
+    const tinaWant = 50 + (proven.proposed_by === "sim-tina" ? 5 : 0);
+    check("points: split 50 (+5 when its step is proven), step proof 12, step refutation 12",
+      pts("sim-tina") === tinaWant && pts(realWho) === (proven.kind === "step" ? 12 : 1000) && pts("sim-grace") === (refutedRec.kind === "step" ? 12 : 1000),
+      `tina ${pts("sim-tina")}, ${realWho} ${pts(realWho)}, grace ${pts("sim-grace")}`);
+  }
   log("   (waiting 62 s for the desk's feed cache)");
   await sleep(62000);
   const lateBeat = await beat("sim-alice", (await next("sim-alice")).body?.lease?.id || "none");

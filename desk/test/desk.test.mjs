@@ -364,16 +364,32 @@ test('unknown routes return 404', async () => {
 const hist = async (call, id) => (await call('GET', `/desk/task/${id}`)).body.history;
 const STEP_A = '∀ n : ℕ, n % 8 = 5 → 1 < n → step^[4] n < n';
 
-test('unknown role returns 400; think and review are gone, build and redteam are accepted', async () => {
+test('unknown role returns 400; build, think and redteam are accepted', async () => {
   const { next } = setup();
-  for (const role of ['summit', 'think', 'review']) {
+  for (const role of ['summit', 'review']) {
     const bad = await next('h-' + role, '&role=' + role);
     assert.equal(bad.status, 400, role);
-    assert.match(bad.body.error, /role must be one of: build, redteam/);
+    assert.match(bad.body.error, /role must be one of: build, think, redteam/);
   }
-  for (const role of ['build', 'redteam']) {
+  for (const role of ['build', 'think', 'redteam']) {
     assert.equal((await next('h-' + role, '&role=' + role)).status, 200, role);
   }
+});
+
+test('think prefers statements handed back with missing_lemma, skips ones already split, and points at Proposals/', async () => {
+  const { next, release, feed } = setup();
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 900), rec('st-a', 'step', 'Step_A', 4));
+  const b = await next('bob', '&hard=1');
+  const other = b.body.gap.id === 'm-bridge' ? 'p-1' : 'm-bridge';
+  feed.records.find((r) => r.id === 'st-a').parent = other; // the other hard statement is already split
+  await release(b.body.lease.id, 'missing_lemma');
+  const t1 = await next('tina', '&role=think');
+  assert.equal(t1.body.gap.id, b.body.gap.id);
+  assert.equal(t1.body.gap.role, 'think');
+  assert.match(t1.body.gap.file, /^OpenConjecture\/Collatz\/Proposals\/Split_[A-Za-z0-9_]+\.lean$/);
+  const seen = new Set();
+  for (const h of ['u1', 'u2', 'u3', 'u4', 'u5']) { const r = await next(h, '&role=think'); if (r.body.gap) seen.add(r.body.gap.id); }
+  assert.ok(!seen.has(other), [...seen].join(','));
 });
 
 test('redteam hands out step, milestone, program in that order, with Refute_ file and namespace', async () => {

@@ -21,8 +21,8 @@ export const IP_LIMIT = 30;
 export const IP_WINDOW = MINUTE;
 export const NO_TASK_RETRY_S = 120;
 export const DEFAULT_REPO = 'dxka8000/open-conjecture';
-// Outside agents prove (build) or refute (redteam). Splitting is done in-house, so there is no think or review role.
-export const ROLES = ['build', 'redteam'];
+// Outside agents prove (build), split (think) or refute (redteam).
+export const ROLES = ['build', 'think', 'redteam'];
 
 export const REASONS = [
   'submitted',
@@ -483,13 +483,14 @@ export class Desk {
     const releases = (id, reason) => events.filter((e) => e.task === id && e.reason === reason).length;
     const fewestHolders = (a, b) => (busy.get(a.id) || 0) - (busy.get(b.id) || 0);
     let pick;
-    if (role === 'redteam') {
-      // Red-team agents try to refute statements and may share a task. Prefer what others reported
-      // as doubtful.
-      const signal = 'statement_seems_false';
-      const kinds = ['step', 'milestone', 'program'];
+    if (role === 'redteam' || role === 'think') {
+      // Thinkers split open statements that are not split yet; red-team agents try to refute statements.
+      // Both may share a task. Prefer what builders handed back as too big (think) or as doubtful (redteam).
+      const signal = role === 'think' ? 'missing_lemma' : 'statement_seems_false';
+      const kinds = role === 'think' ? ['program', 'milestone', 'step'] : ['step', 'milestone', 'program'];
+      const split = new Set(feed.filter((r) => r.kind === 'step').map((r) => r.parent));
       const pool = feed
-        .filter((r) => kinds.includes(r.kind) && usable(r))
+        .filter((r) => kinds.includes(r.kind) && usable(r) && !(role === 'think' && split.has(r.id)))
         .sort((a, b) => releases(b.id, signal) - releases(a.id, signal) || fewestHolders(a, b) ||
           kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
@@ -531,6 +532,20 @@ export class Desk {
   gap(rec, lemmas, events, role = 'build') {
     const name = rec.statement;
     const file = role === 'redteam' ? `Refute_${name}` : name;
+    if (role === 'think') {
+      const history = {};
+      for (const e of events) if (e.task === rec.id && e.reason) history[e.reason] = (history[e.reason] || 0) + 1;
+      return {
+        role, id: rec.id, kind: rec.kind, hard: isHard(rec), title_en: rec.title_en, title_zh: rec.title_zh,
+        difficulty: rec.difficulty, statement_name: name,
+        statement: typeof rec.lean === 'string' ? rec.lean : lemmas.get(name),
+        file: `OpenConjecture/Collatz/Proposals/Split_${name}.lean`,
+        namespace: `OpenConjecture.Collatz.Proposals.Split_${name}`,
+        steps: 'OpenConjecture/Collatz/Proposals/Step_<Name>.lean, one per step (1 to 4)',
+        record: 'records/collatz/<new step id>.json, one per step',
+        history,
+      };
+    }
     const history = {};
     for (const e of events) {
       if (e.task === rec.id && e.reason) history[e.reason] = (history[e.reason] || 0) + 1;

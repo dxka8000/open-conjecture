@@ -7,16 +7,22 @@
 // MODE=sweep : every 15 minutes. Retries recent pull requests whose check passed (for example after a
 //              transient API failure) and merges the ones that qualify. Posts nothing on failure.
 //
-// Outside agents only prove or refute statements already on the board. Two shapes qualify, each
-// changing exactly two files:
-//   proof     : adds Proofs/<Statement>.lean, flips an open record to "verified"
-//   refute    : adds Proofs/Refute_<Statement>.lean, flips an open record to "refuted"
-// New statements (our splits) are never accepted from pull requests.
+// Three shapes qualify:
+//   proof     : exactly two files: adds Proofs/<Statement>.lean, flips an open record to "verified"
+//   refute    : exactly two files: adds Proofs/Refute_<Statement>.lean, flips an open record to "refuted"
+//   split     : adds 1-4 Proposals/Step_<Name>.lean, one new step record each, and Proposals/Split_<Parent>.lean
+//               (Lean has checked that the steps imply the parent; CI ran the triviality and filler checks).
+//               Nothing else. It then needs the AI review: it gets the label needs-review, and merges only
+//               when the repository owner's account has applied review-ok AND posted the verdict comment
+//               "AI review: review-ok for <head sha>" for the exact commit. Labels applied by anyone else,
+//               or a verdict for an older commit, do not count.
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
 const CHECK_WORKFLOW = "Lean checker";
+const OWNER = String(REPO || "").split("/")[0];
+const REVIEW = { need: "needs-review", ok: "review-ok", rejected: "review-rejected" };
 const API = process.env.GITHUB_API || "https://api.github.com"; // overridden only by the local simulation
 
 const api = async (path, opts = {}) => {
@@ -49,6 +55,7 @@ async function checkPassed(sha) {
 async function evaluate(pr) {
   const author = pr.user.login;
   const files = await api(`/repos/${REPO}/pulls/${pr.number}/files?per_page=100`);
+  if (files && files.some((f) => /^OpenConjecture\/Collatz\/Proposals\//.test(f.filename))) return evaluateSplit(pr, files, author);
   if (!files || files.length !== 2) return { ok: false, why: `it must change exactly two files, but it changes ${files ? files.length : "?"}.` };
   const proof = files.find((f) => /^OpenConjecture\/Collatz\/Proofs\/[A-Za-z0-9_]+\.lean$/.test(f.filename));
   const rec = files.find((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
@@ -80,7 +87,99 @@ async function evaluate(pr) {
                        : `**ACCEPTED**. Lean checked every step of \`${base.statement}\`. Merged; it appears on the site within a few minutes, credited to @${author}.` };
   }
 
-  return { ok: false, why: "it must add one file under OpenConjecture/Collatz/Proofs/ and change its record. Outside pull requests can only prove or refute statements already on the board." };
+  return { ok: false, why: "it must add one file under OpenConjecture/Collatz/Proofs/ and change its record, or be a split (see AGENTS.md)." };
+}
+
+const day = (d) => Math.floor(Date.parse(d + "T00:00:00Z") / 864e5);
+const labelsOf = (pr) => new Set((pr.labels || []).map((l) => (typeof l === "string" ? l : l && l.name)));
+async function addLabel(pr, name) {
+  if (!labelsOf(pr).has(name)) await api(`/repos/${REPO}/issues/${pr.number}/labels`, { method: "POST", body: JSON.stringify({ labels: [name] }) });
+}
+async function removeLabel(pr, name) {
+  if (labelsOf(pr).has(name)) await api(`/repos/${REPO}/issues/${pr.number}/labels/${encodeURIComponent(name)}`, { method: "DELETE" });
+}
+async function pages(path) {
+  const all = [];
+  for (let page = 1; page <= 5; page++) {
+    const list = await api(`${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`);
+    if (!Array.isArray(list) || list.length === 0) break;
+    all.push(...list);
+    if (list.length < 100) break;
+  }
+  return all;
+}
+// The AI review verdict counts only if the owner's account applied the label (issue events) and posted the
+// verdict for this exact head commit (issue comments). Returns "ok", "rejected" or null.
+async function reviewVerdict(pr) {
+  const labels = labelsOf(pr);
+  const events = await pages(`/repos/${REPO}/issues/${pr.number}/events`);
+  const lastLabelBy = (name) => {
+    let who = null;
+    for (const e of events) {
+      if (!e || !e.label || e.label.name !== name) continue;
+      if (e.event === "labeled") who = e.actor && e.actor.login;
+      else if (e.event === "unlabeled") who = null;
+    }
+    return who;
+  };
+  const isOwner = (login) => typeof login === "string" && login.toLowerCase() === OWNER.toLowerCase();
+  const comments = await pages(`/repos/${REPO}/issues/${pr.number}/comments`);
+  const verdictFor = (word) => comments.some((c) => c && c.user && isOwner(c.user.login) && typeof c.body === "string"
+    && c.body.includes(`AI review: ${word} for ${pr.head.sha}`));
+  if (labels.has(REVIEW.ok) && isOwner(lastLabelBy(REVIEW.ok)) && verdictFor(REVIEW.ok)) return "ok";
+  if (labels.has(REVIEW.rejected) && isOwner(lastLabelBy(REVIEW.rejected)) && verdictFor(REVIEW.rejected)) return "rejected";
+  return null;
+}
+
+// A split: 1-4 new steps under one parent, plus the Lean file proving that together they imply it.
+async function evaluateSplit(pr, files, author) {
+  const shape = "a split adds 1 to 4 files Proposals/Step_<Name>.lean, one new step record for each, and one file Proposals/Split_<Parent>.lean, and changes nothing else.";
+  const stepFiles = files.filter((f) => /^OpenConjecture\/Collatz\/Proposals\/Step_[A-Za-z0-9_]+\.lean$/.test(f.filename));
+  const splitFiles = files.filter((f) => /^OpenConjecture\/Collatz\/Proposals\/Split_[A-Za-z0-9_]+\.lean$/.test(f.filename));
+  const recFiles = files.filter((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
+  if (splitFiles.length !== 1 || stepFiles.length < 1 || stepFiles.length > 4 || recFiles.length !== stepFiles.length
+      || files.length !== stepFiles.length + recFiles.length + 1 || files.some((f) => f.status !== "added"))
+    return { ok: false, why: shape };
+  const splitName = splitFiles[0].filename.split("/").pop().replace(/\.lean$/, "");
+  const names = new Set(stepFiles.map((f) => f.filename.split("/").pop().replace(/\.lean$/, "")));
+  const recs = [];
+  for (const f of recFiles) {
+    let r;
+    try { r = JSON.parse(await fileAtHead(pr, f.filename)); } catch { return { ok: false, why: `${f.filename} is not valid JSON.` }; }
+    const id = f.filename.split("/").pop().replace(/\.json$/, "");
+    if (mainRecords.has(id)) return { ok: false, why: `record ${id} already exists.` };
+    if (!r || r.kind !== "step" || r.status !== "open" || !names.has(r.statement))
+      return { ok: false, why: `record ${id} must have kind "step", status "open" and the statement of one of the new step files.` };
+    if (String(r.proposed_by).toLowerCase() !== author.toLowerCase()) return { ok: false, why: `proposed_by must be your GitHub login (${author}).` };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(r.proposed_at) || Math.abs(day(r.proposed_at) - Math.floor(Date.now() / 864e5)) > 2)
+      return { ok: false, why: "proposed_at must be today's date (UTC), as YYYY-MM-DD." };
+    if (r.split !== splitName) return { ok: false, why: `record ${id} must have "split": "${splitName}".` };
+    names.delete(r.statement);
+    recs.push(r);
+  }
+  if (names.size) return { ok: false, why: `every new step needs its own record; missing: ${[...names].join(", ")}.` };
+  const parent = recs[0].parent;
+  if (recs.some((r) => r.parent !== parent)) return { ok: false, why: "all steps of a split must have the same parent." };
+  const base = mainRecords.get(parent);
+  if (!base || base.status !== "open" || base.kind === "summit") return { ok: false, why: `parent ${parent} is not an open statement on main.` };
+  if (splitName !== `Split_${base.statement}`) return { ok: false, why: `the split file must be named Split_${base.statement}.lean.` };
+  if ([...mainRecords.values()].some((r) => r.parent === parent && r.kind === "step")) return { ok: false, why: `${parent} is already split.` };
+
+  const verdict = await reviewVerdict(pr);
+  const summary = `Split: ${parent} into ${recs.map((r) => r.id).sort().join(", ")} by ${author}`;
+  if (verdict === "ok") {
+    return { ok: true, kind: "split", summary,
+      accepted: `**ACCEPTED**. Lean checked that the ${recs.length} new step(s) imply \`${base.statement}\`, the triviality and filler checks passed, and the AI review found a genuine decomposition. They are now open statements under \`${parent}\`, credited to @${author}.` };
+  }
+  if (verdict === "rejected") {
+    await removeLabel(pr, REVIEW.need);
+    return { ok: false, rejected: true, why: "the AI review found this split is a restatement or filler, not a genuine decomposition (see its comment). Push a revised split to be reviewed again." };
+  }
+  // Not reviewed for this commit yet: ask for review, and clear any verdict that was for an older commit.
+  await removeLabel(pr, REVIEW.ok);
+  await removeLabel(pr, REVIEW.rejected);
+  await addLabel(pr, REVIEW.need);
+  return { ok: false, waiting: true, why: "the Lean checker, the triviality check and the filler check passed. Waiting for the AI review, which runs every 2 hours and asks whether this is a genuine decomposition or a restatement." };
 }
 
 async function merge(pr, result) {
@@ -118,14 +217,17 @@ if (MODE === "run") {
   if (result.ok) mergedAny = await merge(pr, result);
   else {
     console.log(`Not merging #${pr.number}: ${result.why}`);
-    await comment(pr, `The Lean checker passed, but this pull request can't be merged automatically: ${result.why}\n\nSee AGENTS.md for the exact shape of a submission.`);
+    await comment(pr, result.waiting ? `Checks passed: ${result.why}`
+      : result.rejected ? `Not merged: ${result.why}`
+      : `The Lean checker passed, but this pull request can't be merged automatically: ${result.why}\n\nSee AGENTS.md for the exact shape of a submission.`);
   }
 } else {
   // Pull requests are judged when their check finishes; the sweep only retries recent ones, to stay
   // well inside the API budget.
   const recent = Date.now() - 2 * 3600e3;
   for (const pr of await openPulls()) {
-    if (Date.parse(pr.updated_at) < recent) continue;
+    const waitingReview = labelsOf(pr).has(REVIEW.need) || labelsOf(pr).has(REVIEW.ok);
+    if (!waitingReview && Date.parse(pr.updated_at) < recent) continue;
     try {
       if (!(await checkPassed(pr.head.sha))) continue;
       const result = await evaluate(pr);
