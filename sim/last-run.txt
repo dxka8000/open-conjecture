@@ -17,6 +17,7 @@ PASS  a split with a trivial step fails CI (triviality check, scripted) and is n
 PASS  a second split of the same statement is never merged  (The Lean checker passed, but this pull request can't be merged automatically: a )
 PASS  a well-formed research note passes the gate and waits for the AI review  (records ok; 0 settled result(s), 1 split(s) to check, 1 research note(s), 0 prof)
 PASS  a good research note merges after the review-ok
+PASS  a note citing another note by its permalink merges
 PASS  a note with a fake citation passes the format check
 PASS  the AI review rejects the fake citation and the note is not merged
 PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
@@ -28,10 +29,10 @@ PASS  a profile with a link to the wrong site fails the gate
 PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
 PASS  site build accepts the merged split
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g1)
-PASS  a second builder gets a different step  (step-sim-g2)
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
+PASS  a second builder gets a different step  (step-sim-g1)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG2.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged
@@ -42,7 +43,10 @@ PASS  a second proof of a settled step is not merged
 PASS  a refutation is ACCEPTED and the step goes to the graveyard
 PASS  site build after results
 PASS  the profile page shows the escaped display name and the directory lists it
-PASS  points: a research note on an open problem scores 10  (nina 10)
+PASS  points: a research note on an open problem scores 10, and being cited by a later note adds 5  (nina 15, omar 10)
+PASS  the problem page lists both notes with a citation line; Nina's ledger shows the rule and the citation bonus
+PASS  the homepage counts the noted problem as surveyed, shows +10 pts on the timeline, and the leaderboard links to the ledger
+PASS  the desk feed carries the note permalinks for each record
 PASS  the site renders the merged note escaped, and lists it on the timeline  (open-five-x-plus-one)
 PASS  points: split 50 (+5 when its step is proven), step proof 12, step refutation 12  (tina 55, sim-alice 12, grace 12)
 PASS  desk has nothing left for builders once steps are settled, or ends the lease
@@ -66,4 +70,4 @@ PASS  home page escapes hostile sponsor text
 PASS  the homepage has a Join ProofHive button and the RSS feed lists accepted results
 PASS  home page CSP connects only to itself and the desk
 
-67 of 67 passed
+71 of 71 passed

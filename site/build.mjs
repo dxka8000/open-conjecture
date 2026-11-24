@@ -287,7 +287,7 @@ const I18N = {
     kind_summit: "Summit", kind_drop: "Drop lemma", kind_milestone: "Milestone", kind_program: "Open problem", kind_step: "Step",
     other_h: "Other lemmas", none_attached: "No open problems attached yet.",
     join_lead: "You use your own AI and your own API key, on your own machine. The judge is a program.",
-    copy: "Copy", copied: "Copied",
+    copy: "Copy", copied: "Copied", copy_cite: "Copy citation",
     join_build_t: "Builder: prove a step", join_build_d: "Take an open step or open problem and write its Lean proof. Lean checks it, and the record is marked checked under your name.",
     join_redteam_t: "Red team: refute a statement", join_redteam_d: "Try to prove an open statement false. A Lean-checked refutation earns the same credit as a proof.",
     agents_link: "Read AGENTS.md on GitHub",
@@ -422,7 +422,7 @@ const I18N = {
     kind_summit: "顶峰", kind_drop: "降落引理", kind_milestone: "里程碑", kind_program: "未解决问题", kind_step: "步骤",
     other_h: "其他引理", none_attached: "还没有挂接的未解决问题。",
     join_lead: "你用自己的 AI 和自己的 API 密钥，在自己的电脑上运行。裁判是一个程序。",
-    copy: "复制", copied: "已复制",
+    copy: "复制", copied: "已复制", copy_cite: "复制引用",
     join_build_t: "建造者：证明一个步骤", join_build_d: "领取一个未解决的步骤或未解决问题，写出它的 Lean 证明。Lean 检查通过后，记录会以你的名字标为已验证。",
     join_redteam_t: "红队：推翻一个命题", join_redteam_d: "尝试证明某个未解决的命题是假的。经 Lean 检查的反驳与证明得分相同。",
     agents_link: "在 GitHub 上阅读 AGENTS.md",
@@ -475,7 +475,7 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
 :root[data-theme="light"] body::before{background:radial-gradient(900px 500px at 85% -10%,rgba(224,154,20,.10),transparent 60%),radial-gradient(700px 500px at -10% 10%,rgba(10,126,163,.06),transparent 60%)}
 a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:var(--accent-2)}[hidden]{display:none!important}
 ::selection{background:rgba(245,184,61,.35)}
-.wrap{max-width:820px;margin:0 auto;padding:0 20px}.wrap.wide{max-width:1180px}
+.wrap{max-width:820px;margin:0 auto;padding:0 20px}.wrap.wide,header.top .wrap,footer .wrap{max-width:1180px}
 header.top{position:sticky;top:0;z-index:10;backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--line)}
 header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);min-height:64px;flex-wrap:wrap;padding-top:var(--s2);padding-bottom:var(--s2)}
 .brand{display:inline-flex;align-items:center;gap:9px;font:650 1.05rem/1 var(--sans);letter-spacing:-.01em;color:var(--text);text-decoration:none}
@@ -554,6 +554,29 @@ code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 .part .camp,.part .tl,.part .cols{max-width:none}.hero2 .lede{max-width:760px}
 .tag{font:600 .68rem/1 var(--mono);border-radius:6px;padding:3px 6px;border:1px solid var(--line);white-space:nowrap;letter-spacing:.02em}
 .tag.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}.tag.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 30%,transparent)}.tag.open{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+/* per-problem progress, points ledger, notes and citations */
+.progline{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1) var(--s3);margin:var(--s2) 0 0}
+.stage{display:inline-flex;align-items:center;gap:var(--s2);font:600 .68rem/1.6 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.stage.s1{color:var(--cool)}.stage.s2,.stage.s3{color:var(--accent)}.stage.s4{color:var(--ok)}
+.sgs{display:inline-flex;gap:3px}.sg{width:14px;height:5px;border-radius:3px;background:var(--line)}.sg.on{background:currentColor}
+.pcount{color:var(--muted);font:500 .74rem/1.6 var(--mono)}
+.prob .pt a{color:inherit;text-decoration:none}.prob .pt a:hover{text-decoration:underline}
+.tablewrap{overflow-x:auto;margin:var(--s3) 0;border:1px solid var(--line);border-radius:var(--r2)}
+table.ledger{width:100%;border-collapse:collapse;font-size:.86rem}
+.ledger th,.ledger td{padding:var(--s2) var(--s3);border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.ledger th{font:600 .68rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+.ledger td.num,.ledger th.num{text-align:right;white-space:nowrap}.ledger tfoot td{font-weight:650;border-bottom:0}.nowrap{white-space:nowrap}
+.ledger td.what-c{min-width:6.5em}.ledger td.prob-c{min-width:11em}.ledger td.rule-c{min-width:11em}.ledger td.setup-c{min-width:8em}
+.progline+p,.progline+pre{margin-top:var(--s4)}
+.tag.pts{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.lb2 .pts a{color:inherit;text-decoration:none}.lb2 .pts a:hover{text-decoration:underline}
+.notelist{list-style:none;margin:var(--s3) 0;padding:0}
+.notelist li{padding:var(--s4) 0;border-bottom:1px solid var(--line)}.notelist li:first-child{border-top:1px solid var(--line)}
+.notelist p{margin:var(--s2) 0}
+.citebox{padding:var(--s4) var(--s5);margin:var(--s5) 0;border-radius:var(--r2)}
+.citebox h2{margin:0 0 var(--s2);font-size:1.1rem}
+.citebox code{display:block;white-space:normal;overflow-wrap:anywhere;padding:var(--s2) var(--s3);margin:var(--s2) 0;border-radius:var(--r1);background:var(--card);border:1px solid var(--line);font-size:.8rem}
+.kids{list-style:none;padding:0;margin:var(--s2) 0}.kids li{padding:var(--s1) 0}
 /* leaderboard, backers */
 .cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s6)}.cols h3{margin-top:0}
 .lb2{list-style:none;margin:12px 0 0;padding:0;counter-reset:r}
@@ -954,7 +977,9 @@ const scoringBox = () => `<div class="note scoring" id="scoring"><h3>${t("scorin
 <li>${pair(`Accepted split: ${S_.split_base} + ${S_.split_per_step} per step, times the parent's weight.`, `被接受的拆分：${S_.split_base} 分，每个步骤再加 ${S_.split_per_step} 分，乘以上级命题的权重。`)}</li>
 <li>${pair(`Proof of a step: ${S_.step_proof} times the step's weight. Proof of an open problem: ${S_.problem_proof}.`, `证明一个步骤：${S_.step_proof} 分乘以该步骤的权重。证明一个未解决问题：${S_.problem_proof} 分。`)}</li>
 <li>${pair("A refutation scores the same as a proof of that statement.", "推翻一个命题，得分与证明它相同。")}</li>
-<li>${pair(`Research note: ${S_.note_points} times the record's weight, plus ${S_.note_bonus} once that record is later split.`, `研究笔记：${S_.note_points} 分乘以该命题的权重；该命题之后被拆分时再加 ${S_.note_bonus} 分。`)}</li>
+<li>${pair(`Research note: ${S_.note_points} times the record's weight. A note is groundwork, not a proof.`, `研究笔记：${S_.note_points} 分乘以该命题的权重。笔记是基础工作，不是证明。`)}</li>
+<li>${pair(`Citation bonus: ${S_.note_bonus} to a note's author each time a later accepted note or split by someone else links that note's permalink.`, `引用奖励：之后被接受的别人的笔记或拆分每链接一次某篇笔记的永久地址，该笔记作者得 ${S_.note_bonus} 分。`)}</li>
+<li>${pair("Every point is listed, with the rule applied, in each contributor's points ledger.", "每一分都列在贡献者的积分明细里，并写明所用规则。")}</li>
 <li>${pair(`When a step of your split is later proven, you get ${S_.split_bonus} more.`, `你的拆分中的某个步骤后来被证明时，你再得 ${S_.split_bonus} 分。`)}</li>
 <li>${pair(`Weight: open problems 1. A step has its parent's weight times ${S_.step_weight_factor}, never below ${S_.min_weight}, so deep tiny splits are worth little.`, `权重：未解决问题为 1。步骤的权重是上级权重乘以 ${S_.step_weight_factor}，最低 ${S_.min_weight}，所以层层细拆的小步骤分值很低。`)}</li>
 <li>${pair("Only merged results count. Rejected or reverted work scores 0.", "只有已合并的结果计分。被拒绝或被撤回的内容得 0 分。")}</li>
@@ -962,7 +987,7 @@ const scoringBox = () => `<div class="note scoring" id="scoring"><h3>${t("scorin
 const lbTable = (rows, emptyKey) => {
   if (!rows.length) return `<p class="empty">${t(emptyKey)}</p>`;
   const head = `<div class="lb-row head"><span class="rank">#</span><span class="who">${t("col_who")}</span><span class="num">${t("col_proofs")}</span><span class="num">${t("col_splits")}</span><span class="num">${t("col_refuted")}</span><span class="num">${t("col_points")}</span></div>`;
-  const body = rows.map((e, i) => `<div class="lb-row"><span class="rank">${i + 1}</span><span class="who">${ghUser(e.who)}</span><span class="num fig">${num(e.proofs)}</span><span class="num fig">${num(e.splits)}</span><span class="num fig">${num(e.refutations)}</span><span class="num fig">${num(e.points)}</span></div>`).join("");
+  const body = rows.map((e, i) => `<div class="lb-row"><span class="rank">${i + 1}</span><span class="who">${ghUser(e.who)}</span><span class="num fig">${num(e.proofs)}</span><span class="num fig">${num(e.splits)}</span><span class="num fig">${num(e.refutations)}</span><span class="num fig"><a href="c/${esc(e.who)}.html#ledger">${num(e.points)}</a></span></div>`).join("");
   return head + body;
 };
 
@@ -993,7 +1018,7 @@ function lemmaCard(r) {
   const notesHtml = myNotes.length ? `<p class="small">${pair("Research notes:", "研究笔记：")} ${myNotes.map((n) => `<a href="${notePage(n)}">${esc(n.title)}</a> (@${esc(n.who)}, ${esc(n.date)})`).join(" · ")}</p>` : "";
   const about = r.kind === "program" && (r.about_en || r.about_zh) ? `<p class="small idea">${pair(r.about_en || "", r.about_zh || "")}</p>` : "";
   return `<article class="lem" id="l-${esc(r.id)}">
-<div class="lem-top"><h3>${pair(r.title_en, r.title_zh)}</h3>${status}</div>
+<div class="lem-top"><h3><a href="${probPage(r)}">${pair(r.title_en, r.title_zh)}</a></h3>${status}</div>
 <p class="small muted">${bits.join(" · ")}</p>
 ${about}${sketch}${split}${notesHtml}
 ${leanBlock(r)}<p class="small muted mono">${esc(r.statement)}</p>
@@ -1032,7 +1057,93 @@ const subtree = (r) => { const out = []; const walk = (x) => kidsOf(x.id).forEac
 const linkRecord = (r) => `${cfg.repo_url}/blob/main/records/collatz/${r.id}.json`;
 const profile = (who, prefix = "") => LOGIN_RE.test(who || "") ? `<a href="${prefix}c/${esc(who)}.html">@${esc(who)}</a>` : esc(who);
 
+// ---------- per-problem progress, the points ledger, problem pages ----------
+// A research note is groundwork, not a proof: it moves a problem to "Surveyed", never further.
+const STAGES = [["Not started", "未开始"], ["Surveyed", "已调研"], ["Split", "已拆分"], ["Steps proven", "步骤已证明"], ["Solved", "已解决"]];
+const probPage = (r) => `p/${r.id}.html`;
+function progressOf(p) {
+  const ids = new Set([p.id, ...subtree(p).map((r) => r.id)]);
+  const nNotes = notes.filter((n) => ids.has(n.record)).length;
+  const nSplits = new Set(records.filter((r) => r.kind === "step" && r.split && ids.has(r.parent)).map((r) => r.split)).size;
+  const nProofs = records.filter((r) => ids.has(r.id) && r.id !== p.id && r.status === "verified").length;
+  const stage = p.status === "verified" ? 4 : nProofs ? 3 : nSplits ? 2 : nNotes ? 1 : 0;
+  return { nNotes, nSplits, nProofs, stage };
+}
+const nWord = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+function progressLine(p) {
+  const g = progressOf(p);
+  const segs = STAGES.slice(1).map(([en], i) => `<span class="sg${g.stage >= i + 1 ? " on" : ""}" title="${esc(en)}"></span>`).join("");
+  return `<div class="progline"><span class="stage s${g.stage}" title="Surveyed → Split → Steps proven → Solved"><span class="sgs" aria-hidden="true">${segs}</span>${pair(STAGES[g.stage][0], STAGES[g.stage][1])}</span><span class="pcount">${pair(`${nWord(g.nNotes, "research note", "research notes")} · ${nWord(g.nSplits, "split", "splits")} · ${nWord(g.nProofs, "proof", "proofs")}`, `研究笔记 ${g.nNotes} · 拆分 ${g.nSplits} · 证明 ${g.nProofs}`)}</span></div>`;
+}
+const KIND_LABEL = { proof: ["Proof", "证明"], refutation: ["Refutation", "推翻"], split: ["Split", "拆分"], note: ["Research note", "研究笔记"], bonus: ["Bonus", "奖励"] };
+function ledgerLink(e) {
+  if (e.kind === "bonus" && e.sub === "cited") return e.by_kind === "note" ? String(e.by_ref).replace(/\.md$/, ".html") : `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${e.by_ref}.lean`;
+  if (e.kind === "bonus") return byId.has(e.id) ? linkRecord(byId.get(e.id)) : "";
+  return eventLink(e);
+}
+function ledgerTable(evts, prefix = "", { who = true } = {}) {
+  const rows = evts.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  if (!rows.length) return `<p class="empty">${pair("No points yet.", "还没有积分。")}</p>`;
+  const total = Math.round(rows.reduce((a, e) => a + e.points, 0) * 10) / 10;
+  const body = rows.map((e) => {
+    const r = byId.get(e.record), link = ledgerLink(e), href = link && !/^https:/.test(link) ? prefix + link : link;
+    return `<tr><td class="mono nowrap">${esc(e.date)}</td><td class="num fig">+${num(e.points)}</td>${who ? `<td>${profile(e.who, prefix)}</td>` : ""}<td class="what-c">${href ? `<a href="${esc(href)}" rel="noopener">${pair(...KIND_LABEL[e.kind])} ↗</a>` : pair(...KIND_LABEL[e.kind])}</td><td class="prob-c">${r ? `<a href="${prefix}${probPage(r)}" title="${esc(r.title_en)}">${pair(r.title_en.split(":")[0], r.title_zh.split("：")[0])}</a>` : esc(e.record || e.id)}</td><td class="small rule-c">${pair(e.rule_en || "", e.rule_zh || e.rule_en || "")}</td><td class="small muted setup-c">${e.kind === "bonus" ? "–" : esc(setupLabel(e))}</td></tr>`;
+  }).join("");
+  return `<div class="tablewrap"><table class="ledger"><thead><tr><th>${pair("Date", "日期")}</th><th class="num">${pair("Points", "积分")}</th>${who ? `<th>${pair("Who", "贡献者")}</th>` : ""}<th>${pair("What", "内容")}</th><th>${pair("Problem", "问题")}</th><th>${pair("Rule applied", "计分规则")}</th><th>${pair("Model · tool", "模型 · 工具")}</th></tr></thead><tbody>${body}</tbody><tfoot><tr><td>${pair("Total", "合计")}</td><td class="num fig">${num(total)}</td><td colspan="${who ? 5 : 4}"></td></tr></tfoot></table></div>`;
+}
+// Notes as reusable work: a one-line summary, a permalink and a citation line.
+function noteSummary(n) {
+  const lines = String(n.text || "").split(/\r?\n/);
+  const at0 = lines.findIndex((l) => /^## /.test(l));
+  const para = [];
+  for (const l of lines.slice(at0 + 1)) {
+    if (/^## /.test(l)) break;
+    if (!l.trim() || /^\s{4}/.test(l)) { if (para.length) break; continue; }
+    para.push(l.trim().replace(/^[-*] /, ""));
+  }
+  const s = para.join(" ").replace(/\*\*|`/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  if (s.length <= 240) return s;
+  const cut = s.slice(0, 240), dot = cut.lastIndexOf(". ");
+  return dot > 60 ? cut.slice(0, dot + 1) : cut.replace(/\s+\S*$/, "") + "…";
+}
+const noteUrl = (n) => `${cfg.site_url}${notePage(n)}`;
+const citeLine = (n) => { const r = byId.get(n.record); return `@${n.who} (${n.date}). “${n.title}”. ProofHive research note on “${r ? r.title_en : n.record}”. ${noteUrl(n)}`; };
+const citeBtns = (n) => `<div class="btns"><button class="btn sm" type="button" data-copy="${esc(noteUrl(n))}"><span class="lbl" data-i18n="copy_link">${esc(I18N.en.copy_link)}</span></button><button class="btn sm" type="button" data-copy="${esc(citeLine(n))}"><span class="lbl" data-i18n="copy_cite">${esc(I18N.en.copy_cite)}</span></button></div>`;
+const citedBy = (n) => scoreEvts.filter((e) => e.sub === "cited" && e.path === n.path);
+function noteItem(n, prefix) {
+  const c = citedBy(n).length;
+  return `<li><a href="${prefix}${notePage(n)}"><b>${esc(n.title)}</b></a>
+<div class="small muted">${profile(n.who, prefix)} · ${esc(n.date)} · ${esc(setupLabel(n))}${c ? ` · ${pair(`cited ${nWord(c, "time", "times")}`, `被引用 ${c} 次`)}` : ""}</div>
+<p class="small">${esc(noteSummary(n))}</p>${citeBtns(n)}</li>`;
+}
+function problemPage(r) {
+  const pre = "../";
+  const kids = kidsOf(r.id);
+  const myNotes = notes.filter((n) => n.record === r.id).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const parent = byId.get(r.parent);
+  const ids = new Set([r.id, ...subtree(r).map((x) => x.id)]);
+  const pts = scoreEvts.filter((e) => ids.has(e.record));
+  const splitFile = r.kind === "step" && r.split ? `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/${existsSync(at(`OpenConjecture/Collatz/Splits/${r.split}.lean`)) ? "Splits" : "Proposals"}/${r.split}.lean` : "";
+  return page({
+    key: "title_note", prefix: pre, title: r.title_en,
+    body: `<p class="kicker">${parent ? `<a href="${parent.kind === "summit" ? `${pre}index.html` : `${pre}${probPage(parent)}`}">${pair(parent.title_en.split(":")[0], parent.title_zh.split("：")[0])}</a>` : "ProofHive"} · ${t(KIND_KEY[r.kind])}</p>
+<h1>${pair(r.title_en, r.title_zh)}</h1>
+<p class="small muted">${statusWord(r)} · ${pair(`difficulty ${r.difficulty}`, `难度 ${r.difficulty}`)}${r.status !== "open" ? ` · ${r.status === "verified" ? t("by") : t("refuted_by")} ${profile(r.proved_by, pre)}` : ""}${r.proposed_by ? ` · ${t("proposed_by")} ${profile(r.proposed_by, pre)}` : ""}</p>
+${progressLine(r)}
+${r.kind === "program" && (r.about_en || r.about_zh) ? `<p>${pair(r.about_en || "", r.about_zh || "")}</p>` : ""}${r.sketch ? `<p class="idea">${esc(String(r.sketch).slice(0, 2000))}</p>` : ""}
+${leanBlock(r)}<p class="small muted mono">${esc(r.statement)} · <a href="${esc(linkRecord(r))}" rel="noopener">${pair("record", "记录")}</a>${splitFile ? ` · <a href="${esc(splitFile)}" rel="noopener">${t("split_note")}</a>` : ""}</p>
+${kids.length ? `<h2>${pair("Steps", "步骤")}</h2><ul class="kids">${kids.map((k) => `<li><span class="dot2 ${esc(k.status)}"></span><a href="${esc(k.id)}.html">${pair(k.title_en, k.title_zh)}</a> <span class="st">${statusWord(k)}</span></li>`).join("")}</ul>` : ""}
+<h2>${pair("Research notes", "研究笔记")}</h2>
+<p class="small muted">${pair("Notes are groundwork, not proofs: surveys of what is known and where it is stuck. Read them before you work on this problem, and cite the ones you build on by linking their permalink; the cited author gets a bonus.", "笔记是基础工作，不是证明：梳理已知结果和卡在哪里。动手之前先读，并通过链接永久地址引用你所依据的笔记；被引用的作者会得到奖励。")}</p>
+${myNotes.length ? `<ul class="notelist">${myNotes.map((n) => noteItem(n, pre)).join("")}</ul>` : `<p class="empty">${pair("No research notes yet. Be the first: see agent.md.", "还没有研究笔记。来写第一篇：见 agent.md。")}</p>`}
+<h2>${pair("Points awarded on this problem", "这个问题上发出的积分")}</h2>
+${ledgerTable(pts, pre)}
+<p class="small"><a href="${pre}about.html#scoring">${t("scoring_h")} →</a></p>`,
+  });
+}
+
 // Timeline events from the records (merged work) and, when built in CI, from pull requests (open, rejected, closed).
+const evPts = (kind, pred) => { const e = scoreEvts.find((x) => x.kind === kind && pred(x)); return e ? ` <span class="tag pts">+${num(e.points)} ${pair("pts", "分")}</span>` : ""; };
 function recordEvents() {
   const ev = [];
   const splits = new Map();
@@ -1045,17 +1156,17 @@ function recordEvents() {
     if (r.status === "verified" || r.status === "refuted") {
       const v = r.status === "verified";
       ev.push({ at: r.verified_at, url: linkRecord(r), ico: v ? ["✓", "ok"] : ["✗", "bad"],
-        html: `${profile(r.proved_by)} ${pair(v ? "proved" : "refuted", v ? "证明了" : "推翻了")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("Lean checked", "Lean 已检查")}</span>` });
+        html: `${profile(r.proved_by)} ${pair(v ? "proved" : "refuted", v ? "证明了" : "推翻了")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("Lean checked", "Lean 已检查")}</span>${evPts(v ? "proof" : "refutation", (x) => x.id === r.id)}` });
     }
   }
   for (const n of notes) {
     const r = byId.get(n.record);
-    ev.push({ at: n.date, url: notePage(n), ico: ["✎", "cool"], html: `${profile(n.who)} ${pair("wrote a research note on", "写了一篇研究笔记，关于")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("reviewed", "已审查")}</span>` });
+    ev.push({ at: n.date, url: notePage(n), ico: ["✎", "cool"], html: `${profile(n.who)} ${pair("wrote a research note on", "写了一篇研究笔记，关于")} ${pair(r.title_en, r.title_zh)} <span class="tag ok">${pair("reviewed", "已审查")}</span>${evPts("note", (x) => x.path === n.path)} <span class="small muted">${esc(setupLabel(n))}</span>` });
   }
   for (const g of splits.values()) {
     if (!g.parent) continue;
     ev.push({ at: g.at, url: `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${g.split}.lean`, ico: ["⑂", "acc"],
-      html: `${profile(g.who)} ${pair("split", "拆分了")} ${pair(g.parent.title_en, g.parent.title_zh)} ${pair(`into ${g.n} smaller ${g.n === 1 ? "step" : "steps"}`, `，拆成 ${g.n} 个小步骤`)} <span class="tag ok">${pair("accepted", "已接受")}</span>` });
+      html: `${profile(g.who)} ${pair("split", "拆分了")} ${pair(g.parent.title_en, g.parent.title_zh)} ${pair(`into ${g.n} smaller ${g.n === 1 ? "step" : "steps"}`, `，拆成 ${g.n} 个小步骤`)} <span class="tag ok">${pair("accepted", "已接受")}</span>${evPts("split", (x) => x.id === g.split)}` });
   }
   return ev;
 }
@@ -1093,9 +1204,11 @@ function homePage() {
   const joinEn = `Read ${cfg.site_url}agent.md and follow it.`;
   const joinZh = `阅读 ${cfg.site_url}agent.md，然后照做。`;
 
+  const surveyed = programs.filter((p) => progressOf(p).nNotes > 0).length;
   const summary = pair(
-    `Collatz conjecture: unsolved. ${programs.length} open problems on the way. ${solvedProblems} solved, ${splitProblems} split into ${steps.length} smaller ${steps.length === 1 ? "step" : "steps"}, ${stepsProven} ${stepsProven === 1 ? "step" : "steps"} proven.`,
-    `Collatz 猜想：未解决。通往它的路上有 ${programs.length} 个未解决问题。已解决 ${solvedProblems} 个，${splitProblems} 个被拆成 ${steps.length} 个小步骤，${stepsProven} 个步骤已被证明。`);
+    `Collatz conjecture: unsolved. ${programs.length} open problems · ${surveyed} surveyed · ${splitProblems} split · ${solvedProblems} solved.`,
+    `Collatz 猜想：未解决。${programs.length} 个未解决问题 · ${surveyed} 个已调研 · ${splitProblems} 个已拆分 · ${solvedProblems} 个已解决。`)
+    + `<span class="small muted" style="display:block;font-weight:400;font-size:.82rem;margin-top:4px">${pair(`${notes.length} research ${notes.length === 1 ? "note" : "notes"} (groundwork, not proofs) · ${steps.length} ${steps.length === 1 ? "step" : "steps"} · ${stepsProven} ${stepsProven === 1 ? "step" : "steps"} proven.`, `研究笔记 ${notes.length} 篇（基础工作，不是证明）· 步骤 ${steps.length} 个 · 已证明 ${stepsProven} 个。`)}</span>`;
 
   const stepLine = (r, depth) => `<li class="d${Math.min(depth, 3)}"><span class="dot2 ${esc(r.status)}"></span>${pair(r.title_en, r.title_zh)} <span class="st">${statusWord(r)}</span>${kidsOf(r.id).length ? `<ul>${kidsOf(r.id).map((k) => stepLine(k, depth + 1)).join("")}</ul>` : ""}</li>`;
   const tree = summits.map((s) => {
@@ -1103,15 +1216,15 @@ function homePage() {
     return `<div class="branch"><h3>${pair(s.title_en.split(":")[0], s.title_zh.split("：")[0])}</h3>${probs.map((p) => {
       const sub = subtree(p), done = sub.filter((r) => r.status !== "open").length;
       const pct = p.status === "verified" ? 100 : sub.length ? Math.round((100 * done) / (sub.length + 1)) : 0;
-      return `<div class="prob"><div class="prob-top"><span class="pt">${pair(p.title_en, p.title_zh)}</span><span class="st">${statusWord(p)}${sub.length ? ` · ${pair(`${sub.length} steps`, `${sub.length} 个步骤`)}` : ""}</span></div>
-<div class="bar"><div class="fill" style="width:${pct}%"></div></div>${sub.length ? `<ul class="steps">${kidsOf(p.id).map((k) => stepLine(k, 1)).join("")}</ul>` : ""}</div>`;
+      return `<div class="prob"><div class="prob-top"><span class="pt"><a href="${probPage(p)}">${pair(p.title_en, p.title_zh)}</a></span><span class="st">${statusWord(p)}${sub.length ? ` · ${pair(`${sub.length} steps`, `${sub.length} 个步骤`)}` : ""}</span></div>
+<div class="bar"><div class="fill" style="width:${pct}%"></div></div>${progressLine(p)}${sub.length ? `<ul class="steps">${kidsOf(p.id).map((k) => stepLine(k, 1)).join("")}</ul>` : ""}</div>`;
     }).join("") || `<p class="small muted">${t("none_attached")}</p>`}</div>`;
   }).join("");
 
   const events = [...recordEvents(), ...prEvents].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0)).slice(0, 80);
   const tlStatic = events.map((e) => `<li><span class="ico ${esc((e.ico || ["•", ""])[1])}">${esc((e.ico || ["•"])[0])}</span><span class="what">${e.html}${e.url ? ` <a class="src" href="${esc(e.url)}" rel="noopener">↗</a>` : ""}</span><span class="when" data-at="${esc(String(e.at).slice(0, 10))}">${esc(String(e.at).slice(0, 10))}</span></li>`).join("");
 
-  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${avatar(e.who, 22)} ${profile(e.who)}</span><span class="pts">${num(e.points)} ${pair("pts", "分")}</span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations · ${e.notes} notes`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations} · 笔记 ${e.notes}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
+  const lbRows = (rows, emptyKey) => rows.length ? `<ol class="lb2">${rows.slice(0, 10).map((e) => `<li><span class="who">${avatar(e.who, 22)} ${profile(e.who)}</span><span class="pts"><a href="c/${esc(e.who)}.html#ledger" title="Where every point came from">${num(e.points)} ${pair("pts", "分")}</a></span><span class="small muted">${pair(`${e.proofs} proofs · ${e.splits} splits · ${e.refutations} refutations · ${e.notes} notes`, `证明 ${e.proofs} · 拆分 ${e.splits} · 推翻 ${e.refutations} · 笔记 ${e.notes}`)}</span></li>`).join("")}</ol>` : `<p class="empty">${t(emptyKey)}</p>`;
   const logos = rankedSupporters.slice(0, 8).map((s) => `<span class="logo"><span class="nm">${esc(s.name)}</span><span class="am">${usd(s.amount)}</span></span>`).join("");
 
   return page({
@@ -1323,8 +1436,9 @@ ${P.badges.length ? `<p class="badges">${P.badges.map(([k, en, zh]) => `<span cl
 <div class="btns"><a class="btn sm" href="${esc(shareX)}" rel="noopener">${pair("Share on X", "分享到 X")}</a><a class="btn sm" href="${esc(shareLi)}" rel="noopener">${pair("Share on LinkedIn", "分享到 LinkedIn")}</a><a class="btn sm" href="${esc(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(shareEn)}`)}" rel="noopener">${pair("Share on Weibo", "分享到微博")}</a><button class="btn sm" type="button" id="wxbtn" data-url="${esc(url)}">${pair("WeChat QR", "微信二维码")}</button><button class="btn sm" type="button" data-copy="${esc(url)}"><span class="lbl" data-i18n="copy_link">${esc(I18N.en.copy_link)}</span></button></div>
 </div>
 <div id="wxqr" class="wxqr" hidden><img alt="QR code" width="180" height="180"><p class="small muted">${pair("Scan with WeChat to share this page.", "用微信扫一扫，分享此页面。")}</p></div>
-<h2>${pair("Contributions", "贡献")}</h2>
-<ol class="tl">${items || `<li class="empty-li">${t("tl_empty")}</li>`}</ol>
+<h2 id="ledger">${pair("Points ledger", "积分明细")}</h2>
+<p class="small muted">${pair("One row per award: where every point came from, the rule applied, and a link to the work.", "每一行是一次计分：分数从哪里来、用了哪条规则，以及对应成果的链接。")}</p>
+${ledgerTable(P.mine, "../", { who: false })}
 <p class="small muted">${t("profile_note")} ${t("profile_edit")}</p>`,
   });
 }
@@ -1401,9 +1515,13 @@ function notePageHtml(n) {
   const r = byId.get(n.record);
   return page({
     key: "title_note", prefix: "../../", title: n.title,
-    body: `<p class="small muted">${pair("Research note", "研究笔记")} · ${profile(n.who, "../../")} · ${esc(n.date)} · ${pair(`on: ${r.title_en}`, `关于：${r.title_zh}`)}</p>
+    body: `<p class="small muted">${pair("Research note", "研究笔记")} · ${profile(n.who, "../../")} · ${esc(n.date)} · ${esc(setupLabel(n))} · <a href="../../${probPage(r)}">${pair(`on: ${r.title_en}`, `关于：${r.title_zh}`)}</a></p>
 <article class="note-md">${mdRender(n.text.split(/\r?\n/).slice(1).filter((l) => !/^(Record|Author|Date): /.test(l)).join("\n")).replace(/^/, `<h1>${esc(n.title)}</h1>\n`)}</article>
-<p class="small muted">${t("note_disclaimer")} <a href="${esc(cfg.repo_url)}/blob/main/${esc(n.path)}" rel="noopener">${pair("Source", "源文件")}</a></p>`,
+<p class="small muted">${t("note_disclaimer")} <a href="${esc(cfg.repo_url)}/blob/main/${esc(n.path)}" rel="noopener">${pair("Source", "源文件")}</a></p>
+<section class="citebox glass"><h2>${pair("Cite / build on this", "引用 / 在此基础上继续")}</h2>
+<p class="small muted">${pair("Link this permalink in your own note or split sketch: the author gets a citation bonus when your work is accepted.", "在你自己的笔记或拆分说明里链接这个永久地址：你的成果被接受时，作者会得到引用奖励。")}</p>
+<code>${esc(noteUrl(n))}</code><code>${esc(citeLine(n))}</code>${citeBtns(n)}
+${citedBy(n).length ? `<p class="small">${pair("Cited by", "被引用：")} ${citedBy(n).map((e) => { const l = ledgerLink(e); return `<a href="${esc(/^https:/.test(l) ? l : "../../" + l)}">@${esc(e.by)} (${esc(e.date)})</a>`; }).join(" · ")}</p>` : ""}</section>`,
   });
 }
 
@@ -2005,6 +2123,8 @@ writeFileSync(at("dist/stats.html"), statsPage());
 if (ALIPAY_QR) { mkdirSync(dirname(at(`dist/${ALIPAY_QR}`)), { recursive: true }); copyFileSync(at(`site/${ALIPAY_QR}`), at(`dist/${ALIPAY_QR}`)); }
 mkdirSync(at("dist/c"), { recursive: true });
 for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: true }); writeFileSync(at(`dist/${notePage(n)}`), notePageHtml(n)); }
+mkdirSync(at("dist/p"), { recursive: true });
+for (const r of lemmaRecs) writeFileSync(at(`dist/${probPage(r)}`), problemPage(r));
 const contributors = people.map((P) => P.login);
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 writeFileSync(at("dist/people.html"), peoplePage());
@@ -2030,7 +2150,9 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
   notes: notes.map(({ text, ...n }) => n),
   // Steps live in Proposals/, not Lemmas.lean: give the desk (and agents) their statement text.
   records: records.map((r0) => {
-    const r = { ...r0, notes: notes.filter((n) => n.record === r0.id).length };
+    const mine = notes.filter((n) => n.record === r0.id);
+    const r = { ...r0, notes: mine.length, page: `${cfg.site_url}${probPage(r0)}`,
+      note_links: mine.map((n) => ({ title: n.title, who: n.who, date: n.date, url: noteUrl(n), model: n.model || "", tool: n.tool || "" })) };
     if (r.kind !== "step") return r;
     const f = at(`OpenConjecture/Collatz/Proposals/${r.statement}.lean`);
     if (!existsSync(f)) return r;

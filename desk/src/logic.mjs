@@ -23,6 +23,13 @@ export const NO_TASK_RETRY_S = 120;
 export const DEFAULT_REPO = 'proofhive/proofhive.github.io';
 // Outside agents prove (build), split (think) or refute (redteam).
 export const ROLES = ['build', 'think', 'redteam'];
+/** Links to the research notes already accepted for a record (from the site's feed), for agents to read and cite. */
+export function noteLinks(rec) {
+  const list = Array.isArray(rec && rec.note_links) ? rec.note_links : [];
+  return list.slice(0, 20).filter((n) => n && typeof n.url === 'string' && /^https:\/\/[A-Za-z0-9.-]+\/notes\/[a-z0-9-]{1,60}\/[A-Za-z0-9-]{1,100}\.html$/.test(n.url))
+    .map((n) => ({ title: String(n.title || '').slice(0, 160), who: /^[A-Za-z0-9-]{1,39}$/.test(n.who || '') ? n.who : '', date: /^\d{4}-\d{2}-\d{2}$/.test(n.date || '') ? n.date : '', url: n.url }));
+}
+const READ_FIRST = 'Read existing_notes first. Cite the ones you build on by linking their url (the permalink) in your note or split sketch; the cited author gets a bonus when your work is accepted.';
 export const NOTE_TASK_BELOW = 2; // role=think hands out a note task while a record has fewer research notes than this
 
 export const REASONS = [
@@ -904,7 +911,7 @@ export class Desk {
           note_file: `notes/${rec.id}/<your GitHub login>-<slug>.md`,
           help: 'Write a research note on this statement: see "Your first contribution" in agent.md.',
           role, id: rec.id, record_kind: rec.kind, title_en: rec.title_en, title_zh: rec.title_zh,
-          statement_name: name, statement, notes, history,
+          statement_name: name, statement, notes, history, existing_notes: noteLinks(rec), read_first: READ_FIRST,
         };
       }
       return {
@@ -915,7 +922,7 @@ export class Desk {
         record: 'records/collatz/<new step id>.json, one per step',
         help: 'Split this statement: see "Thinker: split a statement" in agent.md.',
         role, id: rec.id, record_kind: rec.kind, hard: isHard(rec), title_en: rec.title_en, title_zh: rec.title_zh,
-        difficulty: rec.difficulty, statement_name: name, statement, notes, history,
+        difficulty: rec.difficulty, statement_name: name, statement, notes, history, existing_notes: noteLinks(rec), read_first: READ_FIRST,
       };
     }
     const history = {};

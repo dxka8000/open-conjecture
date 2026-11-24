@@ -339,6 +339,13 @@ async function main() {
   aiReview(pN, "review-ok");
   await automerge("sweep");
   check("a good research note merges after the review-ok", gh.prs.get(pN.number).state === "merged" && existsSync(join(WS, `notes/${NR}/sim-nina-survey.md`)));
+  // A second note that builds on Nina's and cites it by its permalink: Nina gets the citation bonus.
+  const pC = openPr({ author: "sim-omar", title: `Note ${NR}`, files: noteFile("sim-omar", NR, "followup", {
+    known: `- Builds on https://proofhive.github.io/notes/${NR}/sim-nina-survey.html (Nina's survey). C. Hercher (2023), J. Integer Sequences. https://arxiv.org/abs/2201.00406` }) });
+  await ciCheck(pC, true);
+  aiReview(pC, "review-ok");
+  await automerge("sweep");
+  check("a note citing another note by its permalink merges", gh.prs.get(pC.number).state === "merged");
   const pF = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "fake", {
     known: "- A. Nonexistent (2025), \"A proof of the Collatz conjecture\", Annals. https://arxiv.org/abs/2599.99999 Proves the full conjecture." }) });
   check("a note with a fake citation passes the format check", (await ciCheck(pF, true)).conclusion === "success");
@@ -429,7 +436,14 @@ async function main() {
     const tinaWant = 50 + (proven.proposed_by === "sim-tina" ? 5 : 0);
     const ninaRec = wsJson(`records/collatz/${NR}.json`);
     check("the profile page shows the escaped display name and the directory lists it", /Nina &lt;i&gt;Sim&lt;\/i&gt;/.test(wsRead("dist/c/sim-nina.html")) && /sim-nina/.test(wsRead("dist/people.html")));
-    check("points: a research note on an open problem scores 10", pts("sim-nina") === 10, `nina ${pts("sim-nina")}`);
+    check("points: a research note on an open problem scores 10, and being cited by a later note adds 5", pts("sim-nina") === 15 && pts("sim-omar") === 10, `nina ${pts("sim-nina")}, omar ${pts("sim-omar")}`);
+    const prob = wsRead(`dist/p/${NR}.html`), ninaPage = wsRead("dist/c/sim-nina.html"), home = wsRead("dist/index.html");
+    check("the problem page lists both notes with a citation line; Nina's ledger shows the rule and the citation bonus",
+      /sim-nina-survey\.html/.test(prob) && /sim-omar-followup\.html/.test(prob) && /ProofHive research note on/.test(prob) && /id="ledger"/.test(ninaPage)
+      && /research note: 10 × weight 1\.0/.test(ninaPage) && /citation bonus: your note was cited by @sim-omar/.test(ninaPage));
+    check("the homepage counts the noted problem as surveyed, shows +10 pts on the timeline, and the leaderboard links to the ledger",
+      /1 surveyed/.test(home) && /\+10 <span data-lang="en">pts/.test(home) && /c\/sim-nina\.html#ledger/.test(home));
+    check("the desk feed carries the note permalinks for each record", (wsJson("dist/feed.json").records.find((r) => r.id === NR)?.note_links || []).length === 2);
     check("the site renders the merged note escaped, and lists it on the timeline", existsSync(join(WS, `dist/notes/${NR}/sim-nina-survey.html`)) && /wrote a research note on/.test(wsRead("dist/index.html")) && !/<script>alert/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)), ninaRec.id);
     check("points: split 50 (+5 when its step is proven), step proof 12, step refutation 12",
       pts("sim-tina") === tinaWant && pts(realWho) === (proven.kind === "step" ? 12 : 1000) && pts("sim-grace") === (refutedRec.kind === "step" ? 12 : 1000),

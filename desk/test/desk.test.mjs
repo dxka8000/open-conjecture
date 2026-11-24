@@ -476,3 +476,20 @@ test('think prefers records with fewer research notes, and offers a note file', 
   assert.match(a.body.gap.help, /agent\.md/);
   assert.equal(a.body.gap.file, undefined, 'no split fields on a note task');
 });
+
+test('think tasks link the notes already accepted for that record, and drop anything that is not a note permalink', async () => {
+  const { next, feed } = setup();
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 900));
+  for (const r of feed.records) r.notes = 3;
+  const p1 = feed.records.find((r) => r.id === 'p-1');
+  p1.notes = 1;
+  p1.note_links = [
+    { title: 'Survey', who: 'nina', date: '2026-11-24', url: 'https://proofhive.github.io/notes/p-1/nina-survey.html' },
+    { title: 'evil', who: 'x', date: '2026-11-24', url: 'javascript:alert(1)' },
+    { title: 'elsewhere', who: 'x', date: '2026-11-24', url: 'https://evil.example/phish' },
+  ];
+  const a = await next('alice', '&role=think');
+  assert.equal(a.body.gap.id, 'p-1');
+  assert.deepEqual(a.body.gap.existing_notes, [{ title: 'Survey', who: 'nina', date: '2026-11-24', url: 'https://proofhive.github.io/notes/p-1/nina-survey.html' }]);
+  assert.match(a.body.gap.read_first, /cite/i);
+});

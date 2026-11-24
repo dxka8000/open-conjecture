@@ -66,16 +66,39 @@ test("config overrides are read from site/config.json, invalid values ignored", 
   assert.equal(c.min_weight, 0.1);
 });
 
-test("research notes: 10 times the record's weight, +5 once the record is later split", () => {
+test("research notes: 10 times the record's weight; every event carries its rule and record", () => {
   const b = board();
   const notes = [
-    { record: "p", who: "nina", date: "2026-11-19", path: "notes/p/nina-a.md" }, // before p was split (2026-11-20)
-    { record: "s1", who: "olga", date: "2026-11-24", path: "notes/s1/olga-a.md" }, // after s1 was split
+    { record: "p", who: "nina", date: "2026-11-19", path: "notes/p/nina-a.md", file: "nina-a.md" },
+    { record: "s1", who: "olga", date: "2026-11-24", path: "notes/s1/olga-a.md", file: "olga-a.md" },
   ];
-  const rows = leaderboardRows(scoreEvents(b, S, notes));
-  assert.equal(pts(rows, "nina"), 15); // 10 * 1 + 5
-  assert.equal(pts(rows, "olga"), 6); // 10 * 0.6, no bonus
+  const ev = scoreEvents(b, S, notes);
+  const rows = leaderboardRows(ev);
+  assert.equal(pts(rows, "nina"), 10); // no citation, no bonus
+  assert.equal(pts(rows, "olga"), 6); // 10 * 0.6
   assert.equal(rows.find((r) => r.who === "nina").notes, 1);
+  const n = ev.find((e) => e.kind === "note" && e.who === "nina");
+  assert.equal(n.rule_en, "research note: 10 × weight 1.0");
+  assert.equal(n.record, "p");
+  for (const e of ev) assert.ok(e.rule_en && e.rule_zh && e.record, JSON.stringify(e));
+});
+
+test("citation bonus: a later note or split by someone else linking a note's permalink gives +5, once each", async () => {
+  const { citedNotes } = await import("../scoring.mjs");
+  assert.deepEqual([...citedNotes("see https://proofhive.github.io/notes/p/nina-a.html and https://github.com/o/r/blob/main/notes/p/nina-a.md")], ["p/nina-a"]);
+  const b = board();
+  b.find((r) => r.id === "t1").sketch = "Builds on https://proofhive.github.io/notes/p/nina-a.html (Nina's survey).";
+  const notes = [
+    { record: "p", who: "nina", date: "2026-11-19", path: "notes/p/nina-a.md", file: "nina-a.md", text: "self link https://x.io/notes/p/nina-a.html" },
+    { record: "s1", who: "olga", date: "2026-11-24", path: "notes/s1/olga-a.md", file: "olga-a.md", text: "See https://proofhive.github.io/notes/p/nina-a.html twice: https://proofhive.github.io/notes/p/nina-a.html" },
+    { record: "s2", who: "nina", date: "2026-11-25", path: "notes/s2/nina-b.md", file: "nina-b.md", text: "my own https://proofhive.github.io/notes/p/nina-a.html" },
+    { record: "s2", who: "pete", date: "2026-11-18", path: "notes/s2/pete-a.md", file: "pete-a.md", text: "earlier than the note https://proofhive.github.io/notes/p/nina-a.html" },
+  ];
+  const ev = scoreEvents(b, S, notes);
+  const cites = ev.filter((e) => e.sub === "cited");
+  assert.deepEqual(cites.map((e) => [e.who, e.by, e.by_kind]).sort(), [["nina", "carol", "split"], ["nina", "olga", "note"]]);
+  assert.match(cites[0].rule_en, /^citation bonus: your note was cited by @/);
+  assert.equal(pts(leaderboardRows(ev), "nina"), 10 + 10 * 0.6 + 5 + 5);
 });
 
 test("model x tool board groups by exact model and tool, with families", async () => {
