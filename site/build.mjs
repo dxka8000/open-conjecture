@@ -27,6 +27,8 @@ const deskOn = deskUrl !== "none";
 // ---------- operator and contact (for the sponsor, terms, refund and privacy pages) ----------
 const COMPANY = typeof cfg.company_name === "string" ? cfg.company_name.trim().slice(0, 120) : "";
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+// Sponsorship (pledge form and desk-fed wall) stays closed until the owner sets sponsorship_open: true.
+const SPONSOR_OPEN = cfg.sponsorship_open === true && deskOn;
 const PAYPAL = typeof cfg.paypal_me === "string" && /^[A-Za-z0-9]{1,20}$/.test(cfg.paypal_me) ? cfg.paypal_me : "";
 const CONTACT = typeof cfg.contact_email === "string" && EMAIL_RE.test(cfg.contact_email.trim()) ? cfg.contact_email.trim() : "";
 
@@ -173,6 +175,7 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    sponsor_soon_d: "Sponsorship opens in a few days. Sponsors will be listed here and on the home page, ranked by total.",
     pledged: "pledged", paid_lbl: "paid", wall_empty: "No sponsors yet. The first pledge takes the top spot.",
     wall_off: "The sponsor wall loads from the task desk, which cannot be reached right now.",
     pledge_h: "Pledge a sponsorship", pledge_lead: "Payments open in a few days. Pledge now and we will email you a one-click payment link the moment they do. Nothing is charged today.",
@@ -255,6 +258,7 @@ const I18N = {
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    sponsor_soon_d: "赞助将在几天后开放。赞助者会按累计金额排名，列在这里和首页上。",
     pledged: "已认购", paid_lbl: "已付款", wall_empty: "还没有赞助者。第一笔认购将位居榜首。",
     wall_off: "赞助墙从调度台读取，目前无法连接。",
     pledge_h: "认购赞助", pledge_lead: "几天后开放付款。现在认购，付款开放时我们会立即给你发一封一键付款链接的邮件。今天不会收取任何费用。",
@@ -855,8 +859,8 @@ function homePage() {
     pill,
     top: `<div class="justin"><div class="wrap wide"><b>${t("justin_lbl")}</b><a href="${latest ? "names.html" : "lemmas.html"}">${justIn} <span class="arrow">→</span></a></div></div>`,
     sub: `<div class="ticker" aria-hidden="true"><div class="wrap wide"><span class="lbl">${t("ticker_lbl")}</span><div class="rail"><div class="track">${tickItems}${tickItems}</div></div></div></div>`,
-    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}" data-sponsors="${esc(deskUrl)}"` : "",
-    extra: deskOn ? `<script>${SPONSOR_JS}</script><script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
+    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"${SPONSOR_OPEN ? ` data-sponsors="${esc(deskUrl)}"` : ""}` : "",
+    extra: deskOn ? `${SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : ""}<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
 <script>${DESK_JS}</script>` : "",
     body: `<section class="hero">
 <div>
@@ -963,15 +967,15 @@ function joinPage() {
 function namesPage() {
   return page({
     key: "title_names",
-    bodyAttrs: deskOn ? `data-sponsors="${esc(deskUrl)}"` : "",
-    extra: deskOn ? `<script>${SPONSOR_JS}</script>` : "",
+    bodyAttrs: SPONSOR_OPEN ? `data-sponsors="${esc(deskUrl)}"` : "",
+    extra: SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : "",
     body: `<h1>${t("title_names")}</h1>
 <p class="muted">${t("record_lead")}</p>
-<div id="wall">${deskOn ? "" : `<p class="empty">${t("wall_off")}</p>`}</div>
+<div id="wall">${SPONSOR_OPEN ? "" : `<p class="empty">${t("sponsor_soon_d")}</p>`}</div>
 <h2 id="support">${t("support_h")}</h2>
 <p>${t("support_1")}</p>
 <p class="muted small">${t("support_2")}</p>
-<div class="btns"><a class="btn primary" href="sponsor.html">${t("support_btn")}</a></div>
+<div class="btns">${SPONSOR_OPEN ? `<a class="btn primary" href="sponsor.html">${t("support_btn")}</a>` : `<a class="btn" href="sponsor.html">${t("support_soon")}</a>`}</div>
 <h2>${t("lb_full")}</h2>
 ${lbTable(lbAll, "lb_none")}`,
   });
@@ -999,7 +1003,7 @@ const backerHrefAll = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.
 
 function sponsorPage() {
   const L = (name, key, attrs) => `<label>${t(key)}<input name="${name}" ${attrs}></label>`;
-  const form = deskOn
+  const form = SPONSOR_OPEN
     ? `<form id="pledge-form" class="pledge"${PAYPAL ? ` data-paypal="${esc(PAYPAL)}"` : ""}>
 ${L("name", "f_name", 'required maxlength="60" autocomplete="organization"')}
 ${L("tagline", "f_tagline", 'maxlength="80"')}
@@ -1009,11 +1013,11 @@ ${L("email", "f_email", 'type="email" required maxlength="254" autocomplete="ema
 <button class="btn primary" type="submit">${t("f_submit")}</button>
 </form>
 <div id="pledge-out" aria-live="polite"></div>`
-    : `<p class="empty">${t("pledge_off")}</p>`;
+    : `<p class="note">${t("sponsor_soon_d")}</p>`;
   return page({
     key: "title_sponsor",
-    bodyAttrs: deskOn ? `data-sponsors="${esc(deskUrl)}"` : "",
-    extra: deskOn ? `<script>${SPONSOR_JS}</script>` : "",
+    bodyAttrs: SPONSOR_OPEN ? `data-sponsors="${esc(deskUrl)}"` : "",
+    extra: SPONSOR_OPEN ? `<script>${SPONSOR_JS}</script>` : "",
     body: `<h1>${t("title_sponsor")}</h1>
 ${P("Put your name, or your company's, on the wall of The Collatz Climb. A sponsorship buys a sponsor listing and advertising placement, ranked by total. It is not tax-deductible.",
     "把你或你公司的名字放上 The Collatz Climb 的赞助墙。赞助购买的是一个赞助展示位和广告位，按累计金额排名。不可抵税。")}
@@ -1024,9 +1028,9 @@ ${H("What you get", "你得到什么")}
 <li>${pair("Optionally a one-line tagline and a link to your website.", "可选：一句话简介和一个指向你网站的链接。")}</li>
 <li>${pair("Ranking by total. The top six are shown under the headline on the home page.", "按累计金额排名。前六名显示在首页标题下方。")}</li>
 </ul>
-${H("Pledge a sponsorship", "认购赞助")}
+${SPONSOR_OPEN ? `${H("Pledge a sponsorship", "认购赞助")}
 <p>${t("pledge_lead")}</p>
-${form}
+` : ""}${form}
 ${P("Sponsoring does not buy any influence over the project, the board or the results, and it does not make a solution more likely.", "赞助不会带来对项目、题目或结果的任何影响力，也不会让问题更可能被解决。")}
 <p class="small muted"><a href="names.html">${t("nav_names")}</a> · <a href="terms.html">${t("nav_terms")}</a> · <a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a></p>`,
   });
