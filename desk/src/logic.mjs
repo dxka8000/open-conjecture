@@ -20,9 +20,9 @@ export const NEXT_MIN_GAP = 2000;
 export const IP_LIMIT = 30;
 export const IP_WINDOW = MINUTE;
 export const NO_TASK_RETRY_S = 120;
-export const PULLS_TTL = 5 * MINUTE;
 export const DEFAULT_REPO = 'dxka8000/open-conjecture';
-export const ROLES = ['build', 'think', 'review', 'redteam'];
+// Outside agents prove (build) or refute (redteam). Splitting is done in-house, so there is no think or review role.
+export const ROLES = ['build', 'redteam'];
 
 export const REASONS = [
   'submitted',
@@ -104,7 +104,6 @@ export class Desk {
     this.site = String(site).replace(/\/+$/, '');
     this.lemmasUrl = lemmasUrl;
     this.repo = /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(repo) ? repo : DEFAULT_REPO;
-    this.pullsCache = null;
     this.githubApi = String(githubApi).replace(/\/+$/, '');
     this.feedCache = null;
     this.lemmasCache = null;
@@ -267,32 +266,6 @@ export class Desk {
     }
   }
 
-  /** Open proposal pull requests ("Propose ..."), from the public GitHub API, cached. */
-  async proposals() {
-    const now = this.now();
-    if (this.pullsCache && now - this.pullsCache.at < PULLS_TTL) return this.pullsCache.list;
-    try {
-      const res = await this.fetchFn(`${this.githubApi}/repos/${this.repo}/pulls?state=open&per_page=100`, {
-        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'collatz-climb-desk' },
-      });
-      if (!res.ok) throw new Error(`pulls HTTP ${res.status}`);
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('pulls is not an array');
-      const list = data
-        .filter((p) => p && Number.isInteger(p.number) && typeof p.title === 'string' && /^Propose /.test(p.title))
-        .map((p) => ({
-          number: p.number,
-          title: p.title.slice(0, 200),
-          author: p.user && typeof p.user.login === 'string' ? p.user.login : '',
-        }));
-      this.pullsCache = { at: now, list };
-      return list;
-    } catch (e) {
-      if (this.pullsCache) return this.pullsCache.list;
-      throw new HttpError(503, 'proposal list unavailable, try again shortly');
-    }
-  }
-
   // ---- endpoints ----------------------------------------------------------
 
   async next(now, sp, live) {
@@ -323,11 +296,6 @@ export class Desk {
     if (mine.length && !another) {
       const events = await this.events();
       for (const l of mine) {
-        if (l.role === 'review') {
-          const pr = (await this.proposals()).find((p) => `pr-${p.number}` === l.task);
-          if (pr) return { status: 200, body: { gap: this.reviewGap(pr), lease: { id: l.id, expires_at: iso(l.expires) } } };
-          continue;
-        }
         const rec = feed.find((r) => r.id === l.task);
         if (rec && (lemmas.has(rec.statement) || typeof rec.lean === 'string')) {
           return {
@@ -356,20 +324,11 @@ export class Desk {
     const releases = (id, reason) => events.filter((e) => e.task === id && e.reason === reason).length;
     const fewestHolders = (a, b) => (busy.get(a.id) || 0) - (busy.get(b.id) || 0);
     let pick;
-    if (role === 'review') {
-      const pool = (await this.proposals())
-        .filter((p) => p.author.toLowerCase() !== handle.toLowerCase())
-        .map((p) => ({ ...p, id: `pr-${p.number}` }))
-        .filter((p) => !held.has(p.id) && !cool.has(p.id))
-        .sort((a, b) => fewestHolders(a, b) || a.number - b.number);
-      const pr = pool[0];
-      if (!pr) return { status: 200, body: { gap: null, retry_after_s: NO_TASK_RETRY_S } };
-      return this.lease(now, handle, pr.id, role, this.reviewGap(pr));
-    } else if (role === 'think' || role === 'redteam') {
-      // Thinkers split the big open statements into smaller steps; red-team agents try to refute
-      // statements. Both may share a task. Prefer what others reported as stuck or doubtful.
-      const signal = role === 'think' ? 'missing_lemma' : 'statement_seems_false';
-      const kinds = role === 'think' ? ['program', 'milestone', 'step'] : ['step', 'milestone', 'program'];
+    if (role === 'redteam') {
+      // Red-team agents try to refute statements and may share a task. Prefer what others reported
+      // as doubtful.
+      const signal = 'statement_seems_false';
+      const kinds = ['step', 'milestone', 'program'];
       const pool = feed
         .filter((r) => kinds.includes(r.kind) && usable(r))
         .sort((a, b) => releases(b.id, signal) - releases(a.id, signal) || fewestHolders(a, b) ||
@@ -407,17 +366,6 @@ export class Desk {
     await this.store.put(`lease:${lease.id}`, lease);
     await this.record({ at: now, handle, task, type: role === 'build' ? 'took' : `took:${role}` });
     return { status: 200, body: { gap, lease: { id: lease.id, expires_at: iso(lease.expires) } } };
-  }
-
-  reviewGap(pr) {
-    return {
-      id: `pr-${pr.number}`,
-      role: 'review',
-      kind: 'review',
-      pr: pr.number,
-      url: `https://github.com/${this.repo}/pull/${pr.number}`,
-      title: pr.title,
-    };
   }
 
   gap(rec, lemmas, events, role = 'build') {
