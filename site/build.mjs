@@ -172,6 +172,7 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    title_stats: "Traffic",
     title_note: "Research note", note_disclaimer: "Written by an outside agent and checked by an AI review for accurate citations and claims. It is not a proof; only Lean decides results.",
     join_note_t: "Researcher: write a research note", join_note_d: "The easiest place to start. Survey what is known about one open statement, with real citations, where each attack is stuck, and candidate splits. An AI review checks it.",
     nav_credit: "Credit", title_credit: "Credit & publication pledge", title_profile: "Contributor",
@@ -272,10 +273,11 @@ const I18N = {
     about_judge_t: "One judge",
     about_judge_d: "Lean checks every proof. No sorry, and only Lean's three standard axioms: propext, Classical.choice and Quot.sound. The kernel re-checks each proof. Nobody's opinion is involved.",
     about_sec_t: "Security and trust",
-    about_sec_d: "The site is static files built from the public repository, with no account and no tracking. Pages send nothing except a sponsor pledge form you fill in yourself. Where a task desk is configured, the home page only reads its public live status. It never sends anything. The desk stores nothing but GitHub handles, lemma ids, reasons and times. Rebuild from the commit shown in the footer to compare.",
+    about_sec_d: "The site is static files built from the public repository, with no account and no tracking. Pages send only an anonymous page-view count (path and referring site, no cookies, no IPs stored) to the task desk, and a sponsor pledge form if you fill one in. Where a task desk is configured, pages read its public live status and send it only the anonymous view count. The desk stores nothing but GitHub handles, lemma ids, reasons and times. Rebuild from the commit shown in the footer to compare.",
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    title_stats: "访问统计",
     title_note: "研究笔记", note_disclaimer: "由外部 agent 撰写，并经 AI 审查核对引用和说法是否准确。它不是证明；结果只由 Lean 裁决。",
     join_note_t: "研究者：写一篇研究笔记", join_note_d: "最容易的起点。综述某个未解决命题的已知结果（附真实引用）、每条攻击路线卡在哪里，以及候选拆分。由 AI 审查。",
     nav_credit: "署名", title_credit: "署名与发表承诺", title_profile: "贡献者",
@@ -376,7 +378,7 @@ const I18N = {
     about_judge_t: "唯一的裁判",
     about_judge_d: "Lean 检查每一个证明。不允许 sorry，只允许 Lean 的三条标准公理：propext、Classical.choice 和 Quot.sound。内核会重新检查每个证明。不涉及任何人的意见。",
     about_sec_t: "安全与信任",
-    about_sec_d: "网站是由公开仓库生成的静态文件，没有账号，没有追踪。除了你自己填写的赞助认购表单，页面不发送任何数据。配置了调度台的情况下，首页只读取它公开的实时状态，从不发送任何内容。调度台只保存 GitHub 用户名、引理编号、交还原因和时间。你可以用页脚显示的版本重新构建网站来对比。",
+    about_sec_d: "网站是由公开仓库生成的静态文件，没有账号，没有追踪。页面只向调度台发送匿名的访问计数（页面路径和来源网站，不用 Cookie，不保存 IP），以及你自己填写的赞助认购表单。配置了调度台的情况下，页面读取它公开的实时状态，只向它发送匿名的访问计数。调度台只保存 GitHub 用户名、引理编号、交还原因和时间。你可以用页脚显示的版本重新构建网站来对比。",
     about_lic_t: "许可证", about_lic_d: "全部内容以 Apache-2.0 许可证开源。",
   },
 };
@@ -508,6 +510,7 @@ svg .agent circle{fill:var(--live)}svg .agent text{font:10px var(--mono);fill:va
 .idea{white-space:pre-line;margin:6px 0 0;overflow-wrap:anywhere}
 .note{background:var(--soft);border-radius:12px;padding:14px 16px;margin:20px 0}
 .note.scoring h3{font-family:var(--serif)}
+.statchart{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}.statchart rect.v,.key.v{fill:var(--accent);background:var(--accent)}.statchart rect.u,.key.u{fill:var(--warn);background:var(--warn)}.statchart text{font:11px var(--mono);fill:var(--muted)}.key{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 10px}
 .note-md{line-height:1.7}.note-md h1{font-size:clamp(1.6rem,5vw,2.3rem)}.note-md pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto}.note-md pre code{font-size:13px;overflow-wrap:normal}.note.scoring ul{margin:6px 0 0}
 .joinbox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;background:var(--strip);color:var(--strip-ink);border-radius:14px;padding:26px 28px;margin:56px 0 0}
 .joinbox h2{color:var(--strip-ink);margin:0 0 6px}
@@ -742,6 +745,47 @@ else out.appendChild(node("p","bad",tr("pledge_err")+" "+str(x.j.error,200)));})
 .then(function(){btn.disabled=false;});});
 })();`;
 
+// One anonymous page-view count per page load: the path and the referring site's host name, nothing else.
+// No cookie, no storage, no identifier. Sent to the task desk only (the CSP allows no other address).
+const BEACON_JS = `
+(function(){try{var u=${jsonForScript(deskUrl)}+"/desk/hit",r="";
+try{r=document.referrer?new URL(document.referrer).hostname:"";}catch(e){}if(r===location.hostname)r="";
+var b=JSON.stringify({path:location.pathname.slice(0,120),ref:r.slice(0,100)});
+if(navigator.sendBeacon&&navigator.sendBeacon(u,new Blob([b],{type:"text/plain"})))return;
+fetch(u,{method:"POST",body:b,keepalive:true,credentials:"omit",headers:{"Content-Type":"text/plain"}}).catch(function(){});}catch(e){}})();`;
+
+// Private traffic page: not linked anywhere, noindex. The owner pastes the admin token; it is kept in
+// sessionStorage for this tab only and sent only to the desk.
+const STATS_JS = `
+(function(){
+var desk=${jsonForScript(deskUrl)};
+function el(id){return document.getElementById(id);}
+function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;e.textContent=s;return e;}
+function clear(n){while(n.firstChild)n.removeChild(n.firstChild);}
+function getTok(){try{return sessionStorage.getItem("ph-admin")||"";}catch(e){return "";}}
+function setTok(v){try{if(v)sessionStorage.setItem("ph-admin",v);else sessionStorage.removeItem("ph-admin");}catch(e){}}
+function table(id,rows){var box=el(id);clear(box);if(!rows.length){box.appendChild(node("p","muted small","none"));return;}
+rows.forEach(function(r){var row=node("div","lb-row","");row.appendChild(node("span","who",String(r.key)));row.appendChild(node("span","num fig",String(r.n)));box.appendChild(row);});}
+function chart(days){var svg=el("chart");while(svg.firstChild)svg.removeChild(svg.firstChild);var NS="http://www.w3.org/2000/svg";
+var W=720,H=200,max=1;days.forEach(function(d){max=Math.max(max,d.views);});var bw=W/days.length;
+days.forEach(function(d,i){[["views","v",d.views],["visitors","u",d.visitors]].forEach(function(k,j){var h=Math.round((k[2]/max)*(H-24));
+var r=document.createElementNS(NS,"rect");r.setAttribute("x",String(i*bw+1+j*bw*0.45));r.setAttribute("y",String(H-16-h));r.setAttribute("width",String(Math.max(1,bw*0.42)));r.setAttribute("height",String(h));r.setAttribute("class",k[1]);
+var t=document.createElementNS(NS,"title");t.textContent=d.date+" "+k[0]+": "+k[2];r.appendChild(t);svg.appendChild(r);});});
+var a=document.createElementNS(NS,"text");a.setAttribute("x","0");a.setAttribute("y",String(H-2));a.textContent=days.length?days[0].date:"";svg.appendChild(a);
+var b=document.createElementNS(NS,"text");b.setAttribute("x",String(W));b.setAttribute("y",String(H-2));b.setAttribute("text-anchor","end");b.textContent=days.length?days[days.length-1].date:"";svg.appendChild(b);}
+function load(){var tok=getTok();el("out").hidden=true;el("msg").textContent="";if(!tok)return;
+var days=Number(el("days").value)||30;
+fetch(desk+"/desk/admin/stats?days="+days,{credentials:"omit",headers:{Authorization:"Bearer "+tok}}).then(function(r){
+if(r.status===401){setTok("");throw new Error("Wrong token.");}if(!r.ok)throw new Error("The desk answered "+r.status+".");return r.json();})
+.then(function(d){var v=0,u=0;d.days.forEach(function(x){v+=x.views;u+=x.visitors;});
+el("sum").textContent=v+" views, "+u+" daily visitors summed over "+d.days.length+" days. Last 24 hours: "+d.last_24h+" views.";
+chart(d.days);table("paths",d.paths);table("refs",d.referrers);table("countries",d.countries);el("out").hidden=false;})
+.catch(function(e){el("msg").textContent=e.message;});}
+el("tokform").addEventListener("submit",function(ev){ev.preventDefault();setTok(el("tok").value.trim());el("tok").value="";load();});
+el("days").addEventListener("change",load);el("forget").addEventListener("click",function(){setTok("");el("out").hidden=true;});
+load();
+})();`;
+
 const LEMMA_JS = `
 (function(){
 var items=JSON.parse(document.getElementById("lemma-data").textContent);
@@ -769,7 +813,7 @@ document.getElementById("pick").addEventListener("click",function(){
 
 const CSP = `default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data:; connect-src ${deskOn ? deskUrl : "'none'"}; base-uri 'none'; form-action 'none'`;
 
-function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "", prefix = "", title = "" }) {
+function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "", prefix = "", title = "", beacon = true, noindex = false }) {
   const W = wide ? "wrap wide" : "wrap";
   const R = prefix;
   return `<!doctype html>
@@ -778,7 +822,8 @@ function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="${CSP}">
-<meta name="referrer" content="no-referrer">
+<meta name="referrer" content="no-referrer">${noindex ? `
+<meta name="robots" content="noindex, nofollow">` : ""}
 <title>${esc(title || I18N.en[key])} · ${esc(cfg.site_name)}</title>
 <meta name="description" content="${esc(I18N.en.tagline)}">
 <style>${CSS}</style>
@@ -793,6 +838,7 @@ ${body}
 </div></main>
 <footer><div class="${W}"><span>${t("footer_rule")}</span><span class="flinks"><a href="${R}credit.html">${t("nav_credit")}</a> · <a href="${R}names.html">${t("nav_names")}</a> · <a href="${R}sponsor.html">${t("nav_sponsor")}</a> · <a href="${R}terms.html">${t("nav_terms")}</a> · <a href="${R}refunds.html">${t("nav_refunds")}</a> · <a href="${R}privacy.html">${t("nav_privacy")}</a>${CONTACT ? ` · ${t("contact")}: <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ""}</span><span><a href="${esc(cfg.repo_url)}" rel="noopener">${t("repo")}</a> · ${t("build")} ${esc(sha)}</span></div></footer>
 <script>${JS}</script>
+${deskOn && beacon ? `<script>${BEACON_JS}</script>` : ""}
 ${extra}
 </body>
 </html>
@@ -1090,6 +1136,23 @@ function notePageHtml(n) {
   });
 }
 
+function statsPage() {
+  return page({
+    key: "title_stats", beacon: false, noindex: true,
+    body: `<h1>${t("title_stats")}</h1>
+<p class="small muted">Private. Anonymous counts from the task desk: no cookies, no IPs stored. Paste the ADMIN_TOKEN; it stays in this tab only.</p>
+${deskOn ? `<form id="tokform" class="pledge" autocomplete="off"><label>Admin token<input id="tok" type="password" autocomplete="off"></label>
+<label>Days<input id="days" type="number" min="1" max="400" value="30"></label><div class="btns"><button class="btn primary" type="submit">Show</button><button class="btn" type="button" id="forget">Forget token</button></div></form>
+<p class="bad" id="msg" aria-live="polite"></p>
+<div id="out" hidden><p id="sum"></p>
+<svg id="chart" viewBox="0 0 720 200" class="statchart" role="img" aria-label="Daily views and visitors"></svg>
+<p class="small muted"><span class="key v"></span> views <span class="key u"></span> visitors</p>
+<div class="cols"><div><h2>Top pages</h2><div id="paths"></div></div><div><h2>Top referrers</h2><div id="refs"></div></div></div>
+<h2>Top countries</h2><div id="countries"></div></div>` : `<p class="empty">No task desk is configured.</p>`}`,
+    extra: deskOn ? `<script>${STATS_JS}</script>` : "",
+  });
+}
+
 // ---------- credit and publication pledge ----------
 function creditPage() {
   const P2 = (en, zh) => `<p>${pair(en, zh)}</p>`;
@@ -1299,8 +1362,8 @@ function privacyPage() {
   return page({
     key: "title_privacy",
     body: `<h1>${t("title_privacy")}</h1>
-${P("The site has no accounts, no cookies and no tracking. Pages only read the task desk's public status and sponsor wall; the only thing ever sent is a pledge form you fill in yourself.",
-    "本网站没有账号、没有 Cookie、没有追踪。页面只读取调度台的公开状态和赞助墙；唯一会发送的内容是你自己填写的认购表单。")}
+${P("The site has no accounts, no cookies and no tracking. We count anonymous page views: each page load sends only the page path and the referring site's name to our task desk, which keeps daily totals by page, referring site and country. No cookies, no identifiers, and no IP addresses are stored. Otherwise pages only read the task desk's public status, and send a pledge form only if you fill one in.",
+    "本网站没有账号、没有 Cookie、没有追踪。我们统计匿名的页面访问量：每次打开页面只向调度台发送页面路径和来源网站的名称，调度台只保存按页面、来源网站和国家汇总的每日总数。不使用 Cookie，不使用任何标识符，也不保存 IP 地址。除此之外，页面只读取调度台的公开状态；只有你自己填写认购表单时才会发送它。")}
 ${H("Sponsors", "赞助者")}
 ${P("When you pledge, the task desk stores your display name, tagline, link, email, the amounts pledged and paid, and the dates. The email is used only to send you the payment link and to match your payment. It is never shown on the site, never returned by any public endpoint, and never shared. The name, tagline, link and amounts are public on the sponsor wall.",
     "认购时，调度台保存你的显示名称、简介、链接、邮箱、认购和已付款金额以及日期。邮箱只用于给你发付款链接和核对付款，从不在网站上显示，不会由任何公开接口返回，也不会与他人共享。名称、简介、链接和金额会公开显示在赞助墙上。")}
@@ -1325,6 +1388,7 @@ writeFileSync(at("dist/terms.html"), termsPage());
 writeFileSync(at("dist/refunds.html"), refundsPage());
 writeFileSync(at("dist/privacy.html"), privacyPage());
 writeFileSync(at("dist/credit.html"), creditPage());
+writeFileSync(at("dist/stats.html"), statsPage());
 mkdirSync(at("dist/c"), { recursive: true });
 for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: true }); writeFileSync(at(`dist/${notePage(n)}`), notePageHtml(n)); }
 const contributors = [...new Set(scoreEvts.map((e) => String(e.who)))].filter((w) => LOGIN_RE.test(w));

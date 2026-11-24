@@ -36,6 +36,15 @@ export const REASONS = [
 const COOLDOWN_REASONS = new Set(['other', 'out_of_time']);
 const HANDLE_RE = /^[A-Za-z0-9-]{1,39}$/;
 
+// Anonymous page-view counts
+export const HIT_IP_LIMIT = 120; // per hour per address; beyond that, hits are dropped silently
+export const STATS_CAP = 200; // distinct paths and referrer hosts per day; the rest count as "other"
+export const UV_CAP = 200000; // distinct visitors counted per day
+export const STATS_KEEP_DAYS = 400;
+const BOT_RE = /bot|crawler|spider|crawl|slurp|headless|preview|monitor|curl|wget|python-requests|go-http/i;
+const PATH_RE = /^\/[A-Za-z0-9/._-]{0,119}$/;
+const REF_RE = /^[a-z0-9.-]{1,100}$/;
+
 // Sponsor pledges
 export const PLEDGE_MIN = 5;
 export const PLEDGE_MAX = 10000;
@@ -133,6 +142,7 @@ export class Desk {
     this.eventsCache = null; // loaded once per instance; the instance serializes all writes
     this.ipHits = new Map();
     this.pledgeHits = new Map();
+    this.hitHits = new Map();
     this.adminToken = typeof adminToken === 'string' && adminToken.length >= 16 ? adminToken : '';
     // Every request runs one at a time, so lease assignment is atomic even
     // when a request is waiting on the feed fetch.
@@ -164,7 +174,7 @@ export class Desk {
     return result;
   }
 
-  async dispatch({ method, pathname, searchParams, ip, body, auth }) {
+  async dispatch({ method, pathname, searchParams, ip, body, auth, ua, country }) {
     if (method === 'OPTIONS') return { status: 204, body: null };
     const now = this.now();
     const limited = this.checkIp(ip || 'local', now);
@@ -173,6 +183,8 @@ export class Desk {
     const route = routeOf(method, pathname);
     if (!route) return { status: 404, body: { error: 'not found' } };
     if (typeof body === 'string' && body.length > BODY_MAX) throw new HttpError(413, 'request body too large');
+    if (route === 'hit') return this.hit(now, body, ip, ua, country);
+    if (route === 'admin-stats') return this.stats(now, searchParams, auth);
     if (route === 'pledge') return this.pledge(now, body, ip);
     if (route === 'sponsors') return this.sponsors();
     if (route.startsWith('admin-')) return this.admin(now, route, body, auth);
@@ -193,6 +205,84 @@ export class Desk {
     return { status: 404, body: { error: 'not found' } };
   }
 
+
+
+  // ---- anonymous page-view counts --------------------------------------------
+  // Aggregated counters only, one document per day: views per path, per referrer host, per country and
+  // per hour, plus a count of distinct visitors. A visitor is a hash of (daily salt, IP, user agent); the
+  // salt and the hashes are kept for the current day only and deleted when the day changes. No raw IP,
+  // no cookie, no identifier is ever stored.
+
+  async rollDay(day) {
+    const cur = await this.store.get('stats-day');
+    if (cur === day) return;
+    for (const [k] of await this.store.list('uv:')) await this.store.delete(k);
+    for (const [k] of await this.store.list('salt:')) await this.store.delete(k);
+    const cutoff = iso(Date.parse(day + 'T00:00:00Z') - STATS_KEEP_DAYS * 864e5).slice(0, 10);
+    for (const [k] of await this.store.list('stats:')) if (k.slice(6) < cutoff) await this.store.delete(k);
+    await this.store.put(`salt:${day}`, this.newId() + this.newId());
+    await this.store.put('stats-day', day);
+  }
+
+  async hit(now, body, ip, ua, country) {
+    const agent = typeof ua === 'string' ? ua : '';
+    if (!agent || BOT_RE.test(agent)) return { status: 204, body: null };
+    const hits = (this.hitHits.get(ip) || []).filter((t) => now - t < HOUR);
+    if (hits.length >= HIT_IP_LIMIT) return { status: 204, body: null }; // silently dropped
+    hits.push(now);
+    this.hitHits.set(ip, hits);
+    if (this.hitHits.size > 20000) for (const [k, v] of this.hitHits) if (!v.length || now - v[v.length - 1] >= HOUR) this.hitHits.delete(k);
+
+    let d = {};
+    try { d = JSON.parse(body || '{}') || {}; } catch (e) { d = {}; }
+    const path = typeof d.path === 'string' && PATH_RE.test(d.path) ? d.path : 'other';
+    const refRaw = typeof d.ref === 'string' ? d.ref.toLowerCase() : '';
+    const ref = refRaw === '' ? '(direct)' : REF_RE.test(refRaw) ? refRaw : 'other';
+    const cc = typeof country === 'string' && /^[A-Z]{2}$/.test(country) ? country : '??';
+
+    const day = iso(now).slice(0, 10), hour = iso(now).slice(0, 13);
+    await this.rollDay(day);
+    const key = `stats:${day}`;
+    const s = (await this.store.get(key)) || { views: 0, visitors: 0, paths: {}, refs: {}, countries: {}, hours: {} };
+    const bump = (obj, k, cap) => { const kk = Object.prototype.hasOwnProperty.call(obj, k) || Object.keys(obj).length < cap ? k : 'other'; obj[kk] = (obj[kk] || 0) + 1; };
+    s.views += 1;
+    bump(s.paths, path, STATS_CAP);
+    bump(s.refs, ref, STATS_CAP);
+    bump(s.countries, cc, 300);
+    s.hours[hour] = (s.hours[hour] || 0) + 1;
+
+    const salt = (await this.store.get(`salt:${day}`)) || '';
+    const bytes = new TextEncoder().encode(`${salt}|${ip || ''}|${agent}`);
+    const v = [...new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('');
+    const uvKey = `uv:${day}:${v.slice(0, 2)}`; // 256 buckets per day keep each document small
+    const bucket = (await this.store.get(uvKey)) || [];
+    if (!bucket.includes(v) && s.visitors < UV_CAP) {
+      bucket.push(v);
+      await this.store.put(uvKey, bucket);
+      s.visitors += 1;
+    }
+    await this.store.put(key, s);
+    return { status: 204, body: null };
+  }
+
+  async stats(now, searchParams, auth) {
+    this.checkAdmin(auth);
+    const days = Math.max(1, Math.min(STATS_KEEP_DAYS, Number(searchParams.get('days')) || 30));
+    const out = [], paths = {}, refs = {}, countries = {};
+    let last24 = 0;
+    const since = iso(now - 24 * HOUR).slice(0, 13);
+    for (let i = days - 1; i >= 0; i--) {
+      const day = iso(now - i * 864e5).slice(0, 10);
+      const s = (await this.store.get(`stats:${day}`)) || { views: 0, visitors: 0, paths: {}, refs: {}, countries: {}, hours: {} };
+      out.push({ date: day, views: s.views, visitors: s.visitors });
+      for (const [k, n] of Object.entries(s.paths)) paths[k] = (paths[k] || 0) + n;
+      for (const [k, n] of Object.entries(s.refs)) refs[k] = (refs[k] || 0) + n;
+      for (const [k, n] of Object.entries(s.countries)) countries[k] = (countries[k] || 0) + n;
+      for (const [h, n] of Object.entries(s.hours)) if (h >= since) last24 += n;
+    }
+    const top = (o) => Object.entries(o).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 25).map(([key, n]) => ({ key, n }));
+    return { status: 200, body: { days: out, last_24h: last24, paths: top(paths), referrers: top(refs), countries: top(countries) } };
+  }
 
   // ---- sponsor pledges ------------------------------------------------------
   // Pledges are stored under pledge:<sha256 of the lowercased email>. The email is kept only inside
@@ -655,6 +745,8 @@ function routeOf(method, pathname) {
   if (method === 'POST' && pathname === '/desk/beat') return 'beat';
   if (method === 'POST' && pathname === '/desk/release') return 'release';
   if (method === 'GET' && pathname === '/desk/status') return 'status';
+  if (method === 'POST' && pathname === '/desk/hit') return 'hit';
+  if (method === 'GET' && pathname === '/desk/admin/stats') return 'admin-stats';
   if (method === 'POST' && pathname === '/desk/pledge') return 'pledge';
   if (method === 'GET' && pathname === '/desk/sponsors') return 'sponsors';
   if (method === 'POST' && pathname === '/desk/admin/mark-paid') return 'admin-paid';

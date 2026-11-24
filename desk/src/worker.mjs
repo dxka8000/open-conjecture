@@ -6,7 +6,7 @@ import { Desk } from './logic.mjs';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 function respond({ status, body, headers = {} }) {
@@ -52,6 +52,8 @@ export class DeskDO extends DurableObject {
       ip: request.headers.get('CF-Connecting-IP'),
       body,
       auth: request.headers.get('Authorization') || '',
+      ua: request.headers.get('User-Agent') || '',
+      country: (request.cf && request.cf.country) || '',
     });
     return respond(result);
   }

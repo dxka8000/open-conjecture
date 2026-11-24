@@ -20,7 +20,7 @@ const desk = new Desk({
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 const server = http.createServer(async (req, res) => {
@@ -35,6 +35,8 @@ const server = http.createServer(async (req, res) => {
   const result = await desk.handle({
     body,
     auth: req.headers.authorization || '',
+    ua: req.headers['user-agent'] || '',
+    country: '',
     method: req.method,
     pathname: url.pathname,
     searchParams: url.searchParams,
