@@ -12,6 +12,7 @@ const desk = new Desk({
   now: () => Date.now(),
   site: process.env.SITE,
   lemmasUrl: process.env.LEMMAS_URL,
+  adminToken: process.env.ADMIN_TOKEN || '',
   ...(process.env.GITHUB_API ? { githubApi: process.env.GITHUB_API } : {}),
   ...(process.env.REPO ? { repo: process.env.REPO } : {}),
 });
@@ -24,7 +25,16 @@ const CORS = {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
+  let body = '';
+  if (req.method === 'POST') {
+    for await (const chunk of req) {
+      body += chunk;
+      if (body.length > 4097) break;
+    }
+  }
   const result = await desk.handle({
+    body,
+    auth: req.headers.authorization || '',
     method: req.method,
     pathname: url.pathname,
     searchParams: url.searchParams,

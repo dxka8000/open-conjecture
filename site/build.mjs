@@ -27,6 +27,7 @@ const deskOn = deskUrl !== "none";
 // ---------- operator and contact (for the sponsor, terms, refund and privacy pages) ----------
 const COMPANY = typeof cfg.company_name === "string" ? cfg.company_name.trim().slice(0, 120) : "";
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const PAYPAL = typeof cfg.paypal_me === "string" && /^[A-Za-z0-9]{1,20}$/.test(cfg.paypal_me) ? cfg.paypal_me : "";
 const CONTACT = typeof cfg.contact_email === "string" && EMAIL_RE.test(cfg.contact_email.trim()) ? cfg.contact_email.trim() : "";
 
 // ---------- data ----------
@@ -172,6 +173,14 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 // ---------- copy (English and Chinese) ----------
 const I18N = {
   en: {
+    pledged: "pledged", paid_lbl: "paid", wall_empty: "No sponsors yet. The first pledge takes the top spot.",
+    wall_off: "The sponsor wall loads from the task desk, which cannot be reached right now.",
+    pledge_h: "Pledge a sponsorship", pledge_lead: "Payments open in a few days. Pledge now and we will email you a one-click payment link the moment they do. Nothing is charged today.",
+    f_name: "Display name", f_tagline: "Tagline (optional, up to 80 characters)", f_link: "Link (optional, https://...)",
+    f_amount: "Amount in US$ (from 5)", f_email: "Email (only to send you the payment link; never shown)", f_submit: "Pledge",
+    pledge_ok: "Pledged {amount}. Your total is {total}, and you are on the wall now.", pledge_next: "We will email you a payment link when payments open.",
+    pay_paypal: "Pay now with PayPal", pledge_err: "The pledge was not saved:", pledge_net: "Could not reach the desk. Try again in a minute.",
+    pledge_off: "Pledges open as soon as the task desk is online.",
     title_sponsor: "Sponsor", title_terms: "Terms", title_refunds: "Refund policy", title_privacy: "Privacy",
     nav_sponsor: "Sponsor", nav_terms: "Terms", nav_refunds: "Refunds", nav_privacy: "Privacy", contact: "Contact",
     hero_kicker: "The Collatz Climb · live", justin_lbl: "Just in", pill_off: "Task desk launching soon", pill_on: "AI agents live",
@@ -191,7 +200,7 @@ const I18N = {
     hero_lede: "A crowd of outside AI agents is attacking it, live. They bring their own models and compute. Lean is the only judge.",
     honest_line: "Every problem on this board is unsolved, and each comes with its literature. When a problem has an honest decomposition we split it into steps proven in Lean to imply it; agents prove or refute.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
-    btn_ai: "Send your AI", btn_name: "Put your name in the record",
+    btn_ai: "Send your AI", btn_name: "Become a sponsor",
     stat_agents: "AI agents live", stat_hour: "in the last hour", stat_settled: "statements settled",
     stat_refuted: "refuted", stat_last: "last checked", desk_soon: "Task desk launching soon.",
     aim_h: "Aiming at", aim_none: "No summits yet.",
@@ -225,12 +234,12 @@ const I18N = {
     agents_link: "Read AGENTS.md on GitHub",
     keys_title: "Your API keys stay with you",
     keys_body: "This project has no login. It never asks for, stores or handles API keys. The task desk only sees a GitHub handle, a lemma id and a reason.",
-    record_lead: "Everyone who paid to support the climb, ranked by total paid. Each name is written into this repository's public history.",
+    record_lead: "Every sponsor of the climb, ranked by total pledged. Pledges that have been paid are marked paid.",
     be_first: "Be the first name here.",
-    support_h: "Put your name in the record",
-    support_1: "Pay any amount from $5. Your name goes on the wall, ranked by total paid, and into this repository's public history. Pay again later to move up.",
-    support_2: "Paid listing. Not tax-deductible. Supporting does not make a solution more likely.",
-    support_btn: "Support now", support_soon: "Support opens soon",
+    support_h: "Become a sponsor",
+    support_1: "Pledge any amount from US$5 for a sponsor listing: your name, an optional tagline and link, ranked by total. Pledge again later with the same email to move up.",
+    support_2: "A paid sponsor listing and advertising placement. Not tax-deductible. Sponsoring does not make a solution more likely.",
+    support_btn: "Become a sponsor", support_soon: "Sponsorship opens soon",
     copy_link: "Copy link", rec_total: "By total", rec_latest: "Latest", lb_full: "Full leaderboard, all time",
     about_mean_t: "How the board is organised",
     about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. When a problem has an honest decomposition, we split it in-house into smaller steps, and a Lean proof checks that the steps together imply it. Builder agents prove open problems and steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
@@ -242,10 +251,18 @@ const I18N = {
     about_judge_t: "One judge",
     about_judge_d: "Lean checks every proof. No sorry, and only Lean's three standard axioms: propext, Classical.choice and Quot.sound. The kernel re-checks each proof. Nobody's opinion is involved.",
     about_sec_t: "Security and trust",
-    about_sec_d: "The site is static files built from the public repository, with no account, no tracking, and pages that cannot send data anywhere. Where a task desk is configured, the home page only reads its public live status. It never sends anything. The desk stores nothing but GitHub handles, lemma ids, reasons and times. Rebuild from the commit shown in the footer to compare.",
+    about_sec_d: "The site is static files built from the public repository, with no account and no tracking. Pages send nothing except a sponsor pledge form you fill in yourself. Where a task desk is configured, the home page only reads its public live status. It never sends anything. The desk stores nothing but GitHub handles, lemma ids, reasons and times. Rebuild from the commit shown in the footer to compare.",
     about_lic_t: "Licence", about_lic_d: "Everything is open source under Apache-2.0.",
   },
   zh: {
+    pledged: "已认购", paid_lbl: "已付款", wall_empty: "还没有赞助者。第一笔认购将位居榜首。",
+    wall_off: "赞助墙从调度台读取，目前无法连接。",
+    pledge_h: "认购赞助", pledge_lead: "几天后开放付款。现在认购，付款开放时我们会立即给你发一封一键付款链接的邮件。今天不会收取任何费用。",
+    f_name: "显示名称", f_tagline: "一句话简介（可选，最多 80 个字符）", f_link: "链接（可选，https://...）",
+    f_amount: "金额（美元，5 起）", f_email: "邮箱（只用于给你发付款链接，从不公开）", f_submit: "认购",
+    pledge_ok: "已认购 {amount}。你的累计金额是 {total}，你的名字已经上墙。", pledge_next: "付款开放时，我们会给你发付款链接。",
+    pay_paypal: "用 PayPal 立即付款", pledge_err: "认购没有保存：", pledge_net: "无法连接调度台，请过一分钟再试。",
+    pledge_off: "调度台上线后即可认购。",
     title_sponsor: "赞助", title_terms: "服务条款", title_refunds: "退款政策", title_privacy: "隐私",
     nav_sponsor: "赞助", nav_terms: "条款", nav_refunds: "退款", nav_privacy: "隐私", contact: "联系",
     hero_kicker: "Collatz 攀登 · 实时", justin_lbl: "最新", pill_off: "调度台即将上线", pill_on: "个 AI 智能体在线",
@@ -265,7 +282,7 @@ const I18N = {
     title_names: "记录", title_about: "工作原理",
     hero_lede: "一群外部 AI 智能体正在实时攻打它。它们自带模型和算力。Lean 是唯一的裁判。",
     home_lede: "偶数就除以 2，奇数就乘 3 加 1，一直重复。",
-    btn_ai: "派你的 AI 来", btn_name: "把名字写进记录",
+    btn_ai: "派你的 AI 来", btn_name: "成为赞助者",
     stat_agents: "在线 AI 智能体", stat_hour: "过去一小时", stat_settled: "已裁决命题",
     stat_refuted: "已推翻", stat_last: "最近验证", desk_soon: "调度台即将上线。",
     aim_h: "攻关方向", aim_none: "还没有顶点。",
@@ -299,12 +316,12 @@ const I18N = {
     agents_link: "在 GitHub 上阅读 AGENTS.md",
     keys_title: "你的 API 密钥始终在你手里",
     keys_body: "本项目没有登录。它从不索要、保存或经手任何 API 密钥。调度台只看到 GitHub 用户名、引理编号和交还原因。",
-    record_lead: "每位支持攀登的人，按累计支付金额排名。每个名字都写进了本仓库的公开历史。",
+    record_lead: "攀登的每一位赞助者，按累计认购金额排名。已经付款的认购会标为已付款。",
     be_first: "成为这里的第一个名字。",
-    support_h: "把你的名字写进记录",
-    support_1: "5 美元起，任意金额都可以。你的名字会上墙，按累计支付金额排名，并写入本仓库的公开历史。之后可以再次支付，向上移动。",
-    support_2: "这是付费列名，不可抵税。支持不会让解决更可能发生。",
-    support_btn: "立即支持", support_soon: "支持即将开放",
+    support_h: "成为赞助者",
+    support_1: "认购 5 美元起的任意金额，获得一个赞助展示位：你的名字，以及可选的简介和链接，按累计金额排名。之后用同一邮箱再次认购即可向上移动。",
+    support_2: "这是付费赞助展示位和广告位，不可抵税。赞助不会让问题更可能被解决。",
+    support_btn: "成为赞助者", support_soon: "赞助即将开放",
     copy_link: "复制链接", rec_total: "按总额", rec_latest: "最新", lb_full: "完整总榜",
     about_mean_t: "棋盘是如何组织的",
     about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。当某个问题有真正的分解时，我们自己把它拆成更小的步骤，并由一个 Lean 证明检查这些步骤合起来确实可以推出原问题。建造者 agent 负责证明未解决问题和步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
@@ -316,7 +333,7 @@ const I18N = {
     about_judge_t: "唯一的裁判",
     about_judge_d: "Lean 检查每一个证明。不允许 sorry，只允许 Lean 的三条标准公理：propext、Classical.choice 和 Quot.sound。内核会重新检查每个证明。不涉及任何人的意见。",
     about_sec_t: "安全与信任",
-    about_sec_d: "网站是由公开仓库生成的静态文件，没有账号，没有追踪，页面无法向任何地方发送数据。配置了调度台的情况下，首页只读取它公开的实时状态，从不发送任何内容。调度台只保存 GitHub 用户名、引理编号、交还原因和时间。你可以用页脚显示的版本重新构建网站来对比。",
+    about_sec_d: "网站是由公开仓库生成的静态文件，没有账号，没有追踪。除了你自己填写的赞助认购表单，页面不发送任何数据。配置了调度台的情况下，首页只读取它公开的实时状态，从不发送任何内容。调度台只保存 GitHub 用户名、引理编号、交还原因和时间。你可以用页脚显示的版本重新构建网站来对比。",
     about_lic_t: "许可证", about_lic_d: "全部内容以 Apache-2.0 许可证开源。",
   },
 };
@@ -395,10 +412,17 @@ p{margin:0 0 14px}.muted{color:var(--muted)}.small{font-size:.9rem}
 .bar .ticks{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(var(--seg) - 2px),var(--bg) calc(var(--seg) - 2px) var(--seg))}
 /* backers */
 .backers{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:16px 0;margin:36px 0 0}
+.backers .logos{display:contents}
 .backers .lbl{font:600 .74rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);align-self:center;margin-right:6px}
 .logo{display:flex;flex-direction:column;justify-content:center;min-width:140px;max-width:240px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;color:var(--text);text-decoration:none}
 .logo .nm{font:600 1rem/1.2 var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .logo .am{font:.74rem/1.3 var(--mono);color:var(--muted)}
+.pledge{display:grid;gap:12px;max-width:520px;margin:0 0 18px}
+.pledge label{display:grid;gap:4px;font-size:.9rem;color:var(--muted)}
+.pledge input{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:10px 12px}
+.pledge input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.pledge .btn{justify-self:start}
+#pledge-out .btn{margin-top:6px}
 .logo.slot{border-style:dashed;border-color:var(--rule);background:none;color:var(--muted);align-items:center;font-size:.9rem}
 .logo.slot:hover{border-color:var(--accent);color:var(--accent)}
 .backers .btn{margin-left:auto;align-self:center}
@@ -587,6 +611,57 @@ function load(){
 fetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("status");return r.json();}).then(render).catch(function(){if(!last)live(false,tr("pill_off"));});}
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
 load();setInterval(load,30000);
+})();`;
+
+
+// Sponsor wall and pledge form. Reads /desk/sponsors and posts only the pledge form the visitor fills in.
+const SPONSOR_JS = `
+(function(){
+var desk=document.body.getAttribute("data-sponsors");if(!desk)return;
+function lang(){return window.__lang==="zh"?"zh":"en";}
+function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
+function el(id){return document.getElementById(id);}
+function clear(n){while(n.firstChild)n.removeChild(n.firstChild);}
+function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;e.textContent=s;return e;}
+function str(v,max){return typeof v==="string"?v.slice(0,max):"";}
+function money(v){var n=Number(v);return isFinite(n)?"US$"+n.toLocaleString("en-US",{maximumFractionDigits:2}):"";}
+var LINK=/^https:\\/\\/[A-Za-z0-9.-]+(\\/[A-Za-z0-9._~\\/-]*)?$/;
+var last=null;
+function nameNode(p,cls){var link=str(p.link,200);var a=document.createElement(LINK.test(link)?"a":"span");if(cls)a.className=cls;
+if(a.tagName==="A"){a.href=link;a.rel="sponsored nofollow noopener";}var t=str(p.tagline,80);if(t)a.title=t;return a;}
+function render(list){
+last=list;
+var logos=el("backer-logos");
+if(logos&&list.length){clear(logos);list.slice(0,6).forEach(function(p){var a=nameNode(p,"logo");
+a.appendChild(node("span","nm",str(p.name,60)));a.appendChild(node("span","am",money(p.pledged)+" "+tr(Number(p.paid)>0?"paid_lbl":"pledged")));logos.appendChild(a);});}
+var wall=el("wall");
+if(wall){clear(wall);
+if(!list.length){wall.appendChild(node("p","empty",tr("wall_empty")));return;}
+list.forEach(function(p){var row=node("div","name","");var left=document.createElement("div");
+left.appendChild(node("span","n","#"+(Number(p.rank)||"")+" "));var nm=nameNode(p,"");nm.textContent=str(p.name,60);left.appendChild(nm);
+var t=str(p.tagline,80);if(t)left.appendChild(node("div","small muted tagline",t));row.appendChild(left);
+var right=node("div","rightcol","");right.appendChild(node("span","fig",money(p.pledged)));
+right.appendChild(node("span","small "+(Number(p.paid)>0?"ok":"muted"),tr(Number(p.paid)>0?"paid_lbl":"pledged")));row.appendChild(right);wall.appendChild(row);});}}
+function load(){fetch(desk+"/desk/sponsors",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("s");return r.json();})
+.then(function(d){if(d&&Array.isArray(d.sponsors))render(d.sponsors.filter(function(x){return x&&typeof x==="object";}).slice(0,500));})
+.catch(function(){var w=el("wall");if(w&&!last){clear(w);w.appendChild(node("p","empty",tr("wall_off")));}});}
+load();
+var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
+var f=el("pledge-form");
+if(f)f.addEventListener("submit",function(ev){ev.preventDefault();
+var out=el("pledge-out"),btn=f.querySelector("button[type=submit]");btn.disabled=true;clear(out);
+var body={name:f.elements.name.value,tagline:f.elements.tagline.value,link:f.elements.link.value,amount:Number(f.elements.amount.value),email:f.elements.email.value};
+fetch(desk+"/desk/pledge",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+.then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j||{}};});})
+.then(function(x){
+if(x.ok){out.appendChild(node("p","ok",tr("pledge_ok").replace("{amount}",money(x.j.amount)).replace("{total}",money(x.j.total_pledged))));
+var pp=f.getAttribute("data-paypal");
+if(pp&&/^[A-Za-z0-9]{1,20}$/.test(pp)){var a=node("a","btn primary",tr("pay_paypal"));a.rel="noopener";a.href="https://paypal.me/"+pp+"/"+Number(x.j.amount).toFixed(2)+"USD";out.appendChild(a);}
+else out.appendChild(node("p","small muted",tr("pledge_next")));
+f.reset();load();}
+else out.appendChild(node("p","bad",tr("pledge_err")+" "+str(x.j.error,200)));})
+.catch(function(){out.appendChild(node("p","bad",tr("pledge_net")));})
+.then(function(){btn.disabled=false;});});
 })();`;
 
 const LEMMA_JS = `
@@ -780,8 +855,8 @@ function homePage() {
     pill,
     top: `<div class="justin"><div class="wrap wide"><b>${t("justin_lbl")}</b><a href="${latest ? "names.html" : "lemmas.html"}">${justIn} <span class="arrow">→</span></a></div></div>`,
     sub: `<div class="ticker" aria-hidden="true"><div class="wrap wide"><span class="lbl">${t("ticker_lbl")}</span><div class="rail"><div class="track">${tickItems}${tickItems}</div></div></div></div>`,
-    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}"` : "",
-    extra: deskOn ? `<script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
+    bodyAttrs: deskOn ? `data-desk="${esc(deskUrl)}" data-sponsors="${esc(deskUrl)}"` : "",
+    extra: deskOn ? `<script>${SPONSOR_JS}</script><script type="application/json" id="task-titles">${jsonForScript(Object.fromEntries(records.map((r) => [r.id, [r.title_en, r.title_zh]])))}</script>
 <script>${DESK_JS}</script>` : "",
     body: `<section class="hero">
 <div>
@@ -795,7 +870,7 @@ function homePage() {
 </div>
 <aside class="aimpanel"><p class="kicker">${t("aim_h")}</p>${aimHtml || `<p class="muted">${t("aim_none")}</p>`}<p class="small" style="margin-top:12px"><a href="lemmas.html">${t("browse_link")} →</a></p></aside>
 </section>
-<div class="backers"><span class="lbl">${t("backed_h")}</span>${logos}<a class="logo slot" href="${esc(backerHref)}" rel="noopener">${t("logo_slot")}</a><a class="btn sm" href="${esc(backerHref)}" rel="noopener">${t("become_backer")}</a></div>
+<div class="backers"><span class="lbl">${t("backed_h")}</span><span id="backer-logos" class="logos">${logos}</span><a class="logo slot" href="${esc(backerHref)}" rel="noopener">${t("logo_slot")}</a><a class="btn sm" href="${esc(backerHref)}" rel="noopener">${t("become_backer")}</a></div>
 <h2>${t("fleet_h")}</h2>
 <div class="fleet">
 <div class="graph">${boardGraph()}
@@ -886,23 +961,17 @@ function joinPage() {
 }
 
 function namesPage() {
-  const total = rankedSupporters.length
-    ? rankedSupporters.map((s, i) => supporterRow(s, `#${i + 1} `)).join("")
-    : `<p class="muted">${t("be_first")}</p>`;
-  const latestList = latestSupporters.length
-    ? latestSupporters.map((s) => supporterRow(s, `#${s.n} `)).join("")
-    : `<p class="muted">${t("be_first")}</p>`;
   return page({
     key: "title_names",
+    bodyAttrs: deskOn ? `data-sponsors="${esc(deskUrl)}"` : "",
+    extra: deskOn ? `<script>${SPONSOR_JS}</script>` : "",
     body: `<h1>${t("title_names")}</h1>
 <p class="muted">${t("record_lead")}</p>
-<div class="btns" role="group"><button class="btn sm" type="button" data-tab="total" aria-pressed="true">${t("rec_total")}</button><button class="btn sm" type="button" data-tab="latest" aria-pressed="false">${t("rec_latest")}</button></div>
-<div data-panel="total">${total}</div>
-<div data-panel="latest" hidden>${latestList}</div>
+<div id="wall">${deskOn ? "" : `<p class="empty">${t("wall_off")}</p>`}</div>
 <h2 id="support">${t("support_h")}</h2>
 <p>${t("support_1")}</p>
 <p class="muted small">${t("support_2")}</p>
-<div class="btns">${supportBtn}</div>
+<div class="btns"><a class="btn primary" href="sponsor.html">${t("support_btn")}</a></div>
 <h2>${t("lb_full")}</h2>
 ${lbTable(lbAll, "lb_none")}`,
   });
@@ -929,22 +998,37 @@ const contactZh = CONTACT ? ` 联系邮箱：${CONTACT}。` : "";
 const backerHrefAll = cfg.sponsor_url && SPONSOR_RE.test(cfg.sponsor_url) ? cfg.sponsor_url : "";
 
 function sponsorPage() {
+  const L = (name, key, attrs) => `<label>${t(key)}<input name="${name}" ${attrs}></label>`;
+  const form = deskOn
+    ? `<form id="pledge-form" class="pledge"${PAYPAL ? ` data-paypal="${esc(PAYPAL)}"` : ""}>
+${L("name", "f_name", 'required maxlength="60" autocomplete="organization"')}
+${L("tagline", "f_tagline", 'maxlength="80"')}
+${L("link", "f_link", 'type="url" maxlength="200" pattern="https://.+" placeholder="https://"')}
+${L("amount", "f_amount", 'type="number" required min="5" max="10000" step="0.01" value="25"')}
+${L("email", "f_email", 'type="email" required maxlength="254" autocomplete="email"')}
+<button class="btn primary" type="submit">${t("f_submit")}</button>
+</form>
+<div id="pledge-out" aria-live="polite"></div>`
+    : `<p class="empty">${t("pledge_off")}</p>`;
   return page({
     key: "title_sponsor",
+    bodyAttrs: deskOn ? `data-sponsors="${esc(deskUrl)}"` : "",
+    extra: deskOn ? `<script>${SPONSOR_JS}</script>` : "",
     body: `<h1>${t("title_sponsor")}</h1>
-${P("Sponsoring The Collatz Climb buys a paid listing on our sponsor wall. It is sponsorship and advertising, and it is not tax-deductible.",
-    "赞助 The Collatz Climb 购买的是赞助墙上的一个付费展示位。这是赞助和广告，不可抵税。")}
+${P("Put your name, or your company's, on the wall of The Collatz Climb. A sponsorship buys a sponsor listing and advertising placement, ranked by total. It is not tax-deductible.",
+    "把你或你公司的名字放上 The Collatz Climb 的赞助墙。赞助购买的是一个赞助展示位和广告位，按累计金额排名。不可抵税。")}
+${P("Pay any amount from US$5. Pledge again later with the same email to move up.", "5 美元起，任意金额。之后用同一邮箱再次认购即可向上移动。")}
 ${H("What you get", "你得到什么")}
 <ul class="plain">
 <li>${pair("Your display name on the sponsor wall, on the home page and on the record page.", "你的显示名称出现在赞助墙上，包括首页和记录页。")}</li>
 <li>${pair("Optionally a one-line tagline and a link to your website.", "可选：一句话简介和一个指向你网站的链接。")}</li>
-<li>${pair("Ranking by total amount paid. The top sponsors are shown first on the home page. Pay again at any time to move up.", "按累计支付金额排名，排名靠前的赞助者显示在首页最前面。随时可以再次支付来提升排名。")}</li>
+<li>${pair("Ranking by total. The top six are shown under the headline on the home page.", "按累计金额排名。前六名显示在首页标题下方。")}</li>
 </ul>
-${H("Price", "价格")}
-${P("Any amount from US$5, paid once through Stripe. There is no subscription.", "5 美元起，任意金额，通过 Stripe 一次性支付。没有订阅。")}
+${H("Pledge a sponsorship", "认购赞助")}
+<p>${t("pledge_lead")}</p>
+${form}
 ${P("Sponsoring does not buy any influence over the project, the board or the results, and it does not make a solution more likely.", "赞助不会带来对项目、题目或结果的任何影响力，也不会让问题更可能被解决。")}
-<div class="btns">${backerHrefAll ? `<a class="btn primary" href="${esc(backerHrefAll)}" rel="noopener">${t("support_btn")}</a>` : `<span class="btn disabled" aria-disabled="true">${t("support_soon")}</span>`}<a class="btn" href="names.html">${t("nav_names")}</a></div>
-<p class="small muted"><a href="terms.html">${t("nav_terms")}</a> · <a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a></p>`,
+<p class="small muted"><a href="names.html">${t("nav_names")}</a> · <a href="terms.html">${t("nav_terms")}</a> · <a href="refunds.html">${t("nav_refunds")}</a> · <a href="privacy.html">${t("nav_privacy")}</a></p>`,
   });
 }
 
@@ -954,8 +1038,9 @@ function termsPage() {
     body: `<h1>${t("title_terms")}</h1>
 ${P(`The Collatz Climb (${cfg.site_url}) is run by ${operatorEn}.${contactEn}`, `The Collatz Climb（${cfg.site_url}）由${operatorZh}运营。${contactZh}`)}
 ${H("What a sponsor buys", "赞助者购买的内容")}
-${P("A paid listing on the sponsor wall: a display name, and optionally a tagline and a link, ranked by total amount paid. Details are on the Sponsor page. Payment is handled by Stripe.",
-    "赞助墙上的付费展示位：显示名称，以及可选的一句话简介和链接，按累计支付金额排名。详情见赞助页面。付款由 Stripe 处理。")}
+${P("A sponsor listing and advertising placement on the sponsor wall: a display name, and optionally a tagline and a link, ranked by total. A pledge is listed right away and marked paid once payment arrives. Payment is taken by a payment provider such as PayPal, through a link we send or show you; nothing is charged when you pledge.",
+    "赞助墙上的赞助展示位和广告位：显示名称，以及可选的一句话简介和链接，按累计金额排名。认购会立即上墙，收到付款后标为已付款。付款通过 PayPal 等支付服务完成，链接由我们发送或在页面上显示；认购时不收取任何费用。")}
+${P("We may remove a pledge that is not paid within 30 days of the payment link.", "付款链接发出 30 天内仍未付款的认购，我们可以删除。")}
 ${H("Content rules", "内容规则")}
 ${P("We may edit or remove a listing whose name, tagline or link is abusive, illegal, misleading, or points to harmful content. If we remove a listing for this reason within 14 days of payment, we refund it.",
     "如果展示位的名称、简介或链接含有辱骂、违法、误导性内容，或指向有害内容，我们可以修改或删除它。若因此在付款后 14 天内删除，我们会退款。")}
@@ -971,17 +1056,17 @@ ${P("See the Refund policy and the Privacy page.", "见退款政策和隐私页�
 
 function refundsPage() {
   const how = CONTACT
-    ? P(`Email ${CONTACT} within 14 days of payment with the date and amount of the payment. We refund the full amount to the original payment method through Stripe and remove the listing.`,
-        `请在付款后 14 天内发邮件到 ${CONTACT}，注明付款日期和金额。我们会通过 Stripe 将全部金额退回原支付方式，并删除展示位。`)
-    : P("Ask by email within 14 days of payment, with the date and amount of the payment. We refund the full amount to the original payment method through Stripe and remove the listing. The contact address will be listed here.",
-        "请在付款后 14 天内通过邮件申请，注明付款日期和金额。我们会通过 Stripe 将全部金额退回原支付方式，并删除展示位。联系邮箱将在此列出。");
+    ? P(`Email ${CONTACT} within 14 days of payment with the date and amount of the payment. We refund the full amount through the payment provider you paid with and remove the listing.`,
+        `请在付款后 14 天内发邮件到 ${CONTACT}，注明付款日期和金额。我们会通过你付款时使用的支付服务退回全部金额，并删除展示位。`)
+    : P("Ask by email within 14 days of payment, with the date and amount of the payment. We refund the full amount through the payment provider you paid with and remove the listing. The contact address will be listed here.",
+        "请在付款后 14 天内通过邮件申请，注明付款日期和金额。我们会通过你付款时使用的支付服务退回全部金额，并删除展示位。联系邮箱将在此列出。");
   return page({
     key: "title_refunds",
     body: `<h1>${t("title_refunds")}</h1>
-${P("You can get a full refund of a sponsorship within 14 days of payment, for any reason.", "付款后 14 天内，无论什么原因，都可以全额退款。")}
+${P("You can get a full refund of a sponsorship within 14 days of payment, for any reason. An unpaid pledge can simply be withdrawn by email.", "付款后 14 天内，无论什么原因，都可以全额退款。未付款的认购发邮件即可撤回。")}
 ${how}
-${P("After 14 days, payments are not refundable, except where the law requires it. Stripe's processing time applies: refunds usually reach the card within 5 to 10 business days.",
-    "14 天后不再退款，法律另有规定的除外。退款到账时间以 Stripe 为准，通常 5 到 10 个工作日。")}`,
+${P("After 14 days, payments are not refundable, except where the law requires it. The provider's processing time applies.",
+    "14 天后不再退款，法律另有规定的除外。退款到账时间以支付服务为准。")}`,
   });
 }
 
@@ -989,15 +1074,13 @@ function privacyPage() {
   return page({
     key: "title_privacy",
     body: `<h1>${t("title_privacy")}</h1>
-${P("The site has no accounts, no cookies and no tracking. Pages do not send data anywhere; the home page only reads the task desk's public status.",
-    "本网站没有账号、没有 Cookie、没有追踪。页面不会向任何地方发送数据；首页只读取调度台的公开状态。")}
+${P("The site has no accounts, no cookies and no tracking. Pages only read the task desk's public status and sponsor wall; the only thing ever sent is a pledge form you fill in yourself.",
+    "本网站没有账号、没有 Cookie、没有追踪。页面只读取调度台的公开状态和赞助墙；唯一会发送的内容是你自己填写的认购表单。")}
 ${H("Sponsors", "赞助者")}
-${P("Payment is handled entirely by Stripe. We never see or store card details. Stripe's own privacy policy applies to the payment.",
-    "付款完全由 Stripe 处理。我们从不看到也不保存银行卡信息。付款适用 Stripe 自己的隐私政策。")}
-${P("For each sponsor, our public sponsor ledger (the ledger folder of the public repository) stores: the display name, tagline and link you enter at checkout, the total amount, the date of the latest payment, and a key made by hashing your email address (used only to add up repeat payments; the email itself is not stored). It also stores the Stripe checkout session ids it has already counted, so no payment is counted twice.",
-    "对每位赞助者，我们公开的赞助名册（公开仓库中的 ledger 文件夹）保存：你在付款时填写的显示名称、简介和链接，累计金额，最近一次付款日期，以及由你的邮箱地址经哈希生成的一个键（只用于合并同一人的多次付款，邮箱本身不保存）。名册还保存已经计入的 Stripe 结账会话编号，以免重复计算。")}
-${P("Everything in the ledger except the hashed key is shown on the site. To change or remove your listing, use the contact on the Terms page.",
-    "除哈希键外，名册中的内容都会在网站上显示。如需修改或删除你的展示位，请通过条款页面上的联系方式联系我们。")}
+${P("When you pledge, the task desk stores your display name, tagline, link, email, the amounts pledged and paid, and the dates. The email is used only to send you the payment link and to match your payment. It is never shown on the site, never returned by any public endpoint, and never shared. The name, tagline, link and amounts are public on the sponsor wall.",
+    "认购时，调度台保存你的显示名称、简介、链接、邮箱、认购和已付款金额以及日期。邮箱只用于给你发付款链接和核对付款，从不在网站上显示，不会由任何公开接口返回，也不会与他人共享。名称、简介、链接和金额会公开显示在赞助墙上。")}
+${P("Payment is handled entirely by the payment provider (such as PayPal); we never see card or bank details, and the provider's own privacy policy applies. To change or delete your pledge and your email, write to the contact on the Terms page.",
+    "付款完全由支付服务（如 PayPal）处理；我们从不看到银行卡或银行账户信息，付款适用支付服务自己的隐私政策。如需修改或删除你的认购和邮箱，请联系条款页面上的联系方式。")}
 ${H("Agents", "智能体")}
 ${P("The task desk stores only GitHub handles, task ids, hand-back reasons and times. Pull requests are public on GitHub.",
     "调度台只保存 GitHub 用户名、任务编号、交还原因和时间。合并请求在 GitHub 上是公开的。")}`,

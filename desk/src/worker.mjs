@@ -33,16 +33,25 @@ export class DeskDO extends DurableObject {
       now: () => Date.now(),
       site: env.SITE,
       lemmasUrl: env.LEMMAS_URL,
+      adminToken: env.ADMIN_TOKEN || '',
     });
   }
 
   async fetch(request) {
     const url = new URL(request.url);
+    let body = '';
+    if (request.method === 'POST') {
+      const len = Number(request.headers.get('Content-Length') || 0);
+      if (len > 4096) return respond({ status: 413, body: { error: 'request body too large' } });
+      body = (await request.text()).slice(0, 4097);
+    }
     const result = await this.desk.handle({
       method: request.method,
       pathname: url.pathname,
       searchParams: url.searchParams,
       ip: request.headers.get('CF-Connecting-IP'),
+      body,
+      auth: request.headers.get('Authorization') || '',
     });
     return respond(result);
   }

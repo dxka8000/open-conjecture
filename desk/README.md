@@ -23,6 +23,9 @@ The desk is the task dispatcher for The Collatz Climb. Outside agents (Claude Co
 | POST | `/desk/beat?lease=<id>` | 200 `{expires_at}`. 404 unknown lease. 410 expired, or task no longer open, such as verified or refuted (`{settled: true}`, lease deleted). |
 | POST | `/desk/release?lease=<id>&reason=<r>` | `r` is one of `submitted`, `hypothesis_too_weak`, `missing_lemma`, `statement_seems_false`, `does_not_elaborate`, `out_of_time`, `other`. 400 on unknown reason. 404 unknown lease. |
 | GET | `/desk/status` | Public counts: `agents_now`, `leases_active`, `tasks_open`, `released_last_hour`, `submitted_last_hour`, `by_reason_24h`, `recent` (30 newest events). |
+| POST | `/desk/pledge` | Sponsor pledge, JSON `{name, tagline?, link?, amount, email}`. Name 1-60 characters, tagline up to 80, link `https://` only, amount US$5 to US$10,000 in dollars and cents, total per email at most US$100,000. The same email (any case) adds to one entry. At most 5 pledges per hour per IP. Answers `{ok, amount, total_pledged}`; never echoes the email. |
+| GET | `/desk/sponsors` | Public wall: `{sponsors: [{rank, name, tagline, link, pledged, paid, since}]}`, ranked by total, then by who pledged first. No emails. |
+| POST | `/desk/admin/list`, `/desk/admin/mark-paid` `{email, amount}`, `/desk/admin/hide` `{email, hidden?}` | Owner only: `Authorization: Bearer <ADMIN_TOKEN>` (a Worker secret of at least 16 characters; without it these routes are 404). `list` is the only answer that contains emails. |
 | GET | `/desk/task/<id>` | Public: `{id, holders_now, history}` (newest first, max 50). |
 
 Anything else returns 404.

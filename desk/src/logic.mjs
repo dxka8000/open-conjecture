@@ -35,6 +35,27 @@ export const REASONS = [
 ];
 const COOLDOWN_REASONS = new Set(['other', 'out_of_time']);
 const HANDLE_RE = /^[A-Za-z0-9-]{1,39}$/;
+
+// Sponsor pledges
+export const PLEDGE_MIN = 5;
+export const PLEDGE_MAX = 10000;
+export const TOTAL_MAX = 100000;
+export const PLEDGE_IP_LIMIT = 5; // per hour
+export const MAX_PLEDGERS = 5000;
+export const BODY_MAX = 4096;
+const NAME_MAX = 60;
+const TAGLINE_MAX = 80;
+const LINK_MAX = 200;
+const EMAIL_MAX = 254;
+const LINK_RE = /^https:\/\/[A-Za-z0-9.-]+(\/[A-Za-z0-9._~\/-]*)?$/;
+const EMAIL_RE = /^[^\s@<>"',;()\[\]\\]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+/** Trimmed text with control and bidi characters removed; '' if absent, null if not text or too long. */
+function cleanText(v, max) {
+  if (v === undefined || v === null) return '';
+  if (typeof v !== 'string') return null;
+  const t = v.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g, ' ').replace(/\s+/g, ' ').trim();
+  return t.length > max ? null : t;
+}
 const TASK_PREFIX = '/desk/task/';
 
 export class HttpError extends Error {
@@ -94,6 +115,7 @@ export class Desk {
     lemmasUrl = DEFAULT_LEMMAS_URL,
     repo = DEFAULT_REPO,
     githubApi = 'https://api.github.com',
+    adminToken = '',
   } = {}) {
     if (!store) throw new Error('Desk: store is required');
     this.store = store;
@@ -110,6 +132,8 @@ export class Desk {
     this.lastNext = new Map();
     this.eventsCache = null; // loaded once per instance; the instance serializes all writes
     this.ipHits = new Map();
+    this.pledgeHits = new Map();
+    this.adminToken = typeof adminToken === 'string' && adminToken.length >= 16 ? adminToken : '';
     // Every request runs one at a time, so lease assignment is atomic even
     // when a request is waiting on the feed fetch.
     this.queue = Promise.resolve();
@@ -140,7 +164,7 @@ export class Desk {
     return result;
   }
 
-  async dispatch({ method, pathname, searchParams, ip }) {
+  async dispatch({ method, pathname, searchParams, ip, body, auth }) {
     if (method === 'OPTIONS') return { status: 204, body: null };
     const now = this.now();
     const limited = this.checkIp(ip || 'local', now);
@@ -148,6 +172,10 @@ export class Desk {
 
     const route = routeOf(method, pathname);
     if (!route) return { status: 404, body: { error: 'not found' } };
+    if (typeof body === 'string' && body.length > BODY_MAX) throw new HttpError(413, 'request body too large');
+    if (route === 'pledge') return this.pledge(now, body, ip);
+    if (route === 'sponsors') return this.sponsors();
+    if (route.startsWith('admin-')) return this.admin(now, route, body, auth);
 
     const live = await this.cleanup(now, searchParams.get('lease'));
     switch (route) {
@@ -163,6 +191,137 @@ export class Desk {
         return this.task(now, live, pathname.slice(TASK_PREFIX.length));
     }
     return { status: 404, body: { error: 'not found' } };
+  }
+
+
+  // ---- sponsor pledges ------------------------------------------------------
+  // Pledges are stored under pledge:<sha256 of the lowercased email>. The email is kept only inside
+  // that record (so the owner can send the payment link) and never appears in any public answer.
+
+  async pledgeKey(email) {
+    const bytes = new TextEncoder().encode(email.toLowerCase());
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+    return 'pledge:' + [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  checkPledgeIp(ip, now) {
+    const hits = (this.pledgeHits.get(ip) || []).filter((t) => now - t < HOUR);
+    if (hits.length >= PLEDGE_IP_LIMIT) {
+      this.pledgeHits.set(ip, hits);
+      throw new HttpError(429, `at most ${PLEDGE_IP_LIMIT} pledges per hour from one address`, {
+        retry_after_s: Math.ceil((hits[0] + HOUR - now) / 1000),
+      });
+    }
+    hits.push(now);
+    this.pledgeHits.set(ip, hits);
+    if (this.pledgeHits.size > 5000) {
+      for (const [k, v] of this.pledgeHits) if (!v.length || now - v[v.length - 1] >= HOUR) this.pledgeHits.delete(k);
+    }
+  }
+
+  async pledge(now, body, ip) {
+    let d;
+    try {
+      d = JSON.parse(body || '');
+    } catch (e) {
+      throw new HttpError(400, 'send a JSON object');
+    }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) throw new HttpError(400, 'send a JSON object');
+    const name = cleanText(d.name, NAME_MAX);
+    const tagline = cleanText(d.tagline, TAGLINE_MAX);
+    const link = typeof d.link === 'string' ? d.link.trim() : '';
+    const email = typeof d.email === 'string' ? d.email.trim() : '';
+    const amount = Number(d.amount);
+    if (!name) throw new HttpError(400, `name must be 1-${NAME_MAX} characters`);
+    if (d.tagline != null && typeof d.tagline !== 'string') throw new HttpError(400, 'tagline must be text');
+    if (tagline === null) throw new HttpError(400, `tagline must be at most ${TAGLINE_MAX} characters`);
+    if (link && (link.length > LINK_MAX || !LINK_RE.test(link))) throw new HttpError(400, 'link must be an https:// address');
+    if (email.length > EMAIL_MAX || !EMAIL_RE.test(email)) throw new HttpError(400, 'email must be a valid address');
+    if (!Number.isFinite(amount) || amount < PLEDGE_MIN || amount > PLEDGE_MAX || Math.abs(amount * 100 - Math.round(amount * 100)) > 1e-6)
+      throw new HttpError(400, `amount must be US$${PLEDGE_MIN} to US$${PLEDGE_MAX}, in dollars and cents`);
+    this.checkPledgeIp(ip || 'local', now);
+
+    const key = await this.pledgeKey(email);
+    let p = await this.store.get(key);
+    if (!p) {
+      const count = (await this.store.list('pledge:')).length;
+      if (count >= MAX_PLEDGERS) throw new HttpError(503, 'the pledge list is full; try again later');
+      const n = ((await this.store.get('pledge-seq')) || 0) + 1;
+      await this.store.put('pledge-seq', n);
+      p = { n, email, name, tagline: '', link: '', pledged_cents: 0, paid_cents: 0, first: now, last: now, hidden: false };
+    }
+    const cents = Math.round(amount * 100);
+    if (p.pledged_cents + cents > TOTAL_MAX * 100) throw new HttpError(400, `the total per email is at most US$${TOTAL_MAX}`);
+    p.pledged_cents += cents;
+    p.email = email;
+    p.name = name;
+    if (tagline) p.tagline = tagline;
+    if (link) p.link = link;
+    p.last = now;
+    await this.store.put(key, p);
+    return { status: 200, body: { ok: true, amount: cents / 100, total_pledged: p.pledged_cents / 100 } };
+  }
+
+  async sponsors() {
+    const all = (await this.store.list('pledge:')).map(([, p]) => p).filter((p) => p && !p.hidden);
+    const total = (p) => Math.max(p.pledged_cents, p.paid_cents);
+    all.sort((a, b) => total(b) - total(a) || a.first - b.first || a.n - b.n);
+    return {
+      status: 200,
+      body: {
+        sponsors: all.slice(0, 500).map((p, i) => ({
+          rank: i + 1,
+          name: p.name,
+          tagline: p.tagline,
+          link: p.link,
+          pledged: total(p) / 100,
+          paid: p.paid_cents / 100,
+          since: iso(p.first).slice(0, 10),
+        })),
+      },
+    };
+  }
+
+  // ---- owner-only admin (bearer token from the ADMIN_TOKEN Worker secret) ---
+
+  checkAdmin(auth) {
+    if (!this.adminToken) throw new HttpError(404, 'not found');
+    const want = `Bearer ${this.adminToken}`;
+    const got = typeof auth === 'string' ? auth : '';
+    let diff = got.length ^ want.length;
+    for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ (got.charCodeAt(i) || 0);
+    if (diff !== 0) throw new HttpError(401, 'unauthorized');
+  }
+
+  async admin(now, route, body, auth) {
+    this.checkAdmin(auth);
+    if (route === 'admin-list') {
+      const all = (await this.store.list('pledge:')).map(([, p]) => p);
+      all.sort((a, b) => a.n - b.n);
+      return { status: 200, body: { pledges: all.map((p) => ({ ...p, first: iso(p.first), last: iso(p.last) })) } };
+    }
+    let d;
+    try {
+      d = JSON.parse(body || '');
+    } catch (e) {
+      throw new HttpError(400, 'send a JSON object');
+    }
+    const email = d && typeof d.email === 'string' ? d.email.trim() : '';
+    if (!EMAIL_RE.test(email)) throw new HttpError(400, 'email must be a valid address');
+    const key = await this.pledgeKey(email);
+    const p = await this.store.get(key);
+    if (!p) throw new HttpError(404, 'no pledge for that email');
+    if (route === 'admin-paid') {
+      const amount = Number(d.amount);
+      if (!Number.isFinite(amount) || amount <= 0 || amount > TOTAL_MAX || Math.abs(amount * 100 - Math.round(amount * 100)) > 1e-6)
+        throw new HttpError(400, 'amount must be a positive number of dollars and cents');
+      p.paid_cents += Math.round(amount * 100);
+    } else if (route === 'admin-hide') {
+      p.hidden = d.hidden !== false;
+    }
+    p.last = now;
+    await this.store.put(key, p);
+    return { status: 200, body: { ok: true, n: p.n, pledged: p.pledged_cents / 100, paid: p.paid_cents / 100, hidden: p.hidden } };
   }
 
   // ---- rate limiting (memory only, never persisted) -----------------------
@@ -477,6 +636,11 @@ function routeOf(method, pathname) {
   if (method === 'POST' && pathname === '/desk/beat') return 'beat';
   if (method === 'POST' && pathname === '/desk/release') return 'release';
   if (method === 'GET' && pathname === '/desk/status') return 'status';
+  if (method === 'POST' && pathname === '/desk/pledge') return 'pledge';
+  if (method === 'GET' && pathname === '/desk/sponsors') return 'sponsors';
+  if (method === 'POST' && pathname === '/desk/admin/mark-paid') return 'admin-paid';
+  if (method === 'POST' && pathname === '/desk/admin/hide') return 'admin-hide';
+  if (method === 'POST' && pathname === '/desk/admin/list') return 'admin-list';
   if (method === 'GET' && pathname.startsWith(TASK_PREFIX) && pathname.length > TASK_PREFIX.length) return 'task';
   return null;
 }
