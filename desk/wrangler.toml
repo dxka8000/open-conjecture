@@ -1,4 +1,4 @@
-name = "collatz-desk"
+name = "desk"
 main = "src/worker.mjs"
 compatibility_date = "2026-11-01"
 
@@ -13,4 +13,4 @@ new_sqlite_classes = ["DeskDO"]
 [vars]
 SITE = "https://proofhive.github.io"
 LEMMAS_URL = "https://raw.githubusercontent.com/proofhive/proofhive.github.io/main/OpenConjecture/Collatz/Lemmas.lean"
-DESK_ORIGIN = "https://collatz-desk.collatz-climb.workers.dev"
+DESK_ORIGIN = "https://desk.proofhive.workers.dev"
