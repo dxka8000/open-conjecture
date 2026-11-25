@@ -211,7 +211,7 @@ const I18N = {
     library_search: "Search problems: words, areas, names (e.g. erdos, primes, tensor)", all_areas: "All areas", all_sources: "All sources",
     sort_votes: "Most wanted", sort_board: "On the board first", sort_title: "Title", only_board: "On the board", only_lean: "Stated in Lean",
     library_loading: "Loading the library…", library_failed: "The library could not be loaded.", library_count: "{n} of {t} problems",
-    show_more: "Show more", show_lean: "Lean statement", vote_title: "Want this attacked: one vote per day", vote_later: "Try later", on_board: "On the board", surveyed_n: "Surveyed · {n} notes", surveyed_1: "Surveyed · 1 note", work_on_it: "Work on it: write a research note in", how_agent: "how (agent.md)", only_notes: "Surveyed (has notes)",
+    show_more: "Show more", show_lean: "Lean statement", vote_title: "Want this attacked: one vote per day", vote_later: "Try later", desk_unreach: "Live numbers can't be loaded from your network right now; the numbers shown are from the last site build.", on_board: "On the board", surveyed_n: "Surveyed · {n} notes", surveyed_1: "Surveyed · 1 note", work_on_it: "Work on it: write a research note in", how_agent: "how (agent.md)", only_notes: "Surveyed (has notes)",
     library_votes_note: "Votes: one per problem per day from each address; only the totals are kept. The maintainers promote the most wanted problems to campaigns.",
     title_people: "People", people_lead: "Everyone with accepted work on ProofHive, with their profiles. Search by name, affiliation, interest or country.",
     people_search: "Search people", sort_points: "Points", sort_name: "Name", sort_new: "Newest",
@@ -346,7 +346,7 @@ const I18N = {
     library_search: "搜索问题：关键词、领域、名称（如 erdos、primes、tensor）", all_areas: "全部领域", all_sources: "全部来源",
     sort_votes: "最受期待", sort_board: "棋盘上的优先", sort_title: "标题", only_board: "在棋盘上", only_lean: "已用 Lean 表述",
     library_loading: "正在加载问题库…", library_failed: "问题库加载失败。", library_count: "共 {t} 个问题，匹配 {n} 个",
-    show_more: "显示更多", show_lean: "Lean 表述", vote_title: "想让它被攻打：每天一票", vote_later: "稍后再试", on_board: "在棋盘上", surveyed_n: "已调研 · {n} 篇笔记", surveyed_1: "已调研 · 1 篇笔记", work_on_it: "动手：在这里写研究笔记", how_agent: "怎么写（agent.md）", only_notes: "已调研（有笔记）",
+    show_more: "显示更多", show_lean: "Lean 表述", vote_title: "想让它被攻打：每天一票", vote_later: "稍后再试", desk_unreach: "目前无法从你的网络加载实时数字；显示的是网站上次构建时的数字。", on_board: "在棋盘上", surveyed_n: "已调研 · {n} 篇笔记", surveyed_1: "已调研 · 1 篇笔记", work_on_it: "动手：在这里写研究笔记", how_agent: "怎么写（agent.md）", only_notes: "已调研（有笔记）",
     library_votes_note: "投票：每个地址每天对每个问题一票，只保存总数。维护者会把最受期待的问题升级为战役。",
     title_people: "贡献者", people_lead: "所有在 ProofHive 有被接受工作的人，以及他们的个人资料。可按姓名、单位、研究兴趣或国家搜索。",
     people_search: "搜索贡献者", sort_points: "积分", sort_name: "姓名", sort_new: "最新",
@@ -609,6 +609,7 @@ table.ledger{width:100%;border-collapse:collapse;font-size:.86rem}
 .joinbox h2{margin:0 0 6px}.joinbox p{color:var(--muted);margin:0 0 14px}
 .joinbox code{display:block;background:color-mix(in srgb,var(--bg) 70%,transparent);border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:var(--text)}
 .note{padding:16px 18px;margin:20px 0}.note.scoring h3{margin-bottom:4px}.note.scoring ul{margin:6px 0 0}
+.deskdown{border:1px solid var(--line);border-radius:12px;background:var(--card);margin:12px 0}.deskdown p{margin:0 0 8px}.deskdown .btn{margin:4px 6px 0 0}
 .empty{padding:16px 18px;color:var(--muted);font-size:.9rem;border-style:dashed;box-shadow:none}
 .ok{color:var(--ok);font-weight:600}.open{color:var(--warn);font-weight:600}.bad{color:var(--bad);font-weight:600}
 .feed-item{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
@@ -811,7 +812,7 @@ var rec=Array.isArray(d.recent)?d.recent.filter(function(e){return e&&typeof e==
 renderFeed(rec.slice(0,15));renderGraph(rec);
 renderReasons(d.by_reason_24h);}
 function load(){
-fetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("status");return r.json();}).then(render).catch(function(){if(!last)live(false,tr("pill_off"));});}
+__dfetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("status");return r.json();}).then(render).catch(function(e){if(!last)live(false,tr(e&&e.unreachable?"desk_unreach":"pill_off"));});}
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
 load();setInterval(load,30000);
 })();`;
@@ -845,9 +846,9 @@ left.appendChild(node("span","n","#"+(Number(p.rank)||"")+" "));var nm=nameNode(
 var t=str(p.tagline,80);if(t)left.appendChild(node("div","small muted tagline",t));row.appendChild(left);
 var right=node("div","rightcol","");right.appendChild(node("span","fig",money(p.pledged)));
 right.appendChild(node("span","small "+(Number(p.paid)>0?"ok":"muted"),tr(Number(p.paid)>0?"paid_lbl":"pledged")));row.appendChild(right);wall.appendChild(row);});}}
-function load(){fetch(desk+"/desk/sponsors",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("s");return r.json();})
+function load(){__dfetch(desk+"/desk/sponsors",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("s");return r.json();})
 .then(function(d){if(d&&Array.isArray(d.sponsors))render(d.sponsors.filter(function(x){return x&&typeof x==="object";}).slice(0,500));})
-.catch(function(){var w=el("wall");if(w&&!last){clear(w);w.appendChild(node("p","empty",tr("wall_off")));}});}
+.catch(function(e){var w=el("wall");if(w&&!last){clear(w);w.appendChild(node("p","empty",tr("wall_off")));if(e&&e.unreachable)window.__deskDown(w);}});}
 load();
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
 var f=el("pledge-form");
@@ -855,7 +856,7 @@ if(f){try{var pj=JSON.parse(sessionStorage.getItem("ph-join")||"null");if(pj&&ty
 if(f)f.addEventListener("submit",function(ev){ev.preventDefault();
 var out=el("pledge-out"),btn=f.querySelector("button[type=submit]");btn.disabled=true;clear(out);
 var body={name:f.elements.name.value,tagline:f.elements.tagline.value,link:f.elements.link.value,amount:Number(f.elements.amount.value),email:f.elements.email.value};
-fetch(desk+"/desk/pledge",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+__dfetch(desk+"/desk/pledge",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
 .then(function(r){return r.json().catch(function(){return {};}).then(function(j){return {ok:r.ok,status:r.status,j:j||{}};});})
 .then(function(x){
 if(x.ok){out.appendChild(node("p","ok",tr("pledge_ok").replace("{amount}",money(x.j.amount)).replace("{total}",money(x.j.total_pledged))));
@@ -867,7 +868,7 @@ if(aq&&/^[A-Za-z0-9_\\/-]+\\.(png|jpg|jpeg|webp)$/.test(aq)){out.appendChild(nod
 f.reset();load();}
 else if(x.status===404||x.status>=500)out.appendChild(node("p","muted",tr("pledge_soon")));
 else out.appendChild(node("p","bad",tr("pledge_err")+" "+str(x.j.error,200)));})
-.catch(function(){out.appendChild(node("p","muted",tr("pledge_soon")));})
+.catch(function(e){if(e&&e.unreachable)window.__deskDown(out);else out.appendChild(node("p","muted",tr("pledge_soon")));})
 .then(function(){btn.disabled=false;});});
 })();`;
 
@@ -878,7 +879,7 @@ const BEACON_JS = `
 try{r=document.referrer?new URL(document.referrer).hostname:"";}catch(e){}if(r===location.hostname)r="";
 var b=JSON.stringify({path:location.pathname.slice(0,120),ref:r.slice(0,100)});
 if(navigator.sendBeacon&&navigator.sendBeacon(u,new Blob([b],{type:"text/plain"})))return;
-fetch(u,{method:"POST",body:b,keepalive:true,credentials:"omit",headers:{"Content-Type":"text/plain"}}).catch(function(){});}catch(e){}})();`;
+window.__dfetch(u,{method:"POST",body:b,keepalive:true,credentials:"omit",headers:{"Content-Type":"text/plain"}}).catch(function(){});}catch(e){}})();`;
 
 // Private traffic page: not linked anywhere, noindex. The owner pastes the admin token; it is kept in
 // sessionStorage for this tab only and sent only to the desk.
@@ -901,7 +902,7 @@ var a=document.createElementNS(NS,"text");a.setAttribute("x","0");a.setAttribute
 var b=document.createElementNS(NS,"text");b.setAttribute("x",String(W));b.setAttribute("y",String(H-2));b.setAttribute("text-anchor","end");b.textContent=days.length?days[days.length-1].date:"";svg.appendChild(b);}
 function load(){var tok=getTok();el("out").hidden=true;el("msg").textContent="";if(!tok)return;
 var days=Number(el("days").value)||30;
-fetch(desk+"/desk/admin/stats?days="+days,{credentials:"omit",headers:{Authorization:"Bearer "+tok}}).then(function(r){
+__dfetch(desk+"/desk/admin/stats?days="+days,{credentials:"omit",headers:{Authorization:"Bearer "+tok}}).then(function(r){
 if(r.status===401){setTok("");throw new Error("Wrong token.");}if(!r.ok)throw new Error("The desk answered "+r.status+".");return r.json();})
 .then(function(d){var v=0,u=0,su=0;d.days.forEach(function(x){v+=x.views;u+=x.visitors;su+=Number(x.signups)||0;});
 el("sum").textContent=v+" views, "+u+" daily visitors and "+su+" sign-ups over "+d.days.length+" days. Last 24 hours: "+d.last_24h+" views.";
@@ -949,6 +950,20 @@ const NAV = [
   ["credit.html", "nav_credit", ["title_credit", "title_publish"]],
   ["about.html", "nav_about", ["title_about"]],
 ];
+// Every request to the task desk goes through __dfetch: it gives up after 6 seconds, so a network that blocks the
+// desk's host (workers.dev is blocked in parts of mainland China) never leaves a spinner. Network failures and
+// timeouts reject with e.unreachable; HTTP errors resolve as usual. __deskDown(box) then explains, in both
+// languages, what still works without the desk. No email address is shown.
+const DESK_TIMEOUT_MS = 6000;
+const DESK_DOWN_HTML = `<p>${pair("Our sign-up service isn't reachable from your network right now (some networks in mainland China block it). You can still:", "我们的注册服务目前无法从你的网络访问（中国大陆的部分网络会屏蔽它）。你仍然可以：")}</p>`
+  + `<p><a class="btn sm" href="${esc(cfg.repo_url)}" rel="noopener">⭐ ${pair("Star the GitHub repository to follow along", "在 GitHub 上给仓库点星，关注进展")}</a> `
+  + `<a class="btn sm" href="${esc(cfg.repo_url)}/issues/new?title=Hello%20from%20ProofHive" rel="noopener">${pair("Open a GitHub issue to say hi", "开一个 GitHub issue 打个招呼")}</a></p>`;
+const DESK_NET_JS = `window.__deskMs=${DESK_TIMEOUT_MS};
+window.__dfetch=function(u,o,ms){o=o||{};var c=null;try{c=new AbortController();o.signal=c.signal;}catch(e){}
+return new Promise(function(res,rej){var done=false,t=setTimeout(function(){if(done)return;done=true;try{if(c)c.abort();}catch(e){}var x=new Error("unreachable");x.unreachable=true;window.__deskOff=true;rej(x);},ms||window.__deskMs);
+fetch(u,o).then(function(r){if(done)return;done=true;clearTimeout(t);res(r);},function(){if(done)return;done=true;clearTimeout(t);var x=new Error("unreachable");x.unreachable=true;window.__deskOff=true;rej(x);});});};
+window.__deskDown=function(box){if(!box||box.querySelector(".deskdown"))return;var d=document.createElement("div");d.className="note deskdown";d.setAttribute("role","status");d.innerHTML=${jsonForScript(DESK_DOWN_HTML)};
+var l=window.__lang==="zh"?"zh":"en";d.querySelectorAll("[data-lang]").forEach(function(s){s.hidden=s.getAttribute("data-lang")!==l;});box.appendChild(d);};`;
 function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", top = "", sub = "", prefix = "", title = "", beacon = true, noindex = false, meta = "" }) {
   const W = wide ? "wrap wide" : "wrap";
   const R = prefix;
@@ -964,7 +979,7 @@ function page({ key, body, extra = "", bodyAttrs = "", wide = false, pill = "", 
 <meta name="description" content="${esc(I18N.en.tagline)}">${meta}
 <link rel="alternate" type="application/rss+xml" title="ProofHive" href="${R}feed.xml">
 <style>${CSS.replaceAll("__R__", R)}</style>
-<script>try{var q=/[?&]theme=(light|dark)/.exec(location.search),t=q?q[1]:localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+<script>try{var q=/[?&]theme=(light|dark)/.exec(location.search),t=q?q[1]:localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}${DESK_NET_JS}</script>
 </head>
 <body data-title-key="${title ? "" : key}" data-site="${esc(cfg.site_name)}"${bodyAttrs ? ` ${bodyAttrs}` : ""}>
 ${top}<header class="top"><div class="${W}">
@@ -1384,7 +1399,7 @@ else if(head==="released")text=h+" "+tr("tl_handed")+" "+t+(Object.prototype.has
 else return;
 var ic=head==="took"?["▶","cool"]:tail==="submitted"?["⇡","ok"]:["↩","acc"];
 var li=document.createElement("li");li.appendChild(node("span","ico "+ic[1],ic[0]));li.appendChild(node("span","what",text));li.appendChild(node("span","when",when(e.at)));box.appendChild(li);});}
-function load(){fetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("s");return r.json();}).then(render).catch(function(){var a=el("agents-now");if(a&&!last)a.textContent=tr("desk_soon");});}
+function load(){__dfetch(desk+"/desk/status",{credentials:"omit"}).then(function(r){if(!r.ok)throw new Error("s");return r.json();}).then(render).catch(function(e){var a=el("agents-now");if(a&&!last)a.textContent=tr(e&&e.unreachable?"desk_unreach":"desk_soon");});}
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(last)render(last);});
 load();setInterval(load,30000);
 })();`;
@@ -1400,7 +1415,7 @@ if (deskOn && !simOk && process.env.GITHUB_ACTIONS) {
     for (const [login, pr] of Object.entries((d && d.profiles) || {})) if (LOGIN_RE.test(login) && pr && typeof pr === "object") deskProfiles[login.toLowerCase()] = { login, ...pr };
   } catch (e) { console.log("site: desk profiles not fetched:", e.message); }
 } else if (simOk) {
-  try { const r = await fetch(`${deskUrl}/desk/profiles`); const d = r.ok ? await r.json() : null;
+  try { const r = await fetch(`${deskUrl}/desk/profiles`, { signal: AbortSignal.timeout(8000) }); const d = r.ok ? await r.json() : null;
     for (const [login, pr] of Object.entries((d && d.profiles) || {})) if (LOGIN_RE.test(login) && pr && typeof pr === "object") deskProfiles[login.toLowerCase()] = { login, ...pr }; } catch (e) {}
 }
 const TEXT_MAX = { display_name: 60, affiliation: 100, bio: 400, country: 40 };
@@ -1605,6 +1620,7 @@ function libraryPage() {
 </div>
 <div class="filters"><label class="chk"><input type="checkbox" id="lboard"> ${t("only_board")}</label><label class="chk"><input type="checkbox" id="llean"> ${t("only_lean")}</label><label class="chk"><input type="checkbox" id="lnotes"> ${t("only_notes")}</label></div>
 </div>
+<div id="lnotice"></div>
 <p class="small muted" id="lcount" aria-live="polite">${t("library_loading")}</p>
 <div id="lib"></div>
 <div class="btns"><button class="btn" type="button" id="lmore" hidden>${t("show_more")}</button></div>
@@ -1631,9 +1647,9 @@ function hay(e){return (str(e.title,300)+" "+str(e.title_zh,300)+" "+str(e.state
 function card(e){var c=node("article","libcard glass");
 var top=node("div","lc-top");var h=node("h3",null,lang()==="zh"&&e.title_zh?e.title_zh:str(e.title,200));top.appendChild(h);
 var vb=node("button","btn sm vote");vb.type="button";var n=votes[e.id]||0;vb.textContent="▲ "+n;vb.title=tr("vote_title");if(mine[e.id])vb.setAttribute("aria-pressed","true");
-vb.addEventListener("click",function(){if(!desk||mine[e.id])return;vb.disabled=true;fetch(desk+"/desk/vote",{method:"POST",credentials:"omit",headers:{"Content-Type":"text/plain"},body:JSON.stringify({id:e.id})})
+vb.addEventListener("click",function(){if(!desk||mine[e.id])return;vb.disabled=true;__dfetch(desk+"/desk/vote",{method:"POST",credentials:"omit",headers:{"Content-Type":"text/plain"},body:JSON.stringify({id:e.id})})
 .then(function(r){return r.json();}).then(function(d){if(d&&typeof d.votes==="number"){votes[e.id]=d.votes;vb.textContent="▲ "+d.votes;}mine[e.id]=1;vb.setAttribute("aria-pressed","true");try{sessionStorage.setItem("ph-voted",JSON.stringify(mine));}catch(x){}})
-.catch(function(){vb.textContent=tr("vote_later");}).then(function(){vb.disabled=false;});});
+.catch(function(e){vb.textContent=tr("vote_later");if(e&&e.unreachable)window.__deskDown(el("lnotice"));}).then(function(){vb.disabled=false;});});
 if(!desk)vb.hidden=true;top.appendChild(vb);c.appendChild(top);
 var tags=node("p","tags");if(e.on_board)tags.appendChild(node("span","badge",tr("on_board")));
 if(e.notes>0&&typeof e.page==="string"&&/^(p|lib)\\/[a-z0-9-]{1,60}\\.html$/.test(e.page)){var sv=node("a","badge surveyed",(e.notes===1?tr("surveyed_1"):tr("surveyed_n").replace("{n}",String(e.notes))));sv.href=e.page;tags.appendChild(sv);}tags.appendChild(node("span","chip",str(e.source,60)));
@@ -1653,7 +1669,7 @@ function fill(sel,vals){vals.forEach(function(v){var o=node("option",null,v);o.v
 fetch("library/library.json",{credentials:"omit"}).then(function(r){return r.json();}).then(function(d){all=(d&&Array.isArray(d.entries)?d.entries:[]).filter(function(e){return e&&typeof e.id==="string";});
 all.forEach(function(e){e._h=hay(e);});var areas={},srcs={};all.forEach(function(e){(e.areas||[]).forEach(function(a){areas[a]=(areas[a]||0)+1;});srcs[e.source]=(srcs[e.source]||0)+1;});
 fill(el("larea"),Object.keys(areas).sort());fill(el("lsrc"),Object.keys(srcs).sort());apply();
-if(desk)fetch(desk+"/desk/votes",{credentials:"omit"}).then(function(r){return r.json();}).then(function(v){if(v&&v.votes&&typeof v.votes==="object"){votes=v.votes;apply();}}).catch(function(){});})
+if(desk)__dfetch(desk+"/desk/votes",{credentials:"omit"}).then(function(r){return r.json();}).then(function(v){if(v&&v.votes&&typeof v.votes==="object"){votes=v.votes;apply();}}).catch(function(e){if(e&&e.unreachable)window.__deskDown(el("lnotice"));});})
 .catch(function(){el("lcount").textContent=tr("library_failed");});
 var t0;el("lq").addEventListener("input",function(){clearTimeout(t0);t0=setTimeout(function(){shown=40;apply();},120);});
 ["larea","lsrc","lsort","lboard","llean","lnotes"].forEach(function(id){el(id).addEventListener("change",function(){shown=40;apply();});});
@@ -1844,11 +1860,11 @@ function lang(){return window.__lang==="zh"?"zh":"en";}
 function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
 function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;if(s!=null)e.textContent=s;return e;}
 var f=document.getElementById("joinform"),out=document.getElementById("joinout"),gh=false;
-fetch(desk+"/desk/auth/status",{credentials:"omit"}).then(function(r){return r.json();}).then(function(d){gh=!!(d&&d.github);}).catch(function(){});
+__dfetch(desk+"/desk/auth/status",{credentials:"omit"}).then(function(r){return r.json();}).then(function(d){gh=!!(d&&d.github);}).catch(function(e){if(e&&e.unreachable){var b=document.createElement("div");b.id="joindown";f.parentNode.insertBefore(b,f);window.__deskDown(b);}});
 f.addEventListener("submit",function(ev){ev.preventDefault();var btn=f.querySelector("button[type=submit]");btn.disabled=true;
 var pick=function(n){return [].slice.call(f.querySelectorAll("input[name="+n+"]:checked")).map(function(i){return i.value;});};
 var body={email:f.elements.email.value,name:f.elements.name.value,roles:pick("roles"),interests:pick("interests"),country:f.elements.country.value,consent:f.elements.consent.checked,website:f.elements.website.value};
-fetch(desk+"/desk/join",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+__dfetch(desk+"/desk/join",{method:"POST",credentials:"omit",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
 .then(function(r){return r.json().catch(function(){return {};}).then(function(j){return {ok:r.ok,status:r.status,j:j};});})
 .then(function(x){while(out.firstChild)out.removeChild(out.firstChild);
 if(!x.ok){out.hidden=false;out.appendChild(node("p","bad",x.status===404?tr("signup_soon"):(tr("signup_err")+" "+String(x.j.error||"").slice(0,200))));return;}
@@ -1858,7 +1874,7 @@ if(body.roles.indexOf("sponsor")>=0){try{sessionStorage.setItem("ph-join",JSON.s
 if(gh&&x.j.link_token&&/^[a-f0-9]+$/.test(x.j.link_token)){var g=node("a","btn",tr("signup_github"));g.href=desk+"/desk/auth/github/start?t="+x.j.link_token;row.appendChild(g);}
 var a=node("a","btn",tr("btn_ai"));a.href="join.html";row.appendChild(a);out.appendChild(row);
 if(gh)out.appendChild(node("p","small muted",tr("signup_github_why")));})
-.catch(function(){out.hidden=false;out.appendChild(node("p","bad",tr("signup_soon")));})
+.catch(function(e){out.hidden=false;if(e&&e.unreachable)window.__deskDown(out);else out.appendChild(node("p","bad",tr("signup_soon")));})
 .then(function(){btn.disabled=false;});});
 })();`;
 
@@ -1894,19 +1910,19 @@ if(m){try{sessionStorage.setItem("ph-session",m[1]);}catch(e){}history.replaceSt
 var tok="";try{tok=sessionStorage.getItem("ph-session")||"";}catch(e){}
 if(!/^[a-f0-9]{16,80}$/.test(tok)){el("mestate").textContent=tr("me_signin");return;}
 var H={Authorization:"Bearer "+tok};var f=el("meform");
-fetch(desk+"/desk/me",{credentials:"omit",headers:H}).then(function(r){if(r.status===401)throw new Error("401");return r.json();}).then(function(d){
+__dfetch(desk+"/desk/me",{credentials:"omit",headers:H}).then(function(r){if(r.status===401)throw new Error("401");return r.json();}).then(function(d){
 var login=String(d.login||"").slice(0,39),p=d.profile||{};el("mestate").textContent=tr("me_hello").replace("{login}",login);
 el("mewho").textContent="@"+login+" · "+tr("me_since")+" "+String(d.member_since||"");el("meprofile").href="c/"+encodeURIComponent(login)+".html";
 ["display_name","affiliation","bio","country"].forEach(function(k){f.elements[k].value=typeof p[k]==="string"?p[k]:"";});
 f.elements.interests.value=Array.isArray(p.interests)?p.interests.join(", "):"";
 ["x","linkedin","github","orcid","scholar","homepage"].forEach(function(k){f.elements["link_"+k].value=p.links&&typeof p.links[k]==="string"?p.links[k]:"";});f.hidden=false;})
-.catch(function(){try{sessionStorage.removeItem("ph-session");}catch(e){}el("mestate").textContent=tr("me_signin");});
+.catch(function(e){if(e&&e.unreachable){el("mestate").textContent="";window.__deskDown(el("mestate").parentNode);return;}try{sessionStorage.removeItem("ph-session");}catch(x){}el("mestate").textContent=tr("me_signin");});
 f.addEventListener("submit",function(ev){ev.preventDefault();var links={};["x","linkedin","github","orcid","scholar","homepage"].forEach(function(k){var v=f.elements["link_"+k].value.trim();if(v)links[k]=v;});
 var body={display_name:f.elements.display_name.value,affiliation:f.elements.affiliation.value,bio:f.elements.bio.value,country:f.elements.country.value,
 interests:f.elements.interests.value.split(",").map(function(s){return s.trim();}).filter(Boolean).slice(0,8),links:links};
-fetch(desk+"/desk/me/profile",{method:"POST",credentials:"omit",headers:{Authorization:H.Authorization,"Content-Type":"application/json"},body:JSON.stringify(body)})
+__dfetch(desk+"/desk/me/profile",{method:"POST",credentials:"omit",headers:{Authorization:H.Authorization,"Content-Type":"application/json"},body:JSON.stringify(body)})
 .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(x){el("memsg").className=x.ok?"ok":"bad";el("memsg").textContent=x.ok?tr("me_saved"):String(x.j.error||"").slice(0,200);})
-.catch(function(){el("memsg").className="bad";el("memsg").textContent=tr("signup_soon");});});
+.catch(function(e){if(e&&e.unreachable){el("memsg").textContent="";window.__deskDown(el("memsg").parentNode);return;}el("memsg").className="bad";el("memsg").textContent=tr("signup_soon");});});
 el("meout").addEventListener("click",function(){try{sessionStorage.removeItem("ph-session");}catch(e){}location.reload();});
 })();`;
 

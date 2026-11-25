@@ -17,6 +17,8 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import { stubReview } from "./reviewer-stub.mjs";
+import { auditLinks } from "../tools/linkcheck.mjs";
+import vm from "node:vm";
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const WS = join(tmpdir(), "collatz-sim");
@@ -589,6 +591,41 @@ async function main() {
   check("home page escapes hostile sponsor text", !home.includes("<script>alert(1)</script>") && !home.includes("javascript:alert"));
   check("the homepage has a Join ProofHive button and the RSS feed lists accepted results", /signup\.html/.test(home) && /<item><title>@sim-/.test(wsRead("dist/feed.xml")));
   check("home page CSP connects only to itself and the desk", new RegExp(`connect-src 'self' ${DESK.replace(/[.]/g, "\\.")}`).test(home));
+
+  // ---- the desk unreachable (blocked networks, e.g. parts of mainland China): give up after a timeout, explain
+  log("\n== Desk unreachable");
+  {
+    const pagesWithDesk = ["index.html", "signup.html", "library.html", "me.html", "sponsor.html", "stats.html"].filter((f) => existsSync(join(WS, `dist/${f}`)));
+    const raw = pagesWithDesk.filter((f) => /(^|[^_a-zA-Z.])fetch\(desk\+|(^|[^_a-zA-Z.])fetch\(u,\{method/m.test(wsRead(`dist/${f}`)));
+    check("every desk request on the site goes through the timeout wrapper (__dfetch)", pagesWithDesk.length >= 5 && raw.length === 0, raw.join(", "));
+    const head = /<script>(try\{var q=[\s\S]*?window\.__deskDown[\s\S]*?)<\/script>/.exec(wsRead("dist/signup.html"));
+    const ctx = { setTimeout, clearTimeout, AbortController, Promise, Error, JSON, localStorage: { getItem: () => null }, location: { search: "" },
+      document: { documentElement: { setAttribute() {} }, createElement: () => ({ setAttribute() {}, querySelectorAll: () => [], innerHTML: "" }) } };
+    ctx.window = ctx;
+    vm.runInNewContext(head ? head[1] : "", ctx);
+    check("the timeout is 6 seconds", ctx.__deskMs === 6000);
+    ctx.__deskMs = 80;
+    const outcome = async (fetchImpl) => { ctx.fetch = fetchImpl; const t0 = Date.now();
+      try { const r = await ctx.__dfetch("https://desk.example/desk/status", {}); return { ok: true, status: r.status, ms: Date.now() - t0 }; }
+      catch (e) { return { ok: false, unreachable: !!e.unreachable, ms: Date.now() - t0 }; } };
+    const hang = await outcome(() => new Promise(() => {}));
+    check("a desk that never answers is given up on after the timeout, as unreachable", !hang.ok && hang.unreachable && hang.ms >= 70 && hang.ms < 2000, `${hang.ms} ms`);
+    const neterr = await outcome(() => Promise.reject(new TypeError("Failed to fetch")));
+    check("a blocked connection (network error) also counts as unreachable", !neterr.ok && neterr.unreachable);
+    const http = await outcome(() => Promise.resolve({ ok: false, status: 503 }));
+    check("an HTTP error from a reachable desk is passed through, not shown as blocked", http.ok && http.status === 503);
+    const box = { querySelector: () => null, appendChild(d) { this.d = d; } };
+    ctx.__deskDown(box);
+    const msg = box.d ? box.d.innerHTML : "";
+    check("the fallback explains in both languages and links the GitHub repository and a new issue, with no email address",
+      /isn(&#39;|')t reachable from your network/.test(msg) && /中国大陆/.test(msg) && /Star the GitHub repository/.test(msg) && /\/issues\/new\?title=/.test(msg) && !/@|mailto:/.test(msg), msg.slice(0, 80));
+    const lib = wsRead("dist/library.html"), signup = wsRead("dist/signup.html"), homeNow = wsRead("dist/index.html");
+    check("sign-up, votes, pledges and the profile page show the fallback when the desk is unreachable; live counts fall back to the build's numbers",
+      /__deskDown\(el\("lnotice"\)\)/.test(lib) && /id="lnotice"/.test(lib) && /__deskDown\(out\)/.test(signup) && /desk_unreach/.test(homeNow) && /data-count="\d+"/.test(homeNow));
+    const audit = auditLinks(join(WS, "dist"));
+    check("link audit: every internal link and anchor in the built site resolves (including the library and lib/ pages)", audit.broken.length === 0 && audit.checked > 300,
+      audit.broken.length ? audit.broken.slice(0, 3).join("; ") : `${audit.pages} pages, ${audit.checked} links`);
+  }
 
   const failed = results.filter((r) => !r.ok);
   log(`\n${results.length - failed.length} of ${results.length} checks passed.`);
