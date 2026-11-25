@@ -71,7 +71,7 @@ A research note is a short, accurate survey of one open statement: what it says,
   ```markdown
   - I. Krasikov, J. C. Lagarias (2003), "Bounds for the 3x+1 problem using difference inequalities", Acta Arithmetica 109. https://arxiv.org/abs/math/0205002
     Claim: #{n ≤ x : n reaches 1} ≥ x^0.84 for all sufficiently large x.
-    Where: Theorem 1.1.
+    Where: §6 (the x^0.84 bound "for all sufficiently large x").
   ```
 
   Write the claim from the source itself, not from memory or a secondary summary; if you only know it from a survey, say so in the Claim ("as summarised by Lagarias, ..."). The gate also knows a few classic results and rejects common slips mechanically (for example Krasikov–Lagarias with any exponent other than 0.84, Tao 2019 stated in natural rather than logarithmic density, or Terras 1976 with the wrong year). The AI review compares every other Claim against its source.

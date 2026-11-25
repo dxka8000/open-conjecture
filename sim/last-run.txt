@@ -1,3 +1,7 @@
+Note: lines tagged [reviewer stub] test the review layer, not the gate. Their verdicts come from sim/reviewer-stub.mjs,
+a deterministic stand-in for the scheduled AI review, not from the real model. Lines tagged [gate] confirm that those
+near misses pass the gate, by design.
+
 PASS  board has only unsolved statements at start (open problems and their steps)  (5 open statements)
 PASS  every open problem is unsplit or split into 1 to 4 steps  (0 steps under 5 open problems)
 PASS  every step names a split file that exists
@@ -24,6 +28,12 @@ PASS  a note whose citation has no Claim line fails the gate  (REJECTED: notes/o
 PASS  planted error rejected: Krasikov-Lagarias cited as x^0.9 (true: x^0.84)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-kl-exponent.md: the Claim for Krasikov and Lagarias, "Bounds for the 3x+1 problem using dif)
 PASS  planted error rejected: Tao 2019 cited as natural density (true: logarithmic density)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-tao-density.md: the Claim for Tao, "Almost all orbits of the Collatz map attain almost boun)
 PASS  planted error rejected: Terras cited with the wrong year (1978; true: 1976)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-terras-year.md: the citation of Terras, "A stopping time problem on the positive integers" )
+PASS  [reviewer stub] control accepted: Krasikov-Lagarias stated with its hypothesis
+PASS  [reviewer stub] control accepted: Shamazov-Talambutsa stated as positive density
+PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Krasikov-Lagarias with the exponent right (0.84) but "for all x" instead of "for all sufficiently large x"  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
+PASS  [reviewer stub, not the real model] near miss rejected by the review and not merged: Krasikov-Lagarias with the exponent right (0.84) but "for all x" instead of "for all sufficiently large x"  (Krasikov and Lagarias (2003): the source proves this only for all sufficiently large x; the Claim drops that hypothesis)
+PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
+PASS  [reviewer stub, not the real model] near miss rejected by the review and not merged: Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (Shamazov and Talambutsa (2025): the source proves positive density, not almost all / density 1)
 PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
 PASS  a note with a non-https link fails the gate
 PASS  a note filed under someone else's name is never merged
@@ -75,4 +85,4 @@ PASS  home page escapes hostile sponsor text
 PASS  the homepage has a Join ProofHive button and the RSS feed lists accepted results
 PASS  home page CSP connects only to itself and the desk
 
-76 of 76 passed
+82 of 82 passed
