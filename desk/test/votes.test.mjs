@@ -42,3 +42,8 @@ test(`at most ${VOTES_PER_IP_DAY} votes per IP per day`, async () => {
   for (let i = 0; i < VOTES_PER_IP_DAY + 5; i++) await vote(`fc:p${i}`);
   assert.equal(Object.keys(await votes()).length, VOTES_PER_IP_DAY);
 });
+
+test('library ids with Greek letters and subscripts can be voted on', async () => {
+  const { vote } = setup();
+  for (const id of ['fc:moment_isEquiv₃', 'fc:reed_conjecture_Δ_6_ω_2', 'fc:HadamardConjecture.variants.«167»', 'fc:OEIS.189409.conjecture_1']) assert.equal((await vote(id)).status, 200, id);
+});

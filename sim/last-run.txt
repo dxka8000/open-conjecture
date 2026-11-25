@@ -34,6 +34,10 @@ PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Kras
 PASS  [reviewer stub, not the real model] near miss rejected by the review and not merged: Krasikov-Lagarias with the exponent right (0.84) but "for all x" instead of "for all sufficiently large x"  (Krasikov and Lagarias (2003): the source proves this only for all sufficiently large x; the Claim drops that hypothesis)
 PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
 PASS  [reviewer stub, not the real model] near miss rejected by the review and not merged: Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (Shamazov and Talambutsa (2025): the source proves positive density, not almost all / density 1)
+PASS  the desk hands out a library problem as a note task (library=1), with its folder and note file  (fc:Arxiv.1207.5099.SubprimeFibonacci.conjecture -> lib-arxiv-1207-5099-subprimefibonacci-conjecture-2176fe)
+PASS  a note on a library problem passes the same gate and waits for the AI review  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
+PASS  after the review-ok the library note merges into notes/<folder>/
+PASS  a note in a folder that is no record and no library problem fails the gate  (REJECTED: notes/lib-made-up-000000/sim-mallory-x.md: no record or library problem lib-made-up-000000)
 PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
 PASS  a note with a non-https link fails the gate
 PASS  a note filed under someone else's name is never merged
@@ -43,10 +47,10 @@ PASS  a profile with a link to the wrong site fails the gate
 PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
 PASS  site build accepts the merged split
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
-PASS  a second builder gets a different step  (step-sim-g1)
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g1)
+PASS  a second builder gets a different step  (step-sim-g2)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG2.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged
@@ -60,6 +64,10 @@ PASS  the profile page shows the escaped display name and the directory lists it
 PASS  points: a research note on an open problem scores 10, and being cited by a later note adds 5  (nina 15, omar 10)
 PASS  the problem page lists both notes with a citation line; Nina's ledger shows the rule and the citation bonus
 PASS  the homepage counts the noted problem as surveyed, shows +10 pts on the timeline, and the leaderboard links to the ledger
+PASS  points: a note on a library problem scores 10 (weight 1)  (lena 10)
+PASS  the library problem gets its own page listing the note, and the library marks it surveyed with 1 note  (fc:Arxiv.1207.5099.SubprimeFibonacci.conjecture notes 1)
+PASS  the board's own progress is unchanged by a library note (still 1 surveyed of the board's problems)
+PASS  the home page leads with the library and the live Collatz campaign, with counts taken from the data
 PASS  the desk feed carries the note permalinks for each record
 PASS  the site renders the merged note escaped, and lists it on the timeline  (open-five-x-plus-one)
 PASS  the note page shows each citation's Claim and Where on their own lines
@@ -77,7 +85,7 @@ PASS  sponsor sync runs  (stripe sync: 3 new payments, 2 new supporters, 2 suppo
 PASS  same email merges and sums ($1,125), unpaid ignored
 PASS  no email stored anywhere in ledger/
 PASS  sponsor sync is idempotent
-PASS  desk status counts activity  (recent 12)
+PASS  desk status counts activity  (recent 14)
 PASS  lemmas page marks every step as proven to imply its parent
 PASS  home page lists the refuted step in the graveyard
 PASS  home page leaderboard shows the prover and the red team
@@ -85,4 +93,4 @@ PASS  home page escapes hostile sponsor text
 PASS  the homepage has a Join ProofHive button and the RSS feed lists accepted results
 PASS  home page CSP connects only to itself and the desk
 
-82 of 82 passed
+90 of 90 passed

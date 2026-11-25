@@ -6,6 +6,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { readNotes } from "./notes.mjs";
 import { readProfiles } from "./profiles.mjs";
+import { readLibrary } from "./library.mjs";
 
 const fail = (m) => { console.error("REJECTED: " + m); process.exit(1); };
 const PROOFS = "OpenConjecture/Collatz/Proofs";
@@ -187,7 +188,10 @@ for (const { f, where, r } of records) {
 // Research notes: format, sections, links, and a record that exists.
 let notes = [];
 try { notes = readNotes("."); } catch (e) { fail(e.message); }
-for (const nt of notes) if (!ids.has(nt.record)) fail(`${nt.path}: no record ${nt.record}`);
+// Notes may also be on library problems (site/library/library.json), under notes/<library folder>/.
+let library = new Map();
+try { library = readLibrary("."); } catch (e) { fail(e.message); }
+for (const nt of notes) if (!ids.has(nt.record) && !library.has(nt.record)) fail(`${nt.path}: no record or library problem ${nt.record}`);
 // Contributor profiles: format and links.
 let profiles = new Map();
 try { profiles = readProfiles("."); } catch (e) { fail(e.message); }

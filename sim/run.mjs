@@ -174,7 +174,7 @@ async function automerge(mode, pr, conclusion) {
 async function ciCheck(pr, leanAccepts, antiGamingFails = false) {
   const dir = join(tmpdir(), `collatz-sim-pr${pr.number}`);
   rmSync(dir, { recursive: true, force: true });
-  for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
+  for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles", "site/library"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
   for (const [f, text] of Object.entries(pr.contents)) { mkdirSync(dirname(join(dir, f)), { recursive: true }); writeFileSync(join(dir, f), text); }
   const g = gate(dir);
   rmSync(dir, { recursive: true, force: true });
@@ -273,7 +273,7 @@ async function main() {
   {
     const dir = join(tmpdir(), "collatz-sim-restate");
     rmSync(dir, { recursive: true, force: true });
-    for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
+    for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles", "site/library"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
     const L = join(dir, "OpenConjecture/Collatz/Lemmas.lean");
     const body = /^def Open_DensityOne : Prop := (.*)$/m.exec(readFileSync(L, "utf8"))[1];
     writeFileSync(L, readFileSync(L, "utf8").replace("end OpenConjecture.Collatz", `def Step_Restated : Prop := ${body}\n\nend OpenConjecture.Collatz`));
@@ -402,6 +402,24 @@ async function main() {
     check(`[reviewer stub, not the real model] near miss rejected by the review and not merged: ${label}`,
       v.verdict === "review-rejected" && v.reasons.some((x) => why.test(x)) && gh.prs.get(pr.number).state === "open" && hasLabel(pr, "review-rejected"), v.reasons.join("; "));
   }
+  // ---- a research note on a library problem, end to end: desk task, gate, review, merge, site, points
+  log("\n== Round 1d: a note on a library problem");
+  const ltk = await next("sim-lena", "&role=think&library=1");
+  const lg = ltk.body.gap || {};
+  check("the desk hands out a library problem as a note task (library=1), with its folder and note file",
+    ltk.status === 200 && lg.kind === "note" && lg.library === true && /^lib-[a-z0-9-]+$/.test(lg.folder || "") && lg.note_file === `notes/${lg.folder}/<your GitHub login>-<slug>.md` && lg.record_line === `Record: ${lg.folder}`,
+    `${lg.id} -> ${lg.folder}`);
+  const LIBF = lg.folder || "none";
+  const pLib = openPr({ author: "sim-lena", title: `Note ${LIBF}`, files: noteFile("sim-lena", LIBF, "survey") });
+  const cLib = await ciCheck(pLib, true);
+  check("a note on a library problem passes the same gate and waits for the AI review", cLib.conclusion === "success" && hasLabel(pLib, "needs-review"), cLib.gateOut.slice(0, 120));
+  aiReview(pLib, "review-ok");
+  await automerge("sweep");
+  check("after the review-ok the library note merges into notes/<folder>/", gh.prs.get(pLib.number).state === "merged" && existsSync(join(WS, `notes/${LIBF}/sim-lena-survey.md`)));
+  await release("sim-lena", ltk.body.lease.id, "submitted");
+  const pZ = openPr({ author: "sim-mallory", title: "Note lib-made-up-000000", files: noteFile("sim-mallory", "lib-made-up-000000", "x") });
+  const cz = await ciCheck(pZ, true);
+  check("a note in a folder that is no record and no library problem fails the gate", cz.conclusion === "failure" && /no record or library problem/.test(cz.gateOut), cz.gateOut.slice(0, 120));
   const pH = openPr({ author: "sim-mallory", title: `Note ${NR}`, files: noteFile("sim-mallory", NR, "html", {
     body: `# x\nRecord: ${NR}\nAuthor: @sim-mallory\nDate: ${today}\n\n<script>alert(1)</script>\n<img src=x onerror=alert(1)>\n` }) });
   const ch = await ciCheck(pH, true);
@@ -493,6 +511,17 @@ async function main() {
       && /research note: 10 × weight 1\.0/.test(ninaPage) && /citation bonus: your note was cited by @sim-omar/.test(ninaPage));
     check("the homepage counts the noted problem as surveyed, shows +10 pts on the timeline, and the leaderboard links to the ledger",
       /1 surveyed/.test(home) && /\+10 <span data-lang="en">pts/.test(home) && /c\/sim-nina\.html#ledger/.test(home));
+    {
+      const lp = existsSync(join(WS, `dist/lib/${LIBF}.html`)) ? wsRead(`dist/lib/${LIBF}.html`) : "";
+      const le = wsJson("dist/library/library.json").entries.find((e) => e.folder === LIBF) || {};
+      const ltask = wsJson("dist/library-tasks.json").tasks.find((x) => x.folder === LIBF) || {};
+      check("points: a note on a library problem scores 10 (weight 1)", pts("sim-lena") === 10, `lena ${pts("sim-lena")}`);
+      check("the library problem gets its own page listing the note, and the library marks it surveyed with 1 note",
+        /sim-lena-survey\.html/.test(lp) && /Surveyed/.test(lp) && le.notes === 1 && le.page === `lib/${LIBF}.html` && ltask.notes === 1 && (ltask.note_links || []).length === 1, `${le.id} notes ${le.notes}`);
+      check("the board's own progress is unchanged by a library note (still 1 surveyed of the board's problems)", /1 surveyed/.test(home));
+      check("the home page leads with the library and the live Collatz campaign, with counts taken from the data",
+        /1,874 open problems/.test(home) && /821 Erdős problems/.test(home) && /mathematical physics/.test(home) && /First live campaign: the Collatz conjecture/.test(home));
+    }
     check("the desk feed carries the note permalinks for each record", (wsJson("dist/feed.json").records.find((r) => r.id === NR)?.note_links || []).length === 2);
     check("the site renders the merged note escaped, and lists it on the timeline", existsSync(join(WS, `dist/notes/${NR}/sim-nina-survey.html`)) && /wrote a research note on/.test(wsRead("dist/index.html")) && !/<script>alert/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)), ninaRec.id);
     check("the note page shows each citation's Claim and Where on their own lines", /<br><span class="claimk">Claim:<\/span> every Collatz cycle has at least 92/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)) && /<span class="claimk">Where:<\/span> main theorem/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)));

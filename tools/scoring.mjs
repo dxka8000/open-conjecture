@@ -9,7 +9,8 @@
 //   research note             note_points * weight(record)
 //   citation bonus            note_bonus to a note's author each time a later accepted note or split by someone
 //                             else cites it (links its permalink, .../notes/<record>/<file>.html, or the .md source)
-//   weight                    1 for open problems; a step has its parent's weight * step_weight_factor,
+//   library problems          a research note on one of the library's open problems scores as on an open problem
+//   weight                    1 for open problems and library problems; a step has its parent's weight * step_weight_factor,
 //                             never below min_weight
 //
 // Every event carries the rule that produced it (rule_en, rule_zh) and the record it is about (record), so
@@ -53,7 +54,7 @@ export function citedNotes(text) {
 export const noteKey = (n) => `${n.record}/${String(n.file || String(n.path || "").split("/").pop() || "").replace(/\.md$/, "")}`;
 
 /** Every scoring event: {who, kind: "proof"|"refutation"|"split"|"bonus"|"note", points, date, id, record, rule_en, rule_zh}. */
-export function scoreEvents(records, S, notes = []) {
+export function scoreEvents(records, S, notes = [], library = new Map()) {
   const byId = new Map(records.map((r) => [r.id, r]));
   const out = [];
   for (const r of records) {
@@ -87,17 +88,19 @@ export function scoreEvents(records, S, notes = []) {
       rule_zh: `拆分：(${S.split_base} + ${S.split_per_step} × ${g.steps} 个步骤) × 权重 ${fmtWeight(w)}` });
   }
   const known = new Map();
+  // A note on a library problem (library: Map of notes folder -> entry) scores like one on an open problem: weight 1.
+  const target = (id) => byId.has(id) || library.has(id);
   for (const n of notes) {
     const r = byId.get(n.record);
-    if (!r) continue;
+    if (!r && !library.has(n.record)) continue;
     known.set(noteKey(n), n);
-    const w = weightOf(r, byId, S);
+    const w = r ? weightOf(r, byId, S) : 1;
     out.push({ who: n.who, kind: "note", points: round1(S.note_points * w), date: n.date, id: n.record, record: n.record, path: n.path, model: n.model || "", tool: n.tool || "",
       rule_en: `research note: ${S.note_points} × weight ${fmtWeight(w)}`, rule_zh: `研究笔记：${S.note_points} × 权重 ${fmtWeight(w)}` });
   }
   // Citation bonus: a later accepted note or split by someone else that links a note's permalink.
   const citers = [
-    ...notes.filter((n) => byId.has(n.record)).map((n) => ({ who: n.who, date: n.date, kind: "note", self: noteKey(n), ref: n.path, text: n.text || "" })),
+    ...notes.filter((n) => target(n.record)).map((n) => ({ who: n.who, date: n.date, kind: "note", self: noteKey(n), ref: n.path, text: n.text || "" })),
     ...[...splits.values()].map((g) => ({ who: g.who, date: g.date, kind: "split", self: "", ref: g.name, text: g.sketch })),
   ];
   for (const c of citers) {

@@ -6,13 +6,14 @@ import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { scoringConfig, scoreEvents, leaderboardRows } from "./scoring.mjs";
 import { readNotes } from "../checker/notes.mjs";
 import { readProfiles } from "../checker/profiles.mjs";
+import { readLibrary } from "../checker/library.mjs";
 
 const version = process.argv[2] || new Date().toISOString().slice(0, 10);
 const cfg = JSON.parse(readFileSync("site/config.json", "utf8"));
 const records = readdirSync("records/collatz").map((f) => JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")));
 const notes = readNotes(".", { strict: false });
 const profiles = readProfiles(".", { strict: false });
-const rows = leaderboardRows(scoreEvents(records, scoringConfig(cfg), notes)).filter((r) => /^[A-Za-z0-9-]{1,39}$/.test(r.who));
+const rows = leaderboardRows(scoreEvents(records, scoringConfig(cfg), notes, readLibrary("."))).filter((r) => /^[A-Za-z0-9-]{1,39}$/.test(r.who));
 
 const person = (r) => {
   const p = profiles.get(r.who.toLowerCase()) || {};

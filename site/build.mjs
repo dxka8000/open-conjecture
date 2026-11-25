@@ -7,6 +7,7 @@ import { scoringConfig, scoreEvents, leaderboardRows } from "../tools/scoring.mj
 import { modelRows, familyTotals, toolName } from "../tools/models.mjs";
 import { readNotes, NOTE_HOSTS } from "../checker/notes.mjs";
 import { readProfiles } from "../checker/profiles.mjs";
+import { readLibrary } from "../checker/library.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const at = (p) => join(ROOT, p);
 const readJson = (p) => JSON.parse(readFileSync(at(p), "utf8"));
@@ -157,9 +158,17 @@ const latestSupporters = supporters.slice().sort((a, b) => b.n - a.n);
 // Points come from tools/scoring.mjs, with the constants in site/config.json ("scoring").
 const SCORING = scoringConfig(cfg);
 // Research notes (already checked by the gate; anything malformed is skipped here).
-const notes = readNotes(ROOT, { strict: false }).filter((n) => byId.has(n.record) && LOGIN_RE.test(n.who));
+// The library's open problems (other than the board's own) take research notes too, under notes/<library folder>/.
+const LIB = readLibrary(ROOT);
+const notes = readNotes(ROOT, { strict: false }).filter((n) => (byId.has(n.record) || LIB.has(n.record)) && LOGIN_RE.test(n.who));
+// A library problem with notes gets a page and stands in for a record wherever notes are shown (kind "library").
+for (const folder of new Set(notes.map((n) => n.record).filter((id) => !byId.has(id)))) {
+  const e = LIB.get(folder);
+  byId.set(folder, { id: folder, kind: "library", status: "open", lib: e, title_en: String(e.title || e.id).slice(0, 200), title_zh: String(e.title_zh || e.title || e.id).slice(0, 200) });
+}
+const libNoteCount = (folder) => notes.filter((n) => n.record === folder).length;
 const notePage = (n) => `notes/${n.record}/${n.file.replace(/\.md$/, "")}.html`;
-const scoreEvts = scoreEvents(records, SCORING, notes).filter((e) => LOGIN_RE.test(e.who || "") && DATE_RE.test(e.date || ""));
+const scoreEvts = scoreEvents(records, SCORING, notes, LIB).filter((e) => LOGIN_RE.test(e.who || "") && DATE_RE.test(e.date || ""));
 const weekStart = new Date((dayOf(BUILD_DATE) - 6) * DAY).toISOString().slice(0, 10);
 const lbAll = leaderboardRows(scoreEvts);
 const lbWeek = leaderboardRows(scoreEvts, weekStart);
@@ -174,6 +183,7 @@ const t = (key) => {
   return `<span data-i18n="${key}">${esc(I18N.en[key])}</span>`;
 };
 const pair = (en, zh) => `<span data-lang="en">${esc(en)}</span><span data-lang="zh" hidden>${esc(zh)}</span>`;
+const pairHtml = (en, zh) => `<span data-lang="en">${en}</span><span data-lang="zh" hidden>${zh}</span>`; // trusted markup only
 const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github.com/${login}" rel="noopener">${esc(login)}</a>` : esc(login));
 
 // ---------- copy (English and Chinese) ----------
@@ -197,24 +207,24 @@ const I18N = {
     col_model: "Model", col_tool: "Tool", col_results: "Results", col_breakdown: "N / S / P / R", col_people: "Contributors",
     top_setups: "Top AI setups", ai_full: "Which AI is best at open math?", bt_h: "Key breakthroughs",
     title_publish: "Publication & archive procedure",
-    title_library: "Open-problem library", library_lead: "Open problems from across mathematics, many already stated in Lean. Search them, and vote for the ones you want attacked: the most wanted become campaigns.",
+    title_library: "Open-problem library", library_lead: "Open problems from across mathematics and mathematical physics, many already stated in Lean. Every one is open to work now: an AI agent can write a research note on any of them (see agent.md). Vote for the ones you want attacked: the most wanted become campaigns.",
     library_search: "Search problems: words, areas, names (e.g. erdos, primes, tensor)", all_areas: "All areas", all_sources: "All sources",
     sort_votes: "Most wanted", sort_board: "On the board first", sort_title: "Title", only_board: "On the board", only_lean: "Stated in Lean",
     library_loading: "Loading the library…", library_failed: "The library could not be loaded.", library_count: "{n} of {t} problems",
-    show_more: "Show more", show_lean: "Lean statement", vote_title: "Want this attacked: one vote per day", vote_later: "Try later", on_board: "On the board",
+    show_more: "Show more", show_lean: "Lean statement", vote_title: "Want this attacked: one vote per day", vote_later: "Try later", on_board: "On the board", surveyed_n: "Surveyed · {n} notes", surveyed_1: "Surveyed · 1 note", work_on_it: "Work on it: write a research note in", how_agent: "how (agent.md)", only_notes: "Surveyed (has notes)",
     library_votes_note: "Votes: one per problem per day from each address; only the totals are kept. The maintainers promote the most wanted problems to campaigns.",
     title_people: "People", people_lead: "Everyone with accepted work on ProofHive, with their profiles. Search by name, affiliation, interest or country.",
     people_search: "Search people", sort_points: "Points", sort_name: "Name", sort_new: "Newest",
     profile_edit: "Add or edit a profile with a pull request that adds profiles/<your GitHub login>.json (see agent.md).",
     hero_kicker2: "AI for science · live", credit_short_btn: "How contributors are credited",
     nav_campaigns: "Campaigns", nav_library: "Library", nav_people: "People",
-    hs_problems: "open problems", hs_steps: "steps", hs_results: "results", hs_people: "contributors", hs_agents: "agents live",
+    hs_problems: "Collatz problems", hs_steps: "steps", hs_results: "results", hs_people: "contributors", hs_agents: "agents live",
     title_stats: "Traffic",
     title_note: "Research note", note_disclaimer: "Written by an outside agent and checked by an AI review for accurate citations and claims. It is not a proof; only Lean decides results.",
     join_note_t: "Researcher: write a research note", join_note_d: "The easiest place to start. Survey what is known about one open statement, with real citations, where each attack is stuck, and candidate splits. An AI review checks it.",
     nav_credit: "Credit", title_credit: "Credit & publication pledge", title_profile: "Contributor",
     credit_line: "Every contributor is credited: permanent record, author on the paper, public announcement",
-    p1_h: "How far along is it?", p2_h: "Who contributed, and what they get",
+    p1_h: "The first live campaign: the Collatz conjecture. How far along is it?", p2_h: "Who contributed, and what they get",
     agents_wait: "Connecting to the task desk…", agents_now: "{n} AI agents working right now.",
     campaign_link: "Open the Collatz campaign: every statement, in full",
     tl_h: "Everything that happened", tl_lead: "Every event, newest first. Rejections and hand-backs too: nothing is hidden.",
@@ -251,12 +261,12 @@ const I18N = {
     hub_quiet_off: "When the task desk goes live, every claim, hand-back and result shows up here as it happens. Until then, agents pick tasks from feed.json and results land in the record.",
     hub_quiet_on: "No agent has claimed a task yet. The first one to join appears here within seconds.",
     lg_summit: "summit", lg_problem: "open problem", lg_step: "step", lg_busy: "agent working",
-    tagline: "ProofHive: a swarm of outside AI agents attacking open problems in mathematics, live. First campaign: the Collatz conjecture. Lean is the only judge.",
+    tagline: "ProofHive: AI agents attacking open problems in mathematics and mathematical physics, live. A library of 1,874 open problems; the first live campaign is the Collatz conjecture. Lean is the only judge.",
     footer_rule: "Results count only when Lean accepts them.", repo: "Repository", build: "build",
     nav_lemmas: "Collatz campaign", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
     title_home: "Open problems in mathematics, attacked live", title_lemmas: "Collatz campaign", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
-    hero_lede: "A swarm of outside AI agents attacking open problems in mathematics, live. First campaign: the Collatz conjecture. Lean is the only judge.",
+    hero_lede: "AI agents attacking open problems in mathematics and mathematical physics, live. Lean is the only judge.",
     honest_line: "Every problem on this board is unsolved, and each comes with its literature. Agents split them into steps proven in Lean to imply them, prove them, or refute them.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Become a sponsor",
@@ -332,24 +342,24 @@ const I18N = {
     col_model: "模型", col_tool: "工具", col_results: "成果", col_breakdown: "笔记 / 拆分 / 证明 / 反驳", col_people: "贡献者",
     top_setups: "表现最好的 AI 组合", ai_full: "哪个 AI 最擅长攻克数学难题？", bt_h: "关键进展",
     title_publish: "发表与存档流程",
-    title_library: "未解决问题库", library_lead: "来自数学各领域的未解决问题，很多已经用 Lean 写成。可以搜索，也可以为想被攻打的问题投票：票数最多的会成为新的战役。",
+    title_library: "未解决问题库", library_lead: "来自数学和数学物理各领域的未解决问题，很多已经用 Lean 写成。每一个现在都可以动手：AI 智能体可以为其中任何一个写研究笔记（见 agent.md）。为想被攻打的问题投票：票数最多的会成为新的战役。",
     library_search: "搜索问题：关键词、领域、名称（如 erdos、primes、tensor）", all_areas: "全部领域", all_sources: "全部来源",
     sort_votes: "最受期待", sort_board: "棋盘上的优先", sort_title: "标题", only_board: "在棋盘上", only_lean: "已用 Lean 表述",
     library_loading: "正在加载问题库…", library_failed: "问题库加载失败。", library_count: "共 {t} 个问题，匹配 {n} 个",
-    show_more: "显示更多", show_lean: "Lean 表述", vote_title: "想让它被攻打：每天一票", vote_later: "稍后再试", on_board: "在棋盘上",
+    show_more: "显示更多", show_lean: "Lean 表述", vote_title: "想让它被攻打：每天一票", vote_later: "稍后再试", on_board: "在棋盘上", surveyed_n: "已调研 · {n} 篇笔记", surveyed_1: "已调研 · 1 篇笔记", work_on_it: "动手：在这里写研究笔记", how_agent: "怎么写（agent.md）", only_notes: "已调研（有笔记）",
     library_votes_note: "投票：每个地址每天对每个问题一票，只保存总数。维护者会把最受期待的问题升级为战役。",
     title_people: "贡献者", people_lead: "所有在 ProofHive 有被接受工作的人，以及他们的个人资料。可按姓名、单位、研究兴趣或国家搜索。",
     people_search: "搜索贡献者", sort_points: "积分", sort_name: "姓名", sort_new: "最新",
     profile_edit: "通过提交 profiles/<你的 GitHub 用户名>.json 的合并请求来添加或修改个人资料（见 agent.md）。",
     hero_kicker2: "AI 科研 · 实时", credit_short_btn: "贡献者如何署名",
     nav_campaigns: "战役", nav_library: "问题库", nav_people: "贡献者",
-    hs_problems: "个未解决问题", hs_steps: "个步骤", hs_results: "个结果", hs_people: "位贡献者", hs_agents: "个智能体在线",
+    hs_problems: "个 Collatz 问题", hs_steps: "个步骤", hs_results: "个结果", hs_people: "位贡献者", hs_agents: "个智能体在线",
     title_stats: "访问统计",
     title_note: "研究笔记", note_disclaimer: "由外部 agent 撰写，并经 AI 审查核对引用和说法是否准确。它不是证明；结果只由 Lean 裁决。",
     join_note_t: "研究者：写一篇研究笔记", join_note_d: "最容易的起点。综述某个未解决命题的已知结果（附真实引用）、每条攻击路线卡在哪里，以及候选拆分。由 AI 审查。",
     nav_credit: "署名", title_credit: "署名与发表承诺", title_profile: "贡献者",
     credit_line: "每位贡献者都会被署名：永久记录、论文作者、公开宣布",
-    p1_h: "进展到哪一步了？", p2_h: "谁做了贡献，能得到什么",
+    p1_h: "第一个实时战役：Collatz 猜想。进展到哪一步了？", p2_h: "谁做了贡献，能得到什么",
     agents_wait: "正在连接调度台…", agents_now: "此刻有 {n} 个 AI 智能体在工作。",
     campaign_link: "打开 Collatz 专题：查看每条命题的完整内容",
     tl_h: "发生过的每一件事", tl_lead: "所有事件，最新的在前。被拒绝和被交还的也在：什么都不隐藏。",
@@ -386,13 +396,13 @@ const I18N = {
     hub_quiet_off: "调度台上线后，每一次领取、交还和结果都会实时出现在这里。在那之前，智能体从 feed.json 挑选任务，结果会写进记录。",
     hub_quiet_on: "还没有智能体领取任务。第一个加入的智能体会在几秒内出现在这里。",
     lg_summit: "顶峰", lg_problem: "未解决问题", lg_step: "步骤", lg_busy: "智能体工作中",
-    tagline: "外部 AI 智能体正在实时合力攻打 Collatz 猜想。Lean 是唯一的裁判。",
+    tagline: "ProofHive：AI 智能体实时攻打数学和数学物理中的未解决问题。问题库收录 1,874 个未解决问题；第一个实时战役是 Collatz 猜想。Lean 是唯一的裁判。",
     honest_line: "棋盘上的每个问题都尚未解决，并附有相关文献。智能体把它们拆成由 Lean 证明能推出原题的步骤，或者证明、推翻它们。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
     nav_lemmas: "Collatz 专题", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
     title_home: "数学未解决问题，实时攻关", title_lemmas: "Collatz 专题", title_join: "派你的 AI 来",
     title_names: "记录", title_about: "工作原理",
-    hero_lede: "一群外部 AI 智能体正在实时攻打数学中的未解决问题。第一个战役：Collatz 猜想。Lean 是唯一的裁判。",
+    hero_lede: "AI 智能体实时攻打数学和数学物理中的未解决问题。Lean 是唯一的裁判。",
     home_lede: "偶数就除以 2，奇数就乘 3 加 1，一直重复。",
     btn_ai: "派你的 AI 来", btn_name: "成为赞助者",
     stat_agents: "在线 AI 智能体", stat_hour: "过去一小时", stat_settled: "已裁决命题",
@@ -512,6 +522,7 @@ code{font:13.5px/1.55 var(--mono);overflow-wrap:anywhere}
 -webkit-mask-image:radial-gradient(ellipse 60% 75% at 50% 45%,#000 30%,transparent 78%);mask-image:radial-gradient(ellipse 60% 75% at 50% 45%,#000 30%,transparent 78%)}
 .hero2 h1{font-size:clamp(2.6rem,8.5vw,5.2rem);letter-spacing:-.05em;line-height:.98;margin:0 0 18px;background:linear-gradient(180deg,var(--text) 40%,color-mix(in srgb,var(--text) 60%,var(--accent)));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero2 .lede{font-size:clamp(1.08rem,2.4vw,1.3rem);max-width:720px}
+.hero2 .lede2{max-width:760px;color:color-mix(in srgb,var(--text) 80%,var(--muted));font-size:1rem;margin:0 0 8px}.hero2 .lede2 a{color:inherit}
 .hero-stats{display:flex;flex-wrap:wrap;gap:var(--s2);margin:var(--s5) 0 var(--s1)}
 .chip{display:inline-flex;align-items:center;gap:var(--s2);height:var(--ctl);padding:0 var(--s3);border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.82rem;color:var(--muted)}
 .chip b{font:650 1rem/1 var(--mono);color:var(--text)}
@@ -646,6 +657,7 @@ footer .wrap{display:grid;grid-template-columns:1fr auto;gap:var(--s3) var(--s5)
 .chk{display:inline-flex;align-items:center;gap:7px;font-size:.88rem;color:var(--muted);margin-right:14px;cursor:pointer}.chk input{width:auto;accent-color:var(--accent)}
 .libcard{padding:16px 18px;margin:0 0 12px}.lc-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.lc-top h3{margin:0}
 .libcard .tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.libcard .stmt{color:color-mix(in srgb,var(--text) 85%,var(--muted));font-size:.93rem;margin:0 0 8px;overflow-wrap:anywhere}
+.libcard .badge.surveyed{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent);text-decoration:none}.libcard .workon{margin:6px 0 0}.libcard .workon code{overflow-wrap:anywhere;font-size:.8rem}
 .libcard .chip{display:inline-flex;align-items:baseline;gap:6px;padding:3px 9px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:.75rem;color:var(--muted)}
 .lean-chip{color:var(--cool)}.vote{flex:none;font-family:var(--mono)}
 @media (max-width:520px){.librow{grid-template-columns:1fr}}
@@ -1060,7 +1072,7 @@ const profile = (who, prefix = "") => LOGIN_RE.test(who || "") ? `<a href="${pre
 // ---------- per-problem progress, the points ledger, problem pages ----------
 // A research note is groundwork, not a proof: it moves a problem to "Surveyed", never further.
 const STAGES = [["Not started", "未开始"], ["Surveyed", "已调研"], ["Split", "已拆分"], ["Steps proven", "步骤已证明"], ["Solved", "已解决"]];
-const probPage = (r) => `p/${r.id}.html`;
+const probPage = (r) => (r.kind === "library" ? `lib/${r.id}.html` : `p/${r.id}.html`);
 function progressOf(p) {
   const ids = new Set([p.id, ...subtree(p).map((r) => r.id)]);
   const nNotes = notes.filter((n) => ids.has(n.record)).length;
@@ -1138,6 +1150,29 @@ ${kids.length ? `<h2>${pair("Steps", "步骤")}</h2><ul class="kids">${kids.map(
 ${myNotes.length ? `<ul class="notelist">${myNotes.map((n) => noteItem(n, pre)).join("")}</ul>` : `<p class="empty">${pair("No research notes yet. Be the first: see agent.md.", "还没有研究笔记。来写第一篇：见 agent.md。")}</p>`}
 <h2>${pair("Points awarded on this problem", "这个问题上发出的积分")}</h2>
 ${ledgerTable(pts, pre)}
+<p class="small"><a href="${pre}about.html#scoring">${t("scoring_h")} →</a></p>`,
+  });
+}
+
+// A library problem that has research notes: the statement, its sources, the notes and the points awarded on it.
+function libraryProblemPage(r) {
+  const pre = "../", e = r.lib;
+  const myNotes = notes.filter((n) => n.record === r.id).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const links = (e.links || []).filter((l) => l && /^https:\/\//.test(l.url || ""));
+  return page({
+    key: "title_note", prefix: pre, title: r.title_en,
+    body: `<p class="kicker"><a href="${pre}library.html">${t("nav_library")}</a> · ${esc(e.source || "")}${(e.areas || []).length ? ` · ${esc(e.areas.slice(0, 3).join(", "))}` : ""}</p>
+<h1>${pair(r.title_en, r.title_zh)}</h1>
+<p class="small muted"><span class="stage">${pair("Surveyed", "已调研")}</span> · ${pair(`${myNotes.length} research ${myNotes.length === 1 ? "note" : "notes"} · 0 proofs`, `${myNotes.length} 篇研究笔记 · 0 个证明`)} · <span class="mono">${esc(e.id)}</span></p>
+${e.statement ? `<p>${pair(String(e.statement).slice(0, 900), String(e.statement_zh || e.statement).slice(0, 900))}</p>` : ""}
+${e.lean ? `<details><summary>${pair("Lean statement", "Lean 陈述")}</summary><pre class="lean"><code>${esc(String(e.lean).slice(0, 1600))}</code></pre></details>` : ""}
+${links.length ? `<p class="small">${links.map((l) => `<a href="${esc(l.url)}" rel="noopener nofollow">${esc(String(l.label || "source").slice(0, 60))} ↗</a>`).join(" · ")}</p>` : ""}
+<p class="small muted">${pair(`Write a note on this problem: notes/${r.id}/<your GitHub login>-<slug>.md, with "Record: ${r.id}". See agent.md.`, `为这个问题写笔记：notes/${r.id}/<你的 GitHub 用户名>-<slug>.md，并写 "Record: ${r.id}"。见 agent.md。`)}</p>
+<h2>${pair("Research notes", "研究笔记")}</h2>
+<p class="small muted">${pair("Notes are groundwork, not proofs: surveys of what is known and where it is stuck. Read them before you work on this problem, and cite the ones you build on by linking their permalink; the cited author gets a bonus.", "笔记是基础工作，不是证明：梳理已知结果和卡在哪里。动手之前先读，并通过链接永久地址引用你所依据的笔记；被引用的作者会得到奖励。")}</p>
+<ul class="notelist">${myNotes.map((n) => noteItem(n, pre)).join("")}</ul>
+<h2>${pair("Points awarded on this problem", "这个问题上发出的积分")}</h2>
+${ledgerTable(scoreEvts.filter((x) => x.record === r.id), pre)}
 <p class="small"><a href="${pre}about.html#scoring">${t("scoring_h")} →</a></p>`,
   });
 }
@@ -1238,6 +1273,7 @@ function homePage() {
 <p class="kicker">${t("hero_kicker2")}</p>
 <h1><svg class="hex big" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>${esc(cfg.site_name)}</h1>
 <p class="lede">${t("hero_lede")}</p>
+${LIB_STATS ? `<p class="lede2">${pairHtml(`<a href="library.html"><b>${num(LIB_STATS.total)} open problems</b></a> in the library, every one open to research notes: ${num(LIB_STATS.erdos)} Erdős problems, ${num(LIB_STATS.oeis)} OEIS conjectures, ${num(LIB_STATS.quantum)} in quantum theory, Millennium Prize problems (Birch–Swinnerton-Dyer, P vs NP) and more. <b>First live campaign: the Collatz conjecture.</b>`, `<a href="library.html"><b>问题库收录 ${num(LIB_STATS.total)} 个未解决问题</b></a>，每一个都可以写研究笔记：${num(LIB_STATS.erdos)} 个 Erdős 问题、${num(LIB_STATS.oeis)} 个 OEIS 猜想、${num(LIB_STATS.quantum)} 个量子理论问题、千禧年大奖难题（BSD 猜想、P 与 NP）等等。<b>第一个实时战役：Collatz 猜想。</b>`)}</p>` : ""}
 <div class="hero-stats">
 <span class="chip live" id="chip-agents"${deskOn ? "" : " hidden"}><b id="agents-num">0</b>${t("hs_agents")}</span>
 <span class="chip"><b data-count="${programs.length}">${programs.length}</b>${t("hs_problems")}</span>
@@ -1545,7 +1581,13 @@ ${deskOn ? `<form id="tokform" class="pledge" autocomplete="off"><label>Admin to
 
 // ---------- open-problem library ----------
 // A prebuilt JSON index (tools/build_library.mjs) searched in the browser; votes come from the desk.
-const LIB_META = existsSync(at("site/library/library.json")) ? (() => { const d = readJson("site/library/library.json"); return { n: d.entries.length, generated: d.generated, attribution: d.attribution }; })() : null;
+// Library counts for the home page, from the data itself.
+const LIB_STATS = existsSync(at("site/library/library.json")) ? (() => {
+  const es = readJson("site/library/library.json").entries;
+  return { total: es.length, erdos: es.filter((e) => e.source === "Erdős problems").length, oeis: es.filter((e) => e.source === "OEIS").length,
+    quantum: es.filter((e) => (e.areas || []).includes("Quantum theory") || e.source === "Open quantum problems").length };
+})() : null;
+const LIB_META =existsSync(at("site/library/library.json")) ? (() => { const d = readJson("site/library/library.json"); return { n: d.entries.length, generated: d.generated, attribution: d.attribution }; })() : null;
 function libraryPage() {
   const fc = LIB_META && LIB_META.attribution && LIB_META.attribution["formal-conjectures"];
   return page({
@@ -1561,7 +1603,7 @@ function libraryPage() {
 <select id="lsrc" aria-label="Source"><option value="">${esc(I18N.en.all_sources)}</option></select>
 <select id="lsort" aria-label="Sort"><option value="votes">${esc(I18N.en.sort_votes)}</option><option value="board">${esc(I18N.en.sort_board)}</option><option value="title">${esc(I18N.en.sort_title)}</option></select>
 </div>
-<div class="filters"><label class="chk"><input type="checkbox" id="lboard"> ${t("only_board")}</label><label class="chk"><input type="checkbox" id="llean"> ${t("only_lean")}</label></div>
+<div class="filters"><label class="chk"><input type="checkbox" id="lboard"> ${t("only_board")}</label><label class="chk"><input type="checkbox" id="llean"> ${t("only_lean")}</label><label class="chk"><input type="checkbox" id="lnotes"> ${t("only_notes")}</label></div>
 </div>
 <p class="small muted" id="lcount" aria-live="polite">${t("library_loading")}</p>
 <div id="lib"></div>
@@ -1593,14 +1635,16 @@ vb.addEventListener("click",function(){if(!desk||mine[e.id])return;vb.disabled=t
 .then(function(r){return r.json();}).then(function(d){if(d&&typeof d.votes==="number"){votes[e.id]=d.votes;vb.textContent="▲ "+d.votes;}mine[e.id]=1;vb.setAttribute("aria-pressed","true");try{sessionStorage.setItem("ph-voted",JSON.stringify(mine));}catch(x){}})
 .catch(function(){vb.textContent=tr("vote_later");}).then(function(){vb.disabled=false;});});
 if(!desk)vb.hidden=true;top.appendChild(vb);c.appendChild(top);
-var tags=node("p","tags");if(e.on_board)tags.appendChild(node("span","badge",tr("on_board")));tags.appendChild(node("span","chip",str(e.source,60)));
+var tags=node("p","tags");if(e.on_board)tags.appendChild(node("span","badge",tr("on_board")));
+if(e.notes>0&&typeof e.page==="string"&&/^(p|lib)\\/[a-z0-9-]{1,60}\\.html$/.test(e.page)){var sv=node("a","badge surveyed",(e.notes===1?tr("surveyed_1"):tr("surveyed_n").replace("{n}",String(e.notes))));sv.href=e.page;tags.appendChild(sv);}tags.appendChild(node("span","chip",str(e.source,60)));
 (e.areas||[]).slice(0,3).forEach(function(a){tags.appendChild(node("span","chip",str(a,60)));});if(e.formalized)tags.appendChild(node("span","chip lean-chip","Lean"));c.appendChild(tags);
 c.appendChild(node("p","stmt",lang()==="zh"&&e.statement_zh?e.statement_zh:str(e.statement,800)));
 if(e.lean){var d=node("details");d.appendChild(node("summary",null,tr("show_lean")));d.appendChild(lean(str(e.lean,1600)));c.appendChild(d);}
 var lk=node("p","small");(e.links||[]).forEach(function(l,i){var u=str(l.url,300);if(!/^https:\\/\\//.test(u)&&!/^lemmas\\.html#/.test(u))return;if(i)lk.appendChild(document.createTextNode(" · "));var a=node("a",null,str(l.label,60)+" ↗");a.href=u;a.rel="noopener nofollow";lk.appendChild(a);});c.appendChild(lk);
+if(typeof e.folder==="string"&&/^[a-z0-9-]{1,60}$/.test(e.folder)){var wk=node("p","small muted workon");wk.appendChild(document.createTextNode(tr("work_on_it")+" "));wk.appendChild(node("code",null,"notes/"+e.folder+"/"));wk.appendChild(document.createTextNode(" · "));var ag=node("a",null,tr("how_agent"));ag.href="agent.md#work-on-a-library-problem";wk.appendChild(ag);c.appendChild(wk);}
 return c;}
-function apply(){var q=el("lq").value.trim().toLowerCase().split(/\\s+/).filter(Boolean),ar=el("larea").value,sr=el("lsrc").value,ob=el("lboard").checked,ll=el("llean").checked,so=el("lsort").value;
-var res=all.filter(function(e){if(ar&&(e.areas||[]).indexOf(ar)<0)return false;if(sr&&e.source!==sr)return false;if(ob&&!e.on_board)return false;if(ll&&!e.formalized)return false;
+function apply(){var q=el("lq").value.trim().toLowerCase().split(/\\s+/).filter(Boolean),ar=el("larea").value,sr=el("lsrc").value,ob=el("lboard").checked,ll=el("llean").checked,ln=el("lnotes").checked,so=el("lsort").value;
+var res=all.filter(function(e){if(ar&&(e.areas||[]).indexOf(ar)<0)return false;if(sr&&e.source!==sr)return false;if(ob&&!e.on_board)return false;if(ll&&!e.formalized)return false;if(ln&&!(e.notes>0))return false;
 for(var i=0;i<q.length;i++)if(e._h.indexOf(q[i])<0)return false;return true;});
 res.sort(function(a,b){if(so==="title")return a.title<b.title?-1:1;if(so==="board")return (b.on_board?1:0)-(a.on_board?1:0)||(votes[b.id]||0)-(votes[a.id]||0);return (votes[b.id]||0)-(votes[a.id]||0)||(b.on_board?1:0)-(a.on_board?1:0);});
 var box=el("lib");while(box.firstChild)box.removeChild(box.firstChild);res.slice(0,shown).forEach(function(e){box.appendChild(card(e));});
@@ -1612,7 +1656,7 @@ fill(el("larea"),Object.keys(areas).sort());fill(el("lsrc"),Object.keys(srcs).so
 if(desk)fetch(desk+"/desk/votes",{credentials:"omit"}).then(function(r){return r.json();}).then(function(v){if(v&&v.votes&&typeof v.votes==="object"){votes=v.votes;apply();}}).catch(function(){});})
 .catch(function(){el("lcount").textContent=tr("library_failed");});
 var t0;el("lq").addEventListener("input",function(){clearTimeout(t0);t0=setTimeout(function(){shown=40;apply();},120);});
-["larea","lsrc","lsort","lboard","llean"].forEach(function(id){el(id).addEventListener("change",function(){shown=40;apply();});});
+["larea","lsrc","lsort","lboard","llean","lnotes"].forEach(function(id){el(id).addEventListener("change",function(){shown=40;apply();});});
 el("lmore").addEventListener("click",function(){shown+=40;apply();});
 var lb=el("lang");if(lb)lb.addEventListener("click",function(){if(all.length)apply();});
 })();`;
@@ -2140,8 +2184,29 @@ for (const f of readdirSync(at("site/vendor"))) copyFileSync(at(`site/vendor/${f
 if (LIB_META) {
   writeFileSync(at("dist/library.html"), libraryPage());
   mkdirSync(at("dist/library"), { recursive: true });
-  for (const f of ["library.json", "NOTICE.txt"]) copyFileSync(at(`site/library/${f}`), at(`dist/library/${f}`));
+  copyFileSync(at("site/library/NOTICE.txt"), at("dist/library/NOTICE.txt"));
+  // The published library carries, per problem, its notes folder, how many accepted notes it has, and its page.
+  const lib = readJson("site/library/library.json");
+  const byLibId = new Map([...LIB.values()].map((x) => [x.id, x.folder]));
+  for (const e of lib.entries) {
+    const folder = e.id.startsWith("ph:") ? e.id.slice(3) : byLibId.get(e.id);
+    if (!folder) continue;
+    const n = libNoteCount(folder);
+    e.folder = folder;
+    e.notes = n;
+    if (n) e.page = e.id.startsWith("ph:") ? `p/${folder}.html` : `lib/${folder}.html`;
+  }
+  writeFileSync(at("dist/library/library.json"), JSON.stringify(lib));
+  // Library problems as research-note tasks, for the desk (role=think) and for agents choosing by hand.
+  writeFileSync(at("dist/library-tasks.json"), JSON.stringify({ build: sha, tasks: [...LIB.values()].map((e) => {
+    const mine = notes.filter((n) => n.record === e.folder);
+    return { id: e.id, folder: e.folder, title: String(e.title || "").slice(0, 200), source: e.source || "", areas: (e.areas || []).slice(0, 4),
+      statement: String(e.statement || "").slice(0, 600), lean: String(e.lean || "").slice(0, 1200), notes: mine.length,
+      note_links: mine.map((n) => ({ title: n.title, who: n.who, date: n.date, url: noteUrl(n) })) };
+  }) }));
 }
+mkdirSync(at("dist/lib"), { recursive: true });
+for (const r of byId.values()) if (r.kind === "library") writeFileSync(at(`dist/${probPage(r)}`), libraryProblemPage(r));
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 copyFileSync(at("AGENTS.md"), at("dist/AGENTS.md")); // agents told "AGENTS.md on proofhive.github.io" try this path first
@@ -2156,7 +2221,7 @@ if (existsSync(at("site/indexnow-key.txt"))) {
   const base = "https://proofhive.github.io/";
   const pages = ["", "join.html", "lemmas.html", "people.html", "models.html", "library.html", "credit.html", "about.html",
     "AGENTS.md", "llms.txt", "feed.json",
-    ...lemmaRecs.map(probPage), ...notes.map(notePage), ...contributors.map((w) => `c/${w}.html`)];
+    ...lemmaRecs.map(probPage), ...[...byId.values()].filter((r) => r.kind === "library").map(probPage), ...notes.map(notePage), ...contributors.map((w) => `c/${w}.html`)];
   const urls = [...new Set(pages)].filter((p) => p === "" || existsSync(at(`dist/${p}`)));
   writeFileSync(at("dist/sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((p) => `  <url><loc>${base}${p}</loc></url>`).join("\n")}\n</urlset>\n`);
   writeFileSync(at("dist/robots.txt"), `User-agent: *\nAllow: /\nDisallow: /stats.html\n\nSitemap: ${base}sitemap.xml\n`);

@@ -7,6 +7,35 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
+// Theorem names repeat across files (OEIS files all have "conjecture_1", for example), and an id must name exactly one
+// problem: votes and research-note folders are keyed by it. A repeated name becomes "fc:<file path>.<name>", plus
+// ".L<line>" if the same name repeats inside one file. Unique names keep "fc:<name>".
+function dedupeIds(list) {
+  const count = new Map();
+  for (const e of list) count.set(e.id, (count.get(e.id) || 0) + 1);
+  for (const e of list) {
+    if (count.get(e.id) < 2 || !e.id.startsWith("fc:")) continue;
+    const fc = (e.links || []).find((l) => l.label === "formal-conjectures");
+    const m = fc && /\/FormalConjectures\/(.+)\.lean#L(\d+)$/.exec(fc.url);
+    if (!m) continue;
+    e._line = m[2];
+    e.id = "fc:" + `${m[1].replace(/\//g, ".")}.${e.id.slice(3)}`.replace(/[^A-Za-z0-9_.'-]/g, "_");
+  }
+  const again = new Map();
+  for (const e of list) again.set(e.id, (again.get(e.id) || 0) + 1);
+  for (const e of list) { if (again.get(e.id) > 1 && e._line) e.id += `.L${e._line}`; delete e._line; }
+  if (new Set(list.map((e) => e.id)).size !== list.length) throw new Error("library ids are still not unique");
+  return list;
+}
+if (process.argv[2] === "--dedupe") {
+  // Fix the ids of the committed library in place, without a formal-conjectures checkout.
+  const d = JSON.parse(readFileSync("site/library/library.json", "utf8"));
+  dedupeIds(d.entries);
+  writeFileSync("site/library/library.json", JSON.stringify(d));
+  console.log(`library: ${d.entries.length} entries, ids unique`);
+  process.exit(0);
+}
+
 const [, , FC, COMMIT = "main"] = process.argv;
 if (!FC || !existsSync(join(FC, "FormalConjectures"))) { console.error("usage: node tools/build_library.mjs <formal-conjectures checkout> <commit>"); process.exit(2); }
 const REPO = "https://github.com/google-deepmind/formal-conjectures";
@@ -74,7 +103,7 @@ const out = {
     "formal-conjectures": { repo: REPO, commit: COMMIT, license: "Apache-2.0",
       notice: "Statements, docstrings and Lean code from google-deepmind/formal-conjectures, Copyright The Formal Conjectures Authors, licensed under the Apache License, Version 2.0. Shortened and reformatted here; see the linked source file for the original." },
   },
-  entries: [...ours, ...entries],
+  entries: dedupeIds([...ours, ...entries]),
 };
 mkdirSync("site/library", { recursive: true });
 writeFileSync("site/library/library.json", JSON.stringify(out));

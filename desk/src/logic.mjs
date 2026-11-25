@@ -16,6 +16,7 @@ export const MAX_LEASES_PER_HANDLE = 5;
 export const MAX_EVENTS = 5000;
 export const FEED_TTL = 60_000;
 export const LEMMAS_TTL = 5 * MINUTE;
+export const LIBRARY_TTL = 10 * MINUTE; // library-tasks.json, the library's open problems as research-note tasks
 export const NEXT_MIN_GAP = 2000;
 export const IP_LIMIT = 30;
 export const IP_WINDOW = MINUTE;
@@ -56,7 +57,9 @@ const REF_RE = /^[a-z0-9.-]{1,100}$/;
 // Library votes ("want this attacked")
 export const VOTE_IDS_CAP = 5000;
 export const VOTES_PER_IP_DAY = 50;
-const VOTE_ID_RE = /^(fc|ph):[A-Za-z0-9_.'-]{1,120}$/;
+// Library ids: "fc:" or "ph:" and a Lean name, which may contain Greek letters and subscripts (fc:moment_isEquiv₃).
+const VOTE_ID_RE = /^(fc|ph):[\p{L}\p{N}_.'«»-]{1,120}$/u;
+const LIB_ID_RE = VOTE_ID_RE;
 
 // Members (sign-up) and GitHub sessions
 export const MEMBER_ROLES = ['ai', 'mathematician', 'sponsor', 'following'];
@@ -197,6 +200,7 @@ export class Desk {
     this.githubApi = String(githubApi).replace(/\/+$/, '');
     this.feedCache = null;
     this.lemmasCache = null;
+    this.libraryCache = null;
     this.lastNext = new Map();
     this.eventsCache = null; // loaded once per instance; the instance serializes all writes
     this.ipHits = new Map();
@@ -776,6 +780,40 @@ export class Desk {
     }
   }
 
+  /** The library's open problems as note tasks (the site's library-tasks.json); [] when it cannot be had. */
+  async libraryTasks() {
+    const now = this.now();
+    if (this.libraryCache && now - this.libraryCache.at < LIBRARY_TTL) return this.libraryCache.tasks;
+    try {
+      const res = await this.fetchFn(`${this.site}/library-tasks.json`);
+      if (!res.ok) throw new Error(`library HTTP ${res.status}`);
+      const data = await res.json();
+      const tasks = (Array.isArray(data && data.tasks) ? data.tasks : [])
+        .filter((t) => t && typeof t.id === 'string' && LIB_ID_RE.test(t.id) && typeof t.folder === 'string' && /^[a-z0-9-]{1,60}$/.test(t.folder));
+      this.libraryCache = { at: now, tasks };
+      return tasks;
+    } catch (e) {
+      if (this.libraryCache) return this.libraryCache.tasks;
+      this.libraryCache = { at: now, tasks: [] };
+      return [];
+    }
+  }
+
+  libraryGap(t, role) {
+    const s = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+    return {
+      kind: 'note',
+      note_file: `notes/${t.folder}/<your GitHub login>-<slug>.md`,
+      library: true,
+      record_line: `Record: ${t.folder}`,
+      help: 'Write a research note on this library problem: see "Work on a library problem" in agent.md. The header line is "Record: <folder>".',
+      role, id: t.id, folder: t.folder, title_en: s(t.title, 200), source: s(t.source, 60),
+      areas: Array.isArray(t.areas) ? t.areas.filter((a) => typeof a === 'string').slice(0, 4).map((a) => a.slice(0, 60)) : [],
+      statement: s(t.statement, 600), lean: s(t.lean, 1200), notes: Number(t.notes) || 0,
+      existing_notes: noteLinks(t), read_first: READ_FIRST,
+    };
+  }
+
   async lemmas() {
     const now = this.now();
     if (this.lemmasCache && now - this.lemmasCache.at < LEMMAS_TTL) return this.lemmasCache.map;
@@ -821,6 +859,11 @@ export class Desk {
     if (mine.length && !another) {
       const events = await this.events();
       for (const l of mine) {
+        if (l.library) {
+          const t = (await this.libraryTasks()).find((x) => x.id === l.task);
+          if (t) return { status: 200, body: { gap: this.libraryGap(t, l.role || 'think'), lease: { id: l.id, expires_at: iso(l.expires) } } };
+          continue;
+        }
         const rec = feed.find((r) => r.id === l.task);
         if (rec && (lemmas.has(rec.statement) || typeof rec.lean === 'string')) {
           return {
@@ -861,6 +904,23 @@ export class Desk {
           (role === 'think' ? (Number(a.notes) || 0) - (Number(b.notes) || 0) : 0) || fewestHolders(a, b) ||
           kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
+      if (role === 'think') {
+        // The library's open problems take research notes too. library=1 asks for one, library=0 never.
+        // Otherwise: a board statement that still needs notes comes first (the live campaign); after that, half the
+        // time a library problem: one that still needs notes and nobody holds, the most voted first, then the fewest notes.
+        const lib = sp.get('library');
+        const boardNeedsNote = pick && (Number(pick.notes) || 0) < NOTE_TASK_BELOW;
+        const all = lib === '1' || (lib !== '0' && !boardNeedsNote) ? await this.libraryTasks() : [];
+        if (lib === '1' || (all.length && (!pick || this.random() < 0.5))) {
+          const votes = (await this.store.get('votes')) || {};
+          const few = (t) => ((Number(t.notes) || 0) < NOTE_TASK_BELOW ? 0 : 1);
+          const tasks = all.filter((t) => !cool.has(t.id) && !held.has(t.id))
+            .sort((a, b) => few(a) - few(b) || (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || (votes[b.id] || 0) - (votes[a.id] || 0) ||
+              (Number(a.notes) || 0) - (Number(b.notes) || 0) || cmp(a.id, b.id));
+          if (tasks.length) return this.lease(now, handle, tasks[0].id, role, this.libraryGap(tasks[0], role), true);
+          if (lib === '1') return { status: 200, body: { gap: null, retry_after_s: NO_TASK_RETRY_S } };
+        }
+      }
     } else if (hard || !feed.some((r) => (r.kind === 'drop' || r.kind === 'step') && r.status === 'open')) {
       // hard=1, or the board has no open steps at all: share the open problems themselves.
       const pool = feed
@@ -889,8 +949,8 @@ export class Desk {
     return this.lease(now, handle, pick.id, role, this.gap(pick, lemmas, events, role));
   }
 
-  async lease(now, handle, task, role, gap) {
-    const lease = { id: this.newId(), handle, task, role, created: now, expires: capped(now, now + LEASE_TTL) };
+  async lease(now, handle, task, role, gap, library = false) {
+    const lease = { id: this.newId(), handle, task, role, created: now, expires: capped(now, now + LEASE_TTL), ...(library ? { library: true } : {}) };
     await this.store.put(`lease:${lease.id}`, lease);
     await this.record({ at: now, handle, task, type: role === 'build' ? 'took' : `took:${role}` });
     return { status: 200, body: { gap, lease: { id: lease.id, expires_at: iso(lease.expires) } } };

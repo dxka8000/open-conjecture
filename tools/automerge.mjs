@@ -22,6 +22,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { checkNote } from "../checker/notes.mjs";
 import { checkProfile } from "../checker/profiles.mjs";
+import { readLibrary } from "../checker/library.mjs";
 
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
@@ -50,6 +51,8 @@ const mainRecords = new Map();
 for (const f of readdirSync("records/collatz")) {
   try { const r = JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")); mainRecords.set(r.id, r); } catch {}
 }
+// Library problems (site/library/library.json on main) take research notes too, under notes/<library folder>/.
+const mainLibrary = readLibrary(".");
 async function fileAtHead(pr, path) {
   const got = await api(`/repos/${pr.head.repo.full_name}/contents/${path}?ref=${pr.head.sha}`);
   return got && got.content ? Buffer.from(got.content, "base64").toString("utf8") : null;
@@ -160,8 +163,8 @@ async function evaluateNote(pr, files, author) {
   const m = files.length === 1 && files[0].status === "added" && /^notes\/([a-z0-9-]{1,60})\/([A-Za-z0-9-]{1,39}-[a-z0-9-]{1,60}\.md)$/.exec(files[0].filename);
   if (!m) return { ok: false, why: "a research note adds exactly one file, notes/<record id>/<your handle>-<slug>.md, and changes nothing else." };
   const [, rid, file] = m;
-  const base = mainRecords.get(rid);
-  if (!base) return { ok: false, why: `record ${rid} does not exist on main.` };
+  const base = mainRecords.get(rid) || mainLibrary.get(rid);
+  if (!base) return { ok: false, why: `there is no record or library problem ${rid} on main (a library problem's folder is its "folder" in https://proofhive.github.io/library/library.json).` };
   if (!file.toLowerCase().startsWith(author.toLowerCase() + "-")) return { ok: false, why: `the file name must start with your GitHub login (${author}-).` };
   const text = await fileAtHead(pr, files[0].filename);
   if (text === null) return { ok: false, why: "the note could not be read." };
@@ -170,7 +173,7 @@ async function evaluateNote(pr, files, author) {
   const age = Math.floor(Date.now() / 864e5) - day(r.note.date);
   if (age < -1 || age > 7) return { ok: false, why: "the note's Date must be within the last 7 days (UTC), as YYYY-MM-DD." };
   const verdict = await reviewVerdict(pr);
-  if (verdict === "ok") return { ok: true, kind: "note", summary: `Research note on ${rid} by ${author}`,
+  if (verdict === "ok") return { ok: true, kind: "note", summary: `Research note on ${mainLibrary.has(rid) ? `library problem ${mainLibrary.get(rid).id}` : rid} by ${author}`,
     accepted: `**ACCEPTED**. The AI review found this research note accurate, on topic and new. It is on the site now, credited to @${author}.` };
   if (verdict === "rejected") {
     await removeLabel(pr, REVIEW.need);

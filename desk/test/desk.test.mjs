@@ -86,6 +86,7 @@ function setup() {
   const remote = { pulls: [], pullsStatus: 200, pullsCalls: 0 };
   const fetchFn = async (url) => {
     if (url === `${SITE}/feed.json`) return json({ records: feed.records });
+    if (url === `${SITE}/library-tasks.json` && remote.library) return json({ tasks: remote.library });
     if (url === LEMMAS_URL) return text(LEMMAS_TEXT);
     if (url === PULLS_URL) {
       remote.pullsCalls++;
@@ -492,4 +493,62 @@ test('think tasks link the notes already accepted for that record, and drop anyt
   assert.equal(a.body.gap.id, 'p-1');
   assert.deepEqual(a.body.gap.existing_notes, [{ title: 'Survey', who: 'nina', date: '2026-11-24', url: 'https://proofhive.github.io/notes/p-1/nina-survey.html' }]);
   assert.match(a.body.gap.read_first, /cite/i);
+});
+
+// ---- library problems as research-note tasks (role=think)
+const LIB = () => [
+  { id: 'fc:erdos_1', folder: 'lib-erdos-1-aaaaaa', title: 'Erdős Problem 1', source: 'Erdős problems', areas: ['Number theory'], statement: 'S1', lean: 'L1', notes: 0, note_links: [] },
+  { id: 'fc:moment_isEquiv₃', folder: 'lib-moment-isequiv3-bbbbbb', title: 'Moments', source: 'Open quantum problems', areas: ['Quantum theory'], statement: 'S2', lean: '', notes: 0,
+    note_links: [{ title: 'Survey', who: 'nina', date: '2026-11-24', url: 'https://proofhive.github.io/notes/lib-moment-isequiv3-bbbbbb/nina-survey.html' }] },
+  { id: 'fc:bad', folder: 'Bad/../x', title: 'bad folder', notes: 0 },
+  { id: 'fc:<script>', folder: 'lib-x-cccccc', title: 'bad id', notes: 0 },
+];
+
+test('library=1 hands out a library problem as a research-note task, most voted first', async () => {
+  const { next, remote, desk } = setup();
+  remote.library = LIB();
+  await desk.store.put('votes', { 'fc:moment_isEquiv₃': 4, 'fc:erdos_1': 1 });
+  const a = await next('alice', '&role=think&library=1');
+  assert.equal(a.status, 200);
+  const g = a.body.gap;
+  assert.equal(g.kind, 'note');
+  assert.equal(g.library, true);
+  assert.equal(g.id, 'fc:moment_isEquiv₃');
+  assert.equal(g.folder, 'lib-moment-isequiv3-bbbbbb');
+  assert.equal(g.note_file, 'notes/lib-moment-isequiv3-bbbbbb/<your GitHub login>-<slug>.md');
+  assert.equal(g.record_line, 'Record: lib-moment-isequiv3-bbbbbb');
+  assert.equal(g.existing_notes.length, 1);
+  assert.match(g.help, /library problem/);
+  // the same agent asking again gets its lease back; another agent gets the next problem
+  const again = await next('alice', '&role=think&library=1');
+  assert.equal(again.body.gap.id, 'fc:moment_isEquiv₃');
+  assert.equal(again.body.lease.id, a.body.lease.id);
+  const b = await next('bob', '&role=think&library=1');
+  assert.equal(b.body.gap.id, 'fc:erdos_1');
+  // malformed entries are never handed out
+  const c = await next('carol', '&role=think&library=1');
+  assert.ok(['fc:moment_isEquiv₃', 'fc:erdos_1'].includes(c.body.gap.id));
+});
+
+test('by default a board statement that still needs notes comes first; library=0 never gives a library problem', async () => {
+  const { next, remote, feed } = setup();
+  remote.library = LIB();
+  feed.records.push(rec('p-1', 'program', 'Prog_P', 900));
+  const a = await next('alice', '&role=think');
+  assert.equal(a.body.gap.id, 'p-1');
+  assert.equal(a.body.gap.library, undefined);
+  for (const r of feed.records) r.notes = 5;
+  let sawLibrary = false, sawBoard = false;
+  for (const h of ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8']) {
+    const g = (await next(h, '&role=think')).body.gap;
+    if (g && g.library) sawLibrary = true; else if (g) sawBoard = true;
+  }
+  assert.ok(sawLibrary && sawBoard, 'once the board has its notes, think tasks mix library problems and board splits');
+  for (const h of ['z1', 'z2', 'z3']) assert.notEqual((await next(h, '&role=think&library=0')).body.gap?.library, true);
+});
+
+test('library=1 with no library available answers no task, not a board task', async () => {
+  const { next } = setup();
+  const a = await next('alice', '&role=think&library=1');
+  assert.equal(a.body.gap, null);
 });
