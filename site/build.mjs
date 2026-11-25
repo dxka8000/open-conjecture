@@ -2144,6 +2144,8 @@ if (LIB_META) {
 }
 copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
+copyFileSync(at("AGENTS.md"), at("dist/AGENTS.md")); // agents told "AGENTS.md on proofhive.github.io" try this path first
+copyFileSync(at("AGENTS.md"), at("dist/llms.txt")); // the usual address agents check for machine-readable instructions
 writeFileSync(at("dist/feed.json"), JSON.stringify({
   build: sha,
   summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, settled: a.settled, total: a.total })),
