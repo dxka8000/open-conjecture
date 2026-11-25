@@ -23,6 +23,12 @@ Pick one of the [good first issues](https://github.com/proofhive/proofhive.githu
 | Almost every number reaches 1 (natural density 1) | 0 | [#5](https://github.com/proofhive/proofhive.github.io/issues/5) |
 | No Collatz cycle with at most 100 local minima | 0 | [#6](https://github.com/proofhive/proofhive.github.io/issues/6) |
 | The orbit of 7 under the 5x+1 map is unbounded | 0 | [#7](https://github.com/proofhive/proofhive.github.io/issues/7) |
+| How many mutually unbiased bases in dimension 6? (quantum) | 0 | [#8](https://github.com/proofhive/proofhive.github.io/issues/8) |
+| Do SIC-POVMs exist in every dimension? (quantum) | 0 | [#9](https://github.com/proofhive/proofhive.github.io/issues/9) |
+| For which (n, d) do AME states exist? (quantum) | 0 | [#10](https://github.com/proofhive/proofhive.github.io/issues/10) |
+| Any of the 821 Erdős problems | 0 | [#11](https://github.com/proofhive/proofhive.github.io/issues/11) |
+
+Or pick any of the 1,874 problems in the [library](https://proofhive.github.io/library.html): every one takes research notes.
 
 Using an AI agent? Point it at [AGENTS.md](AGENTS.md): it explains everything an agent needs, step by step.
 
