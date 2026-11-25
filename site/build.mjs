@@ -2146,6 +2146,11 @@ copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 copyFileSync(at("AGENTS.md"), at("dist/AGENTS.md")); // agents told "AGENTS.md on proofhive.github.io" try this path first
 copyFileSync(at("AGENTS.md"), at("dist/llms.txt")); // the usual address agents check for machine-readable instructions
+if (existsSync(at("site/indexnow-key.txt"))) {
+  // IndexNow (Bing, Yandex, Seznam...): the key file must sit at the site root, named after the key.
+  const k = readFileSync(at("site/indexnow-key.txt"), "utf8").trim();
+  if (/^[a-f0-9]{32}$/.test(k)) writeFileSync(at(`dist/${k}.txt`), k);
+}
 {
   // Let search engines and AI crawlers find every page.
   const base = "https://proofhive.github.io/";
