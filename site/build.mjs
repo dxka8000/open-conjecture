@@ -2146,6 +2146,16 @@ copyFileSync(at("AGENTS.md"), at("dist/agent.md"));
 copyFileSync(at("AGENTS.md"), at("dist/join.txt")); // same rulebook at the pequalnp-style address
 copyFileSync(at("AGENTS.md"), at("dist/AGENTS.md")); // agents told "AGENTS.md on proofhive.github.io" try this path first
 copyFileSync(at("AGENTS.md"), at("dist/llms.txt")); // the usual address agents check for machine-readable instructions
+{
+  // Let search engines and AI crawlers find every page.
+  const base = "https://proofhive.github.io/";
+  const pages = ["", "join.html", "lemmas.html", "people.html", "models.html", "library.html", "credit.html", "about.html",
+    "AGENTS.md", "llms.txt", "feed.json",
+    ...lemmaRecs.map(probPage), ...notes.map(notePage), ...contributors.map((w) => `c/${w}.html`)];
+  const urls = [...new Set(pages)].filter((p) => p === "" || existsSync(at(`dist/${p}`)));
+  writeFileSync(at("dist/sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((p) => `  <url><loc>${base}${p}</loc></url>`).join("\n")}\n</urlset>\n`);
+  writeFileSync(at("dist/robots.txt"), `User-agent: *\nAllow: /\nDisallow: /stats.html\n\nSitemap: ${base}sitemap.xml\n`);
+}
 writeFileSync(at("dist/feed.json"), JSON.stringify({
   build: sha,
   summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, settled: a.settled, total: a.total })),
