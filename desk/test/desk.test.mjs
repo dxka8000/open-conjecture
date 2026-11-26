@@ -610,3 +610,25 @@ test('campaign=collatz keeps the pick in the Collatz campaign; a bad campaign is
   const bad = await next('dave', '&campaign=Bad!');
   assert.equal(bad.status, 400);
 });
+
+// Regression: the live desk once answered an Erdős milestone with Collatz paths (pre-campaign code). Whatever branch picks
+// the task (the hard pool when there is no small task, a re-served lease, hard=1), the paths follow the record's campaign.
+test('an Erdős task never gets Collatz paths, in any branch; /desk/status shows the desk code', async () => {
+  const { next, feed, call } = setup();
+  feed.records.length = 0; // only Erdős records, as on the live board where Collatz has no small tasks
+  withErdos(feed);
+  const check = (g) => {
+    assert.equal(g.campaign, 'erdos');
+    assert.match(g.file, /^OpenConjecture\/Erdos\/Proofs\//);
+    assert.match(g.namespace, /^OpenConjecture\.Erdos\.Proofs\./);
+    assert.equal(g.record, `records/erdos/${g.id}.json`);
+    assert.ok(!JSON.stringify(g).includes('Collatz') && !JSON.stringify(g).includes('collatz'), JSON.stringify(g));
+  };
+  const a = await next('alice');
+  check(a.body.gap);
+  check((await next('alice')).body.gap); // the same lease, served again
+  check((await next('bob', '&hard=1')).body.gap);
+  check((await next('carol', '&role=redteam')).body.gap);
+  const s = await call('GET', '/desk/status');
+  assert.equal(s.body.code, 'campaigns-1');
+});

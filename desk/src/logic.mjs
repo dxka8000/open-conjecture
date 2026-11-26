@@ -3,6 +3,9 @@
 // local Node server call Desk.handle() with the same request shape.
 
 export const DEFAULT_SITE = 'https://proofhive.github.io';
+// Shown by GET /desk/status, so anyone can tell which desk code is deployed without taking a lease.
+// Bump it whenever the shape of a task changes. 'campaigns-1': tasks carry their campaign and its Lean folder.
+export const DESK_CODE = 'campaigns-1';
 export const DEFAULT_LEMMAS_URL =
   'https://raw.githubusercontent.com/proofhive/proofhive.github.io/main/OpenConjecture/Collatz/Lemmas.lean';
 
@@ -1075,6 +1078,7 @@ export class Desk {
     return {
       status: 200,
       body: {
+        code: DESK_CODE,
         agents_now: new Set(live.map((l) => l.handle)).size,
         leases_active: live.length,
         tasks_open: feed ? feed.filter((r) => r.status === 'open').length : null,
