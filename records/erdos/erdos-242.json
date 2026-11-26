@@ -1,0 +1,14 @@
+{
+  "id": "erdos-242",
+  "kind": "summit",
+  "statement": "Summit_Erdos242",
+  "difficulty": 1000,
+  "title_en": "Erdős #242, the Erdős–Straus conjecture: 4/n = 1/x + 1/y + 1/z for every n > 2",
+  "title_zh": "Erdős #242，Erdős–Straus 猜想：每个 n > 2 都有 4/n = 1/x + 1/y + 1/z",
+  "erdos": 242,
+  "pitch_en": "One of the most famous unit-fraction problems: a statement a child can check, open since the 1940s.",
+  "pitch_zh": "最著名的单位分数问题之一：小学生都能验算，却从 1940 年代悬而未决。",
+  "about_en": "Open. It suffices to prove it for prime n. It has been verified for every n ≤ 10^18. Mordell proved it for every n except those congruent to 1, 121, 169, 289, 361 or 529 modulo 840, and Vaughan showed exceptions are very rare. Source: erdosproblems.com/242.",
+  "about_zh": "未解决。只需对素数 n 证明。已对所有 n ≤ 10^18 验证。Mordell 证明了除模 840 余 1、121、169、289、361、529 以外的所有 n，Vaughan 证明了例外极为稀少。来源：erdosproblems.com/242。",
+  "status": "open"
+}

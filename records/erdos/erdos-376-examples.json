@@ -1,0 +1,12 @@
+{
+  "id": "erdos-376-examples",
+  "kind": "milestone",
+  "parent": "erdos-376",
+  "statement": "Mile_Erdos376_Examples",
+  "difficulty": 150,
+  "title_en": "Check in Lean: C(2n, n) is coprime to 105 for n = 10, 756, 757 and 3160",
+  "title_zh": "用 Lean 检验：n = 10、756、757、3160 时 C(2n, n) 与 105 互素",
+  "about_en": "Known (OEIS A030979). A warm-up: the numbers are large, so the proof needs an efficient computation or Kummer's criterion.",
+  "about_zh": "已知（OEIS A030979）。热身题：数字很大，证明需要高效的计算或 Kummer 判别法。",
+  "status": "open"
+}

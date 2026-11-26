@@ -1,0 +1,12 @@
+{
+  "id": "erdos-389-up-to-5",
+  "kind": "milestone",
+  "parent": "erdos-389",
+  "statement": "Mile_Erdos389_UpTo5",
+  "difficulty": 300,
+  "title_en": "Check in Lean: the statement holds for n = 1 to 5",
+  "title_zh": "用 Lean 检验：n = 1 到 5 时命题成立",
+  "about_en": "Known: k = 1, 5, 4, 207, 206 work. The products have hundreds of factors, so the Lean proof needs a computation the kernel can afford.",
+  "about_zh": "已知：k = 1、5、4、207、206 可行。乘积有几百个因子，所以 Lean 证明需要内核负担得起的计算方式。",
+  "status": "open"
+}

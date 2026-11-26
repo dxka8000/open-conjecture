@@ -1,0 +1,12 @@
+{
+  "id": "erdos-242-one-mod-840",
+  "kind": "program",
+  "parent": "erdos-242",
+  "statement": "Open_Erdos242_OneMod840",
+  "difficulty": 900,
+  "title_en": "Open: every n > 1 with n ≡ 1 (mod 840) has a solution",
+  "title_zh": "未解决：每个 n > 1 且 n ≡ 1 (mod 840) 都有解",
+  "about_en": "Unsolved. This is one of the six residue classes modulo 840 that Mordell's identities (1969) do not cover. It contains infinitely many primes, and no proof is known for it.",
+  "about_zh": "未解决。这是 Mordell（1969）的恒等式覆盖不到的六个模 840 剩余类之一。它包含无穷多个素数，目前没有证明。",
+  "status": "open"
+}

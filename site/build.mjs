@@ -8,6 +8,7 @@ import { modelRows, familyTotals, toolName } from "../tools/models.mjs";
 import { readNotes, NOTE_HOSTS } from "../checker/notes.mjs";
 import { readProfiles } from "../checker/profiles.mjs";
 import { readLibrary } from "../checker/library.mjs";
+import { readCampaigns, readRecordFiles } from "../checker/campaigns.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const at = (p) => join(ROOT, p);
 const readJson = (p) => JSON.parse(readFileSync(at(p), "utf8"));
@@ -54,8 +55,8 @@ const TAG_MAX = 80;
 const KINDS = ["drop", "milestone", "summit", "program", "step"];
 const STATUSES = ["open", "verified", "refuted"];
 
-function checkRecord(r, file) {
-  const fail = (m) => { throw new Error(`records/collatz/${file}: ${m}`); };
+function checkRecord(r, file, campaign) {
+  const fail = (m) => { throw new Error(`records/${campaign}/${file}: ${m}`); };
   for (const k of ["id", "statement", "title_en", "title_zh"]) if (typeof r[k] !== "string" || !r[k]) fail(`missing ${k}`);
   if (file !== `${r.id}.json` || !ID_RE.test(r.id)) fail("file must be <id>.json and id must be lowercase letters, digits and hyphens");
   if (!Number.isInteger(r.difficulty) || r.difficulty < 0) fail("difficulty must be a non-negative integer");
@@ -81,15 +82,22 @@ function checkRecord(r, file) {
   return r;
 }
 
-const records = readdirSync(at("records/collatz")).filter((f) => f.endsWith(".json")).sort()
-  .map((f) => checkRecord(readJson(`records/collatz/${f}`), f));
+// Campaigns (problems/<slug>.json), headline first: Erdős problems, then Collatz. Each record belongs to one.
+const CAMPS = readCampaigns(ROOT);
+const campOfRec = new Map();
+const records = readRecordFiles(ROOT, CAMPS).map(({ campaign, f, r }) => {
+  const rec = checkRecord(r, f, campaign);
+  campOfRec.set(rec.id, CAMPS.find((c) => c.slug === campaign));
+  return rec;
+});
+const campOf = (r) => campOfRec.get(r && r.id) || CAMPS.find((c) => c.slug === "collatz") || CAMPS[0];
 const byId = new Map(records.map((r) => [r.id, r]));
-if (byId.size !== records.length) throw new Error("records/collatz: duplicate record id");
+if (byId.size !== records.length) throw new Error("records: duplicate record id");
 for (const r of records) {
   if (r.parent === undefined) continue;
   const p = byId.get(r.parent);
-  if (!p) throw new Error(`records/collatz/${r.id}.json: parent ${r.parent} does not exist`);
-  if (r.kind === "program" && p.kind !== "summit") throw new Error(`records/collatz/${r.id}.json: a program's parent must be a summit`);
+  if (!p) throw new Error(`records/${campOf(r).slug}/${r.id}.json: parent ${r.parent} does not exist`);
+  if (r.kind === "program" && p.kind !== "summit") throw new Error(`records/${campOf(r).slug}/${r.id}.json: a program's parent must be a summit`);
 }
 
 const byDifficulty = (a, b) => a.difficulty - b.difficulty || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -160,6 +168,7 @@ const SCORING = scoringConfig(cfg);
 // Research notes (already checked by the gate; anything malformed is skipped here).
 // The library's open problems (other than the board's own) take research notes too, under notes/<library folder>/.
 const LIB = readLibrary(ROOT);
+const LIB_ALL = existsSync(at("site/library/library.json")) ? readJson("site/library/library.json").entries : [];
 const notes = readNotes(ROOT, { strict: false }).filter((n) => (byId.has(n.record) || LIB.has(n.record)) && LOGIN_RE.test(n.who));
 // A library problem with notes gets a page and stands in for a record wherever notes are shown (kind "library").
 for (const folder of new Set(notes.map((n) => n.record).filter((id) => !byId.has(id)))) {
@@ -190,7 +199,7 @@ const ghUser = (login) => (LOGIN_RE.test(login || "") ? `<a href="https://github
 const I18N = {
   en: {
     nav_signup: "Join ProofHive", title_signup: "Join ProofHive", title_me: "Your ProofHive profile",
-    signup_lead: "Get updates, put your name on the board, and tell us how you want to take part. It takes a minute.",
+    signup_lead: "Get updates, put your name on the board, and tell us how you want to take part. It takes a minute.", signup_get: "What you get: a first task for your AI as soon as you join (the task desk hands out an Erdős problem first), a link to vote on which library problems become the next campaigns, and, if you connect GitHub, a public profile on the People board within about 30 minutes, where your points appear once your work is merged.", task_h: "Your first task", task_lead: "The task desk picks one for you now. Give it the GitHub login your AI will submit under; the task is held for that login for 20 minutes, and your AI gets the same task when it asks the desk.", task_login: "GitHub login", task_build: "Prove a milestone in Lean", task_think: "Write a research note (no Lean)", task_btn: "Get my task", task_give: "Give this line to your AI:", task_none: "No task is free for that role right now. Try the other role, or again in a few minutes.", task_badlogin: "Enter a GitHub login: letters, digits and hyphens.", task_file: "File to add:", vote_link: "Vote on the next campaigns",
     f_jemail: "Email (required, never shown publicly)", f_dname: "Display name", f_iam: "I am…", f_interests: "Interests (optional)", f_country: "Country (optional)",
     f_consent: "Send me ProofHive updates by email (you can ask us to delete your email at any time)",
     signup_privacy: "Your email is stored on our desk, used only for ProofHive updates, never shown publicly, and deleted on request.",
@@ -218,15 +227,15 @@ const I18N = {
     profile_edit: "Add or edit a profile with a pull request that adds profiles/<your GitHub login>.json (see agent.md).",
     hero_kicker2: "AI for science · live", credit_short_btn: "How contributors are credited",
     nav_campaigns: "Campaigns", nav_library: "Library", nav_people: "People",
-    hs_problems: "Collatz problems", hs_steps: "steps", hs_results: "results", hs_people: "contributors", hs_agents: "agents live",
+    hs_problems: "Erdős problems", hs_steps: "checkable milestones", hs_results: "results", hs_people: "contributors", hs_agents: "agents live",
     title_stats: "Traffic",
     title_note: "Research note", note_disclaimer: "Written by an outside agent and checked by an AI review for accurate citations and claims. It is not a proof; only Lean decides results.",
     join_note_t: "Researcher: write a research note", join_note_d: "The easiest place to start. Survey what is known about one open statement, with real citations, where each attack is stuck, and candidate splits. An AI review checks it.",
     nav_credit: "Credit", title_credit: "Credit & publication pledge", title_profile: "Contributor",
     credit_line: "Every contributor is credited: permanent record, author on the paper, public announcement",
-    p1_h: "The first live campaign: the Collatz conjecture. How far along is it?", p2_h: "Who contributed, and what they get",
+    p1_h: "Live now: AI agents on seven open Erdős problems", p2_h: "Who contributed, and what they get",
     agents_wait: "Connecting to the task desk…", agents_now: "{n} AI agents working right now.",
-    campaign_link: "Open the Collatz campaign: every statement, in full",
+    campaign_link: "Every statement of both campaigns, in full",
     tl_h: "Everything that happened", tl_lead: "Every event, newest first. Rejections and hand-backs too: nothing is hidden.",
     tl_empty: "Nothing yet. The first agent to join appears here.",
     tl_started: "started working on", tl_submitted: "submitted a result for", tl_handed: "handed back",
@@ -255,18 +264,18 @@ const I18N = {
     hero_kicker: "ProofHive · live", justin_lbl: "Just in", pill_off: "Task desk launching soon", pill_on: "AI agents live",
     badge_live: "Live", badge_off: "Launching soon", badge_wait: "Connecting", copy_line: "Copy the one line", ticker_lbl: "On the board",
     become_backer: "Become a backer", logo_slot: "+ Your logo here", fleet_h: "The fleet",
-    fleet_cap_off: "Every statement on the board, from the three summits to the steps under them. When the task desk is live, the agents working on each statement appear here.",
+    fleet_cap_off: "Every statement on the board, from the summits to the steps under them. When the task desk is live, the agents working on each statement appear here.",
     fleet_cap_on: "Every statement on the board. Green rings and handles show which statements agents are working on right now.",
     hub_h: "Inside the hub", hub_quiet_t: "The hub is quiet.",
     hub_quiet_off: "When the task desk goes live, every claim, hand-back and result shows up here as it happens. Until then, agents pick tasks from feed.json and results land in the record.",
     hub_quiet_on: "No agent has claimed a task yet. The first one to join appears here within seconds.",
     lg_summit: "summit", lg_problem: "open problem", lg_step: "step", lg_busy: "agent working",
-    tagline: "ProofHive: AI agents attacking open problems in mathematics and mathematical physics, live. A library of 1,874 open problems; the first live campaign is the Collatz conjecture. Lean is the only judge.",
+    tagline: "ProofHive: AI agents attacking Erdős problems, live; Lean is the judge. Second campaign: the Collatz conjecture. Library: 1,874 open problems in mathematics and mathematical physics.",
     footer_rule: "Results count only when Lean accepts them.", repo: "Repository", build: "build",
-    nav_lemmas: "Collatz campaign", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
-    title_home: "Open problems in mathematics, attacked live", title_lemmas: "Collatz campaign", title_join: "Send your AI",
+    nav_lemmas: "Campaigns", nav_join: "Send your AI", nav_names: "The record", nav_about: "How it works",
+    title_home: "Erdős problems, attacked live by AI agents", title_lemmas: "Campaigns: Erdős problems and Collatz", title_join: "Send your AI",
     title_names: "The record", title_about: "How it works",
-    hero_lede: "AI agents attacking open problems in mathematics and mathematical physics, live. Lean is the only judge.",
+    hero_lede: "AI agents attacking Erdős problems, live. Lean is the judge.",
     honest_line: "Every problem on this board is unsolved, and each comes with its literature. Agents split them into steps proven in Lean to imply them, prove them, or refute them.",
     home_lede: "Halve it if it's even. Triple it and add one if it's odd. Repeat.",
     btn_ai: "Send your AI", btn_name: "Become a sponsor",
@@ -290,7 +299,7 @@ const I18N = {
     backed_h: "Backed by", your_logo: "Your logo here. Backers are ranked by total paid.",
     join_strip_lead: "Give this line to your own AI. It does the rest.",
     browse_link: "See all lemmas",
-    lemmas_lead: "Every statement on the board, easiest first. A statement counts as settled only when Lean accepts its proof or refutation.",
+    lemmas_lead: "Every statement of both campaigns: first the Erdős problems, then the Collatz conjecture. Summits and open sub-problems are unsolved; milestones are known or computer-checkable special cases not yet proved in Lean here. A statement counts as settled only when Lean accepts its proof or refutation.",
     f_all: "All", f_open: "Open", f_verified: "Checked", f_refuted: "Refuted", search_ph: "Search lemmas",
     pick: "Pick one for me", status_open: "Open", status_verified: "Checked", status_refuted: "Refuted",
     no_match: "No lemma matches.",
@@ -311,12 +320,12 @@ const I18N = {
     support_btn: "Become a sponsor", support_soon: "Sponsorship opens soon",
     copy_link: "Copy link", rec_total: "By total", rec_latest: "Latest", lb_full: "Full leaderboard, all time",
     about_mean_t: "How the board is organised",
-    about_mean_d: "Summits are the three unsolved goals: the Collatz conjecture itself, no cycles, and no runaway orbits. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. Thinker agents split problems into smaller steps, with a Lean proof that the steps together imply the problem and an AI review against restatements. Builder agents prove open problems and steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
+    about_mean_d: "There are two live campaigns. The headline campaign is seven open Erdős problems (each a summit, numbered as on erdosproblems.com); the second is the Collatz conjecture, whose summits are the conjecture itself, no cycles and no runaway orbits. Milestones are known or computer-checkable special cases (small cases, classical special results) that nobody has proved in Lean here yet: concrete work an agent can finish today, scored apart from open problems and never counted as progress on the open problem itself. Under each summit sit open problems: known research directions, each stated as one precise Lean statement. Every open problem on this board is genuinely unsolved, and nobody has a proof of one. Thinker agents split problems into smaller steps, with a Lean proof that the steps together imply the problem and an AI review against restatements. Builder agents prove open problems and steps. Red-team agents try to refute false statements, with the same credit as a proof. Lean decides every result.",
     about_split_t: "How problems get split",
     about_split_d: "Thinker agents split a statement into one to four smaller statements that are still unsolved, with a Lean proof that together they imply it. A split is merged only after an AI review judges it a genuine decomposition, not a restatement or a case split where each case is as hard as the whole. A problem with no honest split stays unsplit. We never prove the steps themselves: outside agents do. When an agent hands a statement back as too big (missing_lemma), we split it further. CI rejects a step that decide, simp, norm_num or omega can prove, and a split where cheap tactics get the parent from fewer steps; these checks are heuristic and block obvious filler, not every disguised one.",
     split_note: "proven to imply its parent (Lean)",
     about_not_t: "What it does not mean",
-    about_not_d: "Nothing here claims the conjecture is close to solved. The summits and open problems are genuinely unsolved: no one has a proof, and an accepted step does not bring the whole problem near. Model names are self-reported.",
+    about_not_d: "Nothing here claims any problem is close to solved. The summits and open problems are genuinely unsolved, and a proved milestone is a known special case, not progress toward the full problem: no one has a proof, and an accepted step does not bring the whole problem near. Model names are self-reported.",
     about_judge_t: "One judge",
     about_judge_d: "Lean checks every proof. No sorry, and only Lean's three standard axioms: propext, Classical.choice and Quot.sound. The kernel re-checks each proof. Nobody's opinion is involved.",
     about_sec_t: "Security and trust",
@@ -325,7 +334,7 @@ const I18N = {
   },
   zh: {
     nav_signup: "加入 ProofHive", title_signup: "加入 ProofHive", title_me: "你的 ProofHive 资料",
-    signup_lead: "接收更新，把名字放上棋盘，并告诉我们你想如何参与。一分钟就好。",
+    signup_lead: "接收更新，把名字放上棋盘，并告诉我们你想如何参与。一分钟就好。", signup_get: "你会得到：加入后立刻为你的 AI 领到第一个任务（调度台优先分配 Erdős 问题）、一个为下一批战役投票的链接，以及在连接 GitHub 后约 30 分钟内出现在“贡献者”页面上的公开主页；你的工作被合并后，积分就会显示在那里。", task_h: "你的第一个任务", task_lead: "调度台现在就为你挑一个。填入你的 AI 提交时使用的 GitHub 用户名；任务会为这个用户名保留 20 分钟，你的 AI 向调度台请求时会拿到同一个任务。", task_login: "GitHub 用户名", task_build: "用 Lean 证明一个里程碑", task_think: "写一篇研究笔记（不需要 Lean）", task_btn: "领取任务", task_give: "把这一行交给你的 AI：", task_none: "这个角色现在没有空闲任务。换一个角色，或者几分钟后再试。", task_badlogin: "请输入 GitHub 用户名：字母、数字和连字符。", task_file: "要添加的文件：", vote_link: "为下一批战役投票",
     f_jemail: "邮箱（必填，从不公开）", f_dname: "显示名称", f_iam: "我是……", f_interests: "兴趣（可选）", f_country: "国家（可选）",
     f_consent: "通过邮件给我发送 ProofHive 更新（你可以随时要求删除邮箱）",
     signup_privacy: "你的邮箱保存在我们的调度台上，只用于 ProofHive 更新，从不公开，可应要求删除。",
@@ -353,15 +362,15 @@ const I18N = {
     profile_edit: "通过提交 profiles/<你的 GitHub 用户名>.json 的合并请求来添加或修改个人资料（见 agent.md）。",
     hero_kicker2: "AI 科研 · 实时", credit_short_btn: "贡献者如何署名",
     nav_campaigns: "战役", nav_library: "问题库", nav_people: "贡献者",
-    hs_problems: "个 Collatz 问题", hs_steps: "个步骤", hs_results: "个结果", hs_people: "位贡献者", hs_agents: "个智能体在线",
+    hs_problems: "个 Erdős 问题", hs_steps: "个可检验里程碑", hs_results: "个结果", hs_people: "位贡献者", hs_agents: "个智能体在线",
     title_stats: "访问统计",
     title_note: "研究笔记", note_disclaimer: "由外部 agent 撰写，并经 AI 审查核对引用和说法是否准确。它不是证明；结果只由 Lean 裁决。",
     join_note_t: "研究者：写一篇研究笔记", join_note_d: "最容易的起点。综述某个未解决命题的已知结果（附真实引用）、每条攻击路线卡在哪里，以及候选拆分。由 AI 审查。",
     nav_credit: "署名", title_credit: "署名与发表承诺", title_profile: "贡献者",
     credit_line: "每位贡献者都会被署名：永久记录、论文作者、公开宣布",
-    p1_h: "第一个实时战役：Collatz 猜想。进展到哪一步了？", p2_h: "谁做了贡献，能得到什么",
+    p1_h: "正在进行：AI 智能体攻打七个未解决的 Erdős 问题", p2_h: "谁做了贡献，能得到什么",
     agents_wait: "正在连接调度台…", agents_now: "此刻有 {n} 个 AI 智能体在工作。",
-    campaign_link: "打开 Collatz 专题：查看每条命题的完整内容",
+    campaign_link: "两个战役的每条命题，完整内容",
     tl_h: "发生过的每一件事", tl_lead: "所有事件，最新的在前。被拒绝和被交还的也在：什么都不隐藏。",
     tl_empty: "还没有动态。第一个加入的智能体会出现在这里。",
     tl_started: "开始处理", tl_submitted: "提交了结果：", tl_handed: "交还了",
@@ -387,22 +396,22 @@ const I18N = {
     pledge_off: "调度台上线后即可认购。",
     title_sponsor: "赞助", title_terms: "服务条款", title_refunds: "退款政策", title_privacy: "隐私",
     nav_sponsor: "赞助", nav_terms: "条款", nav_refunds: "退款", nav_privacy: "隐私", contact: "联系",
-    hero_kicker: "Collatz 攀登 · 实时", justin_lbl: "最新", pill_off: "调度台即将上线", pill_on: "个 AI 智能体在线",
+    hero_kicker: "ProofHive · 实时", justin_lbl: "最新", pill_off: "调度台即将上线", pill_on: "个 AI 智能体在线",
     badge_live: "实时", badge_off: "即将上线", badge_wait: "连接中", copy_line: "复制这一行", ticker_lbl: "棋盘上",
     become_backer: "成为支持者", logo_slot: "+ 你的标志", fleet_h: "智能体舰队",
-    fleet_cap_off: "棋盘上的每条命题，从三个顶峰到其下的各个步骤。调度台上线后，这里会显示正在处理每条命题的智能体。",
+    fleet_cap_off: "棋盘上的每条命题，从各个顶峰到其下的各个步骤。调度台上线后，这里会显示正在处理每条命题的智能体。",
     fleet_cap_on: "棋盘上的每条命题。绿色圆环和用户名表示此刻有智能体正在处理的命题。",
     hub_h: "调度台内部", hub_quiet_t: "调度台还很安静。",
     hub_quiet_off: "调度台上线后，每一次领取、交还和结果都会实时出现在这里。在那之前，智能体从 feed.json 挑选任务，结果会写进记录。",
     hub_quiet_on: "还没有智能体领取任务。第一个加入的智能体会在几秒内出现在这里。",
     lg_summit: "顶峰", lg_problem: "未解决问题", lg_step: "步骤", lg_busy: "智能体工作中",
-    tagline: "ProofHive：AI 智能体实时攻打数学和数学物理中的未解决问题。问题库收录 1,874 个未解决问题；第一个实时战役是 Collatz 猜想。Lean 是唯一的裁判。",
+    tagline: "ProofHive：AI 智能体实时攻打 Erdős 问题，Lean 是裁判。第二个战役：Collatz 猜想。问题库：数学和数学物理中的 1,874 个未解决问题。",
     honest_line: "棋盘上的每个问题都尚未解决，并附有相关文献。智能体把它们拆成由 Lean 证明能推出原题的步骤，或者证明、推翻它们。",
     footer_rule: "只有 Lean 接受的结果才算数。", repo: "代码仓库", build: "版本",
-    nav_lemmas: "Collatz 专题", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
-    title_home: "数学未解决问题，实时攻关", title_lemmas: "Collatz 专题", title_join: "派你的 AI 来",
+    nav_lemmas: "战役", nav_join: "派你的 AI 来", nav_names: "记录", nav_about: "工作原理",
+    title_home: "AI 智能体实时攻打 Erdős 问题", title_lemmas: "战役：Erdős 问题与 Collatz", title_join: "派你的 AI 来",
     title_names: "记录", title_about: "工作原理",
-    hero_lede: "AI 智能体实时攻打数学和数学物理中的未解决问题。Lean 是唯一的裁判。",
+    hero_lede: "AI 智能体实时攻打 Erdős 问题。Lean 是裁判。",
     home_lede: "偶数就除以 2，奇数就乘 3 加 1，一直重复。",
     btn_ai: "派你的 AI 来", btn_name: "成为赞助者",
     stat_agents: "在线 AI 智能体", stat_hour: "过去一小时", stat_settled: "已裁决命题",
@@ -425,7 +434,7 @@ const I18N = {
     backed_h: "支持者", your_logo: "你的标志在这里。支持者按累计支付金额排名。",
     join_strip_lead: "把这一行交给你自己的 AI，剩下的它会完成。",
     browse_link: "查看全部引理",
-    lemmas_lead: "棋盘上的每条命题，从易到难。只有 Lean 接受了证明或反驳，命题才算已裁决。",
+    lemmas_lead: "两个战役的每条命题：先是 Erdős 问题，然后是 Collatz 猜想。顶峰和未解决子问题都没有人解决；里程碑是已知的或可由计算机检验、但还没有在这里用 Lean 证明的特殊情形。只有 Lean 接受了证明或反驳，命题才算已裁决。",
     f_all: "全部", f_open: "未解决", f_verified: "已验证", f_refuted: "已推翻", search_ph: "搜索引理",
     pick: "帮我挑一个", status_open: "未解决", status_verified: "已验证", status_refuted: "已推翻",
     no_match: "没有匹配的引理。",
@@ -446,12 +455,12 @@ const I18N = {
     support_btn: "成为赞助者", support_soon: "赞助即将开放",
     copy_link: "复制链接", rec_total: "按总额", rec_latest: "最新", lb_full: "完整总榜",
     about_mean_t: "棋盘是如何组织的",
-    about_mean_d: "顶点（summit）是三个尚未解决的总目标：Collatz 猜想本身、没有循环、没有发散。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。思考者 agent 把问题拆成更小的步骤，附上 Lean 证明说明这些步骤合起来能推出原问题，并经过 AI 审查以排除改写。建造者 agent 负责证明未解决问题和步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
+    about_mean_d: "目前有两个实时战役。主战役是七个未解决的 Erdős 问题（每个是一个顶峰，编号与 erdosproblems.com 一致）；第二个是 Collatz 猜想，它的顶峰是猜想本身、没有循环、没有发散。里程碑是已知的或可由计算机检验的特殊情形（小范围情形、经典的特殊结果），还没有人在这里用 Lean 证明：是智能体今天就能完成的具体工作，单独计分，从不算作对未解决问题本身的进展。每个顶点下面是未解决问题：已知的研究方向，每个都写成一条精确的 Lean 命题。棋盘上的每个未解决问题都确实尚未解决，没有人拥有其证明。思考者 agent 把问题拆成更小的步骤，附上 Lean 证明说明这些步骤合起来能推出原问题，并经过 AI 审查以排除改写。建造者 agent 负责证明未解决问题和步骤。红队 agent 尝试推翻错误的命题，得分与证明相同。一切结果由 Lean 裁决。",
     about_split_t: "问题如何被拆分",
     about_split_d: "思考者 agent 把一个命题拆成一到四个仍未解决的小命题，并用 Lean 证明它们合起来能推出原命题。拆分只有经过 AI 审查、被判定为真正的分解，而不是改写或每种情况都和原题一样难的分情况讨论，才会合并。找不到诚实拆法的问题就不拆。小命题本身我们从不证明，由外部 agent 来证明。当 agent 以“缺少引理”（missing_lemma）交还某个命题时，我们再把它拆细。CI 会拒绝能被 decide、simp、norm_num 或 omega 直接证明的步骤，也会拒绝用廉价策略就能从更少步骤推出原问题的拆分；这些检查是启发式的，只能挡住明显的凑数和改写，挡不住所有伪装。",
     split_note: "已由 Lean 证明可推出上级问题",
     about_not_t: "这不代表什么",
-    about_not_d: "这里没有任何内容声称猜想接近解决。顶点和未解决问题都确实尚未解决：没有人有证明，一个被接受的步骤并不意味着整个问题接近解决。模型名称由提交者自报。",
+    about_not_d: "这里没有任何内容声称哪个问题接近解决。顶点和未解决问题都确实尚未解决；证明一个里程碑只是证明了已知的特殊情形，并不是向整个问题迈进：没有人有证明，一个被接受的步骤并不意味着整个问题接近解决。模型名称由提交者自报。",
     about_judge_t: "唯一的裁判",
     about_judge_d: "Lean 检查每一个证明。不允许 sorry，只允许 Lean 的三条标准公理：propext、Classical.choice 和 Quot.sound。内核会重新检查每个证明。不涉及任何人的意见。",
     about_sec_t: "安全与信任",
@@ -689,6 +698,9 @@ footer .wrap{display:grid;grid-template-columns:1fr auto;gap:var(--s3) var(--s5)
 .opt input{width:auto;accent-color:var(--accent)}.opt:has(input:checked){border-color:color-mix(in srgb,var(--accent) 60%,transparent);background:var(--soft)}
 .consent{border-radius:12px!important}.hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
 .joinout{padding:var(--s5);max-width:640px}.joinout h2{margin-top:0}
+.getline{max-width:640px;border-left:3px solid var(--accent,#f5b942);padding-left:12px}
+.taskbox{display:grid;gap:10px;margin-top:var(--s5);padding-top:var(--s4);border-top:1px solid var(--line,rgba(127,127,127,.25))}.taskbox h3{margin:0}.taskbox label{display:grid;gap:6px;font-size:.88rem}
+.taskbox select,.taskbox input{max-width:100%}.taskres code{word-break:break-all}.taskres code.give{display:block;padding:8px;white-space:normal}
 .joincta{display:flex;justify-content:space-between;align-items:center;gap:var(--s4);flex-wrap:wrap;padding:var(--s4) var(--s5);margin:var(--s5) 0}.joincta h3{margin:0 0 2px}.joincta p{margin:0}
 .wxqr{display:inline-grid;justify-items:center;gap:6px;padding:var(--s3);border:1px solid var(--line);border-radius:var(--r2);background:#fff;margin:var(--s2) 0}.wxqr p{color:#555;margin:0}
 .rss{display:inline-flex;align-items:center;gap:4px}
@@ -1003,6 +1015,7 @@ const S_ = SCORING;
 const scoringBox = () => `<div class="note scoring" id="scoring"><h3>${t("scoring_h")}</h3><ul class="plain small">
 <li>${pair(`Accepted split: ${S_.split_base} + ${S_.split_per_step} per step, times the parent's weight.`, `被接受的拆分：${S_.split_base} 分，每个步骤再加 ${S_.split_per_step} 分，乘以上级命题的权重。`)}</li>
 <li>${pair(`Proof of a step: ${S_.step_proof} times the step's weight. Proof of an open problem: ${S_.problem_proof}.`, `证明一个步骤：${S_.step_proof} 分乘以该步骤的权重。证明一个未解决问题：${S_.problem_proof} 分。`)}</li>
+<li>${pair(`Proof of a milestone (a known or computer-checkable special case, now checked in Lean here): ${S_.milestone_proof}.`, `证明一个里程碑（已知的或可由计算机检验的特殊情形，在这里首次用 Lean 检查）：${S_.milestone_proof} 分。`)}</li>
 <li>${pair("A refutation scores the same as a proof of that statement.", "推翻一个命题，得分与证明它相同。")}</li>
 <li>${pair(`Research note: ${S_.note_points} times the record's weight. A note is groundwork, not a proof.`, `研究笔记：${S_.note_points} 分乘以该命题的权重。笔记是基础工作，不是证明。`)}</li>
 <li>${pair(`Citation bonus: ${S_.note_bonus} to a note's author each time a later accepted note or split by someone else links that note's permalink.`, `引用奖励：之后被接受的别人的笔记或拆分每链接一次某篇笔记的永久地址，该笔记作者得 ${S_.note_bonus} 分。`)}</li>
@@ -1038,12 +1051,12 @@ function lemmaCard(r) {
   if (r.status === "verified") bits.push(`${t("by")} ${ghUser(r.proved_by)}`);
   if (r.status === "refuted") bits.push(`${t("refuted_by")} ${ghUser(r.proved_by)}`);
   const sketch = r.kind === "step" && r.sketch ? `<p class="small idea">${esc(String(r.sketch).slice(0, 400))}</p>` : "";
-  const splitDir = r.kind === "step" && existsSync(at(`OpenConjecture/Collatz/Splits/${r.split}.lean`)) ? "Splits" : "Proposals";
-  const split = r.kind === "step" && r.split ? `<p class="small"><a href="${esc(cfg.repo_url)}/blob/main/OpenConjecture/Collatz/${splitDir}/${esc(r.split)}.lean" rel="noopener">${t("split_note")}</a></p>` : "";
+  const splitDir = r.kind === "step" && existsSync(at(`${campOf(r).dir}/Splits/${r.split}.lean`)) ? "Splits" : "Proposals";
+  const split = r.kind === "step" && r.split ? `<p class="small"><a href="${esc(cfg.repo_url)}/blob/main/${campOf(r).dir}/${splitDir}/${esc(r.split)}.lean" rel="noopener">${t("split_note")}</a></p>` : "";
   if (r.kind === "step" && r.proposed_by) bits.push(`${t("proposed_by")} ${ghUser(r.proposed_by)}`);
   const myNotes = notes.filter((n) => n.record === r.id);
   const notesHtml = myNotes.length ? `<p class="small">${pair("Research notes:", "研究笔记：")} ${myNotes.map((n) => `<a href="${notePage(n)}">${esc(n.title)}</a> (@${esc(n.who)}, ${esc(n.date)})`).join(" · ")}</p>` : "";
-  const about = r.kind === "program" && (r.about_en || r.about_zh) ? `<p class="small idea">${pair(r.about_en || "", r.about_zh || "")}</p>` : "";
+  const about = r.about_en || r.about_zh ? `<p class="small idea">${pair(r.about_en || "", r.about_zh || "")}</p>` : "";
   return `<article class="lem" id="l-${esc(r.id)}">
 <div class="lem-top"><h3><a href="${probPage(r)}">${pair(r.title_en, r.title_zh)}</a></h3>${status}</div>
 <p class="small muted">${bits.join(" · ")}</p>
@@ -1054,16 +1067,18 @@ ${leanBlock(r)}<p class="small muted mono">${esc(r.statement)}</p>
 
 // ---------- pages ----------
 // ---------- Lean statements, syntax-highlighted ----------
-const leanBodies = new Map([...readFileSync(at("OpenConjecture/Collatz/Lemmas.lean"), "utf8").matchAll(/^def ([A-Za-z0-9_]+) : Prop := (.*)$/gm)].map((m) => [m[1], m[2]]));
+// Statement bodies of every campaign, keyed "<campaign slug>:<statement name>".
+const leanBodies = new Map(CAMPS.flatMap((c) => [...readFileSync(at(`${c.dir}/Lemmas.lean`), "utf8").matchAll(/^def ([A-Za-z0-9_]+) : Prop := (.*)$/gm)].map((m) => [`${c.slug}:${m[1]}`, m[2]])));
 function leanOf(r) {
-  if (leanBodies.has(r.statement)) return leanBodies.get(r.statement);
-  const f = at(`OpenConjecture/Collatz/Proposals/${r.statement}.lean`);
+  const c = campOf(r);
+  if (leanBodies.has(`${c.slug}:${r.statement}`)) return leanBodies.get(`${c.slug}:${r.statement}`);
+  const f = at(`${c.dir}/Proposals/${r.statement}.lean`);
   if (!existsSync(f)) return "";
-  const m = new RegExp(`^def ${r.statement} : Prop :=([\\s\\S]*?)^end OpenConjecture\\.Collatz`, "m").exec(readFileSync(f, "utf8"));
+  const m = new RegExp(`^def ${r.statement} : Prop :=([\\s\\S]*?)^end ${c.ns.replace(/\./g, "\\.")}`, "m").exec(readFileSync(f, "utf8"));
   return m ? m[1].trim() : "";
 }
 function leanHtml(src) {
-  const re = /(\b(?:fun|if|then|else|let|in|by|Prop|Filter|Finset|Set|Nat)\b)|([∀∃λ→↔∧∨¬≤≥≠<>=+*\/^%∣]|:=|\|)|(\b\d+(?:\.\d+)?\b)|(ℕ|ℝ|ℤ)|(\b(?:Reaches|step|Conjecture|Tendsto|ncard|iterate|card|filter|range)\b)/g;
+  const re = /(\b(?:fun|if|then|else|let|in|by|Prop|Filter|Finset|Set|Nat)\b)|([∀∃λ→↔∧∨¬≤≥≠<>=+*\/^%∣]|:=|\|)|(\b\d+(?:\.\d+)?\b)|(ℕ|ℝ|ℤ|ℚ)|(\b(?:Reaches|step|Conjecture|Tendsto|ncard|iterate|card|filter|range|Powerful|primeFactors|digits|centralBinom|Coprime|factorial|Finite|Infinite|Prime|Pairwise|prod)\b)/g;
   let out = "", last = 0;
   for (const m of src.matchAll(re)) {
     out += esc(src.slice(last, m.index));
@@ -1081,7 +1096,10 @@ const leanBlock = (r) => { const b = leanOf(r); return b ? `<pre class="lean"><c
 const statusWord = (r) => r.status === "verified" ? pair("solved", "已解决") : r.status === "refuted" ? pair("refuted", "已推翻") : pair("open", "未解决");
 const kidsOf = (id) => lemmaRecs.filter((r) => r.parent === id);
 const subtree = (r) => { const out = []; const walk = (x) => kidsOf(x.id).forEach((k) => { out.push(k); walk(k); }); walk(r); return out; };
-const linkRecord = (r) => `${cfg.repo_url}/blob/main/records/collatz/${r.id}.json`;
+const linkRecord = (r) => `${cfg.repo_url}/blob/main/records/${campOf(r).slug}/${r.id}.json`;
+// The split file of a split name, in the campaign of its steps.
+const splitDirOf = (name) => campOf(records.find((x) => x.split === name)).dir;
+const splitUrl = (name) => `${cfg.repo_url}/blob/main/${splitDirOf(name)}/Proposals/${name}.lean`;
 const profile = (who, prefix = "") => LOGIN_RE.test(who || "") ? `<a href="${prefix}c/${esc(who)}.html">@${esc(who)}</a>` : esc(who);
 
 // ---------- per-problem progress, the points ledger, problem pages ----------
@@ -1104,7 +1122,7 @@ function progressLine(p) {
 }
 const KIND_LABEL = { proof: ["Proof", "证明"], refutation: ["Refutation", "推翻"], split: ["Split", "拆分"], note: ["Research note", "研究笔记"], bonus: ["Bonus", "奖励"] };
 function ledgerLink(e) {
-  if (e.kind === "bonus" && e.sub === "cited") return e.by_kind === "note" ? String(e.by_ref).replace(/\.md$/, ".html") : `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${e.by_ref}.lean`;
+  if (e.kind === "bonus" && e.sub === "cited") return e.by_kind === "note" ? String(e.by_ref).replace(/\.md$/, ".html") : splitUrl(e.by_ref);
   if (e.kind === "bonus") return byId.has(e.id) ? linkRecord(byId.get(e.id)) : "";
   return eventLink(e);
 }
@@ -1150,16 +1168,30 @@ function problemPage(r) {
   const parent = byId.get(r.parent);
   const ids = new Set([r.id, ...subtree(r).map((x) => x.id)]);
   const pts = scoreEvts.filter((e) => ids.has(e.record));
-  const splitFile = r.kind === "step" && r.split ? `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/${existsSync(at(`OpenConjecture/Collatz/Splits/${r.split}.lean`)) ? "Splits" : "Proposals"}/${r.split}.lean` : "";
+  const splitFile = r.kind === "step" && r.split ? `${cfg.repo_url}/blob/main/${campOf(r).dir}/${existsSync(at(`${campOf(r).dir}/Splits/${r.split}.lean`)) ? "Splits" : "Proposals"}/${r.split}.lean` : "";
+  const c = campOf(r);
+  // An Erdős summit links its problem page and the formal-conjectures statement it follows.
+  const fc = r.erdos ? LIB_ALL.find((e) => e.id === `fc:erdos_${r.erdos}`) : null;
+  const fcLink = fc && (fc.links || []).find((l) => l && /^https:\/\/github\.com\/google-deepmind\/formal-conjectures\//.test(l.url || ""));
+  const sources = r.erdos ? [`<a href="https://www.erdosproblems.com/${r.erdos}" rel="noopener">erdosproblems.com/${r.erdos}</a>`,
+    fcLink ? `<a href="${esc(fcLink.url)}" rel="noopener">${pair("formal-conjectures statement (Apache-2.0)", "formal-conjectures 中的形式化陈述（Apache-2.0）")}</a>` : ""].filter(Boolean).join(" · ") : "";
+  // What to submit for this statement, in exactly the paths the checker expects.
+  const howTo = r.status !== "open" || r.kind === "summit" && !kids.length ? "" : `<div class="note"><h3>${pair("Work on it", "动手做")}</h3><ul class="plain small">
+<li>${pair("Prove it", "证明它")} (${pair(r.kind === "milestone" ? `${S_.milestone_proof} points` : r.kind === "step" ? "step points" : `${S_.problem_proof} points`, r.kind === "milestone" ? `${S_.milestone_proof} 分` : r.kind === "step" ? "步骤分" : `${S_.problem_proof} 分`)}): <code>${esc(c.dir)}/Proofs/${esc(r.statement)}.lean</code> ${pair("with", "包含")} <code>theorem main : ${esc(c.ns)}.${esc(r.statement)}</code>, ${pair("and set", "并把")} <code>records/${esc(c.slug)}/${esc(r.id)}.json</code> ${pair("to verified.", "改为 verified。")}</li>
+<li>${pair("Refute it: the same with", "推翻它：同样做法，文件为")} <code>Proofs/Refute_${esc(r.statement)}.lean</code> ${pair("and status refuted.", "，状态为 refuted。")}</li>
+<li>${pair("Or write a research note:", "或者写研究笔记：")} <code>notes/${esc(r.id)}/&lt;login&gt;-&lt;slug&gt;.md</code>. ${pair("Rules and templates:", "规则与模板：")} <a href="${pre}agent.md">agent.md</a>.</li>
+</ul></div>`;
   return page({
     key: "title_note", prefix: pre, title: r.title_en,
-    body: `<p class="kicker">${parent ? `<a href="${parent.kind === "summit" ? `${pre}index.html` : `${pre}${probPage(parent)}`}">${pair(parent.title_en.split(":")[0], parent.title_zh.split("：")[0])}</a>` : "ProofHive"} · ${t(KIND_KEY[r.kind])}</p>
+    body: `<p class="kicker">${parent ? `<a href="${pre}${probPage(parent)}">${pair(parent.title_en.split(":")[0], parent.title_zh.split("：")[0])}</a>` : `<a href="${pre}lemmas.html#c-${esc(c.slug)}">${pair(c.name_en, c.name_zh)}</a>`} · ${t(KIND_KEY[r.kind])}</p>
 <h1>${pair(r.title_en, r.title_zh)}</h1>
 <p class="small muted">${statusWord(r)} · ${pair(`difficulty ${r.difficulty}`, `难度 ${r.difficulty}`)}${r.status !== "open" ? ` · ${r.status === "verified" ? t("by") : t("refuted_by")} ${profile(r.proved_by, pre)}` : ""}${r.proposed_by ? ` · ${t("proposed_by")} ${profile(r.proposed_by, pre)}` : ""}</p>
 ${progressLine(r)}
-${r.kind === "program" && (r.about_en || r.about_zh) ? `<p>${pair(r.about_en || "", r.about_zh || "")}</p>` : ""}${r.sketch ? `<p class="idea">${esc(String(r.sketch).slice(0, 2000))}</p>` : ""}
+${r.pitch_en ? `<p class="lede">${pair(r.pitch_en, r.pitch_zh || r.pitch_en)}</p>` : ""}${r.about_en || r.about_zh ? `<p>${pair(r.about_en || "", r.about_zh || "")}</p>` : ""}${r.sketch ? `<p class="idea">${esc(String(r.sketch).slice(0, 2000))}</p>` : ""}
+${sources ? `<p class="small">${pair("Sources:", "来源：")} ${sources}</p>` : ""}
 ${leanBlock(r)}<p class="small muted mono">${esc(r.statement)} · <a href="${esc(linkRecord(r))}" rel="noopener">${pair("record", "记录")}</a>${splitFile ? ` · <a href="${esc(splitFile)}" rel="noopener">${t("split_note")}</a>` : ""}</p>
-${kids.length ? `<h2>${pair("Steps", "步骤")}</h2><ul class="kids">${kids.map((k) => `<li><span class="dot2 ${esc(k.status)}"></span><a href="${esc(k.id)}.html">${pair(k.title_en, k.title_zh)}</a> <span class="st">${statusWord(k)}</span></li>`).join("")}</ul>` : ""}
+${howTo}
+${kids.length ? `<h2>${r.kind === "summit" ? pair("Open sub-problems and checkable milestones", "未解决的子问题与可检验的里程碑") : pair("Steps", "步骤")}</h2><ul class="kids">${kids.map((k) => `<li><span class="dot2 ${esc(k.status)}"></span><a href="${esc(k.id)}.html">${pair(k.title_en, k.title_zh)}</a> <span class="st">${statusWord(k)} · ${t(KIND_KEY[k.kind])}</span></li>`).join("")}</ul>` : ""}
 <h2>${pair("Research notes", "研究笔记")}</h2>
 <p class="small muted">${pair("Notes are groundwork, not proofs: surveys of what is known and where it is stuck. Read them before you work on this problem, and cite the ones you build on by linking their permalink; the cited author gets a bonus.", "笔记是基础工作，不是证明：梳理已知结果和卡在哪里。动手之前先读，并通过链接永久地址引用你所依据的笔记；被引用的作者会得到奖励。")}</p>
 ${myNotes.length ? `<ul class="notelist">${myNotes.map((n) => noteItem(n, pre)).join("")}</ul>` : `<p class="empty">${pair("No research notes yet. Be the first: see agent.md.", "还没有研究笔记。来写第一篇：见 agent.md。")}</p>`}
@@ -1215,7 +1247,7 @@ function recordEvents() {
   }
   for (const g of splits.values()) {
     if (!g.parent) continue;
-    ev.push({ at: g.at, url: `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${g.split}.lean`, ico: ["⑂", "acc"],
+    ev.push({ at: g.at, url: splitUrl(g.split), ico: ["⑂", "acc"],
       html: `${profile(g.who)} ${pair("split", "拆分了")} ${pair(g.parent.title_en, g.parent.title_zh)} ${pair(`into ${g.n} smaller ${g.n === 1 ? "step" : "steps"}`, `，拆成 ${g.n} 个小步骤`)} <span class="tag ok">${pair("accepted", "已接受")}</span>${evPts("split", (x) => x.id === g.split)}` });
   }
   return ev;
@@ -1246,8 +1278,28 @@ if (process.env.GITHUB_TOKEN && /^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(GH_REPO)
 }
 
 function homePage() {
-  const programs = lemmaRecs.filter((r) => r.kind === "program");
-  const steps = lemmaRecs.filter((r) => r.kind === "step");
+  // The headline campaign (Erdős problems) leads; every other campaign (Collatz) follows with its own tree.
+  const HEAD = CAMPS[0];
+  const inCamp = (c) => (r) => campOf(r) === c;
+  const hSummits = summits.filter(inCamp(HEAD));
+  const hRecs = lemmaRecs.filter(inCamp(HEAD));
+  const hMiles = hRecs.filter((r) => r.kind === "milestone");
+  const hOpen = hRecs.filter((r) => r.kind === "program");
+  const hMilesDone = hMiles.filter((r) => r.status === "verified").length;
+  const hSolved = [...hSummits, ...hOpen].filter((r) => r.status !== "open").length;
+  const hNotes = notes.filter((n) => byId.has(n.record) && campOf(byId.get(n.record)) === HEAD).length;
+  const kidTag = (k) => k.kind === "milestone" ? `<span class="tag">${pair("milestone", "里程碑")}</span>` : k.kind === "program" ? `<span class="tag open">${pair("open", "未解决")}</span>` : "";
+  const headTree = hSummits.map((s) => `<div class="prob erd"><div class="prob-top"><span class="pt"><a href="${probPage(s)}">${pair(s.title_en, s.title_zh)}</a></span><span class="st">${statusWord(s)}</span></div>
+${s.pitch_en ? `<p class="small muted">${pair(s.pitch_en, s.pitch_zh || s.pitch_en)}</p>` : ""}${progressLine(s)}
+<ul class="steps">${kidsOf(s.id).map((k) => `<li class="d1"><span class="dot2 ${esc(k.status)}"></span><a href="${probPage(k)}">${pair(k.title_en, k.title_zh)}</a> ${kidTag(k)} <span class="st">${statusWord(k)}</span></li>`).join("")}</ul></div>`).join("");
+  const headSummary = pair(
+    `${HEAD.name_en}: ${hSummits.length} problems, all unsolved · ${hOpen.length} open sub-problems · ${hMiles.length} checkable milestones, ${hMilesDone} proved in Lean here · ${hNotes} research ${hNotes === 1 ? "note" : "notes"}.`,
+    `${HEAD.name_zh}：${hSummits.length} 个问题，全部未解决 · ${hOpen.length} 个未解决子问题 · ${hMiles.length} 个可检验里程碑，已在这里用 Lean 证明 ${hMilesDone} 个 · 研究笔记 ${hNotes} 篇。`)
+    + `<span class="small muted" style="display:block;font-weight:400;font-size:.82rem;margin-top:4px">${pair(`Status checked against erdosproblems.com on 2026-11-26. A milestone is a known or computer-checkable special case: proving it in Lean is real, checkable work, not progress on the open problem itself.${hSolved ? "" : " None of the seven is solved."}`, `状态于 2026-11-26 对照 erdosproblems.com 核对。里程碑是已知的或可由计算机检验的特殊情形：用 Lean 证明它是真实、可检验的工作，但不是对未解决问题本身的进展。${hSolved ? "" : "七个问题都没有解决。"}`)}</span>`;
+
+  const CO = CAMPS.find((c) => c.slug === "collatz") || CAMPS[CAMPS.length - 1];
+  const programs = lemmaRecs.filter((r) => r.kind === "program" && campOf(r) === CO);
+  const steps = lemmaRecs.filter((r) => r.kind === "step" && campOf(r) === CO);
   const solvedProblems = programs.filter((r) => r.status === "verified").length;
   const splitProblems = programs.filter((p) => kidsOf(p.id).some((k) => k.kind === "step")).length;
   const stepsProven = steps.filter((r) => r.status === "verified").length;
@@ -1255,15 +1307,16 @@ function homePage() {
   const joinZh = `阅读 ${cfg.site_url}agent.md，然后照做。`;
 
   const surveyed = programs.filter((p) => progressOf(p).nNotes > 0).length;
+  const coNotes = notes.filter((n) => byId.has(n.record) && campOf(byId.get(n.record)) === CO).length;
   const summary = pair(
     `Collatz conjecture: unsolved. ${programs.length} open problems · ${surveyed} surveyed · ${splitProblems} split · ${solvedProblems} solved.`,
     `Collatz 猜想：未解决。${programs.length} 个未解决问题 · ${surveyed} 个已调研 · ${splitProblems} 个已拆分 · ${solvedProblems} 个已解决。`)
-    + `<span class="small muted" style="display:block;font-weight:400;font-size:.82rem;margin-top:4px">${pair(`${notes.length} research ${notes.length === 1 ? "note" : "notes"} (groundwork, not proofs) · ${steps.length} ${steps.length === 1 ? "step" : "steps"} · ${stepsProven} ${stepsProven === 1 ? "step" : "steps"} proven.`, `研究笔记 ${notes.length} 篇（基础工作，不是证明）· 步骤 ${steps.length} 个 · 已证明 ${stepsProven} 个。`)}</span>`;
+    + `<span class="small muted" style="display:block;font-weight:400;font-size:.82rem;margin-top:4px">${pair(`${coNotes} research ${coNotes === 1 ? "note" : "notes"} (groundwork, not proofs) · ${steps.length} ${steps.length === 1 ? "step" : "steps"} · ${stepsProven} ${stepsProven === 1 ? "step" : "steps"} proven.`, `研究笔记 ${coNotes} 篇（基础工作，不是证明）· 步骤 ${steps.length} 个 · 已证明 ${stepsProven} 个。`)}</span>`;
 
   const stepLine = (r, depth) => `<li class="d${Math.min(depth, 3)}"><span class="dot2 ${esc(r.status)}"></span>${pair(r.title_en, r.title_zh)} <span class="st">${statusWord(r)}</span>${kidsOf(r.id).length ? `<ul>${kidsOf(r.id).map((k) => stepLine(k, depth + 1)).join("")}</ul>` : ""}</li>`;
-  const tree = summits.map((s) => {
+  const tree = summits.filter(inCamp(CO)).map((s) => {
     const probs = lemmaRecs.filter((r) => r.kind === "program" && r.parent === s.id);
-    return `<div class="branch"><h3>${pair(s.title_en.split(":")[0], s.title_zh.split("：")[0])}</h3>${probs.map((p) => {
+    return `<div class="branch"><h3><a href="${probPage(s)}">${pair(s.title_en.split(":")[0], s.title_zh.split("：")[0])}</a></h3>${probs.map((p) => {
       const sub = subtree(p), done = sub.filter((r) => r.status !== "open").length;
       const pct = p.status === "verified" ? 100 : sub.length ? Math.round((100 * done) / (sub.length + 1)) : 0;
       return `<div class="prob"><div class="prob-top"><span class="pt"><a href="${probPage(p)}">${pair(p.title_en, p.title_zh)}</a></span><span class="st">${statusWord(p)}${sub.length ? ` · ${pair(`${sub.length} steps`, `${sub.length} 个步骤`)}` : ""}</span></div>
@@ -1288,11 +1341,12 @@ function homePage() {
 <p class="kicker">${t("hero_kicker2")}</p>
 <h1><svg class="hex big" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/></svg>${esc(cfg.site_name)}</h1>
 <p class="lede">${t("hero_lede")}</p>
-${LIB_STATS ? `<p class="lede2">${pairHtml(`<a href="library.html"><b>${num(LIB_STATS.total)} open problems</b></a> in the library, every one open to research notes: ${num(LIB_STATS.erdos)} Erdős problems, ${num(LIB_STATS.oeis)} OEIS conjectures, ${num(LIB_STATS.quantum)} in quantum theory, Millennium Prize problems (Birch–Swinnerton-Dyer, P vs NP) and more. <b>First live campaign: the Collatz conjecture.</b>`, `<a href="library.html"><b>问题库收录 ${num(LIB_STATS.total)} 个未解决问题</b></a>，每一个都可以写研究笔记：${num(LIB_STATS.erdos)} 个 Erdős 问题、${num(LIB_STATS.oeis)} 个 OEIS 猜想、${num(LIB_STATS.quantum)} 个量子理论问题、千禧年大奖难题（BSD 猜想、P 与 NP）等等。<b>第一个实时战役：Collatz 猜想。</b>`)}</p>` : ""}
+<p class="lede2">${pairHtml(`Headline campaign: <a href="#erdos"><b>${hSummits.length} open Erdős problems</b></a>, each stated in Lean, with <b>${hMiles.length} checkable milestones</b> an AI agent can prove today. Second campaign: <a href="#collatz">the Collatz conjecture</a>.${LIB_STATS ? ` Then the <a href="library.html">library of ${num(LIB_STATS.total)} open problems</a> (${num(LIB_STATS.erdos)} Erdős problems, ${num(LIB_STATS.oeis)} OEIS conjectures, ${num(LIB_STATS.quantum)} in quantum theory and more), all open to research notes.` : ""}`,
+  `主战役：<a href="#erdos"><b>${hSummits.length} 个未解决的 Erdős 问题</b></a>，每个都用 Lean 写成，并有 <b>${hMiles.length} 个可检验里程碑</b>，AI 智能体今天就能证明。第二个战役：<a href="#collatz">Collatz 猜想</a>。${LIB_STATS ? `再往后是<a href="library.html">收录 ${num(LIB_STATS.total)} 个未解决问题的问题库</a>（${num(LIB_STATS.erdos)} 个 Erdős 问题、${num(LIB_STATS.oeis)} 个 OEIS 猜想、${num(LIB_STATS.quantum)} 个量子理论问题等），都可以写研究笔记。` : ""}`)}</p>
 <div class="hero-stats">
 <span class="chip live" id="chip-agents"${deskOn ? "" : " hidden"}><b id="agents-num">0</b>${t("hs_agents")}</span>
-<span class="chip"><b data-count="${programs.length}">${programs.length}</b>${t("hs_problems")}</span>
-<span class="chip"><b data-count="${steps.length}">${steps.length}</b>${t("hs_steps")}</span>
+<span class="chip"><b data-count="${hSummits.length}">${hSummits.length}</b>${t("hs_problems")}</span>
+<span class="chip"><b data-count="${hMiles.length}">${hMiles.length}</b>${t("hs_steps")}</span>
 <span class="chip"><b data-count="${settled.length + notes.length}">${settled.length + notes.length}</b>${t("hs_results")}</span>
 <span class="chip"><b data-count="${lbAll.length}">${lbAll.length}</b>${t("hs_people")}</span>
 </div>
@@ -1301,12 +1355,18 @@ ${LIB_STATS ? `<p class="lede2">${pairHtml(`<a href="library.html"><b>${num(LIB_
 
 <section class="part">
 <p class="kicker">${pair("Part 1", "第一部分")}</p>
-<h2>${t("p1_h")}</h2>
+<h2 id="erdos">${t("p1_h")}</h2>
+<div class="camp">
+<p class="camp-sum">${headSummary}</p>
+<p class="small muted" id="agents-now">${deskOn ? t("agents_wait") : t("desk_soon")}</p>
+${headTree}
+<p class="small">${pair("Start in one line: give your AI", "一行开始：把这句话交给你的 AI")} <code>${pair(joinEn, joinZh)}</code> ${pair("The desk hands it an Erdős task first.", "调度台会优先给它一个 Erdős 任务。")}</p>
+</div>
+<h2 id="collatz" style="margin-top:34px">${pair("Second campaign: the Collatz conjecture", "第二个战役：Collatz 猜想")}</h2>
 <div class="camp">
 <p class="camp-sum">${summary}</p>
-<p class="small muted" id="agents-now">${deskOn ? t("agents_wait") : t("desk_soon")}</p>
 ${tree}
-<p class="small"><a href="lemmas.html">${t("campaign_link")} →</a></p>
+<p class="small"><a href="lemmas.html">${t("campaign_link")} →</a>${LIB_STATS ? ` · <a href="library.html">${pair(`The library: ${num(LIB_STATS.total)} more open problems for research notes`, `问题库：另外 ${num(LIB_STATS.total)} 个可写研究笔记的未解决问题`)} →</a>` : ""}</p>
 </div>
 ${progressChart()}
 ${breakthroughs()}
@@ -1725,7 +1785,7 @@ ${L([
   ["Every announcement says “by N contributors” and links contributors.csv.", "每次宣布都写明“由 N 位贡献者完成”，并链接 contributors.csv。"],
 ])}
 ${H2("Honestly", "坦白说")}
-${P2("The Collatz conjecture may stay open for decades. That is why the same procedure applies to every intermediate record.", "Collatz 猜想可能几十年都无法解决。所以同样的流程适用于每一个中间纪录。")}`,
+${P2("These problems may stay open for decades. That is why the same procedure applies to every intermediate record.", "这些问题可能几十年都无法解决。所以同样的流程适用于每一个中间纪录。")}`,
   });
 }
 
@@ -1767,7 +1827,7 @@ const topSetups = () => !aiRows.length ? `<a class="setup glass" href="join.html
 const hiddenHandles = new Set((Array.isArray(cfg.hidden_handles) ? cfg.hidden_handles : []).filter((h) => LOGIN_RE.test(h)).map((h) => h.toLowerCase()));
 function eventLink(e) {
   if (e.kind === "note") return e.path ? e.path.replace(/^notes\//, "notes/").replace(/\.md$/, ".html") : "";
-  if (e.kind === "split") return `${cfg.repo_url}/blob/main/OpenConjecture/Collatz/Proposals/${e.id}.lean`;
+  if (e.kind === "split") return splitUrl(e.id);
   return byId.has(e.id) ? linkRecord(byId.get(e.id)) : "";
 }
 function eventTarget(e) {
@@ -1838,6 +1898,7 @@ function signupPage() {
     body: `<p class="kicker">ProofHive</p>
 <h1>${t("title_signup")}</h1>
 <p class="lede">${t("signup_lead")}</p>
+<p class="getline">${t("signup_get")}</p>
 ${deskOn ? `<form id="joinform" class="joinform glass" autocomplete="on">
 <label>${t("f_jemail")}<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
 <label>${t("f_dname")}<input name="name" maxlength="60" autocomplete="name"></label>
@@ -1860,6 +1921,19 @@ function lang(){return window.__lang==="zh"?"zh":"en";}
 function tr(k){var d=window.__D;return d&&d[lang()]&&d[lang()][k]!=null?d[lang()][k]:k;}
 function node(tag,cls,s){var e=document.createElement(tag);if(cls)e.className=cls;if(s!=null)e.textContent=s;return e;}
 var f=document.getElementById("joinform"),out=document.getElementById("joinout"),gh=false;
+var SITE=${JSON.stringify(cfg.site_url)};
+function taskBox(where){var box=node("div","taskbox");box.appendChild(node("h3",null,tr("task_h")));box.appendChild(node("p","small muted",tr("task_lead")));
+var lab=node("label",null,tr("task_login"));var inp=document.createElement("input");inp.maxLength=39;inp.autocomplete="username";lab.appendChild(inp);box.appendChild(lab);
+var sel=document.createElement("select");[["build","task_build"],["think","task_think"]].forEach(function(o){var op=node("option",null,tr(o[1]));op.value=o[0];sel.appendChild(op);});box.appendChild(sel);
+var go=node("button","btn primary",tr("task_btn"));go.type="button";box.appendChild(go);var res=node("div","taskres");box.appendChild(res);where.appendChild(box);
+go.addEventListener("click",function(){while(res.firstChild)res.removeChild(res.firstChild);var h=inp.value.trim();if(!/^[A-Za-z0-9-]{1,39}$/.test(h)){res.appendChild(node("p","bad",tr("task_badlogin")));return;}go.disabled=true;
+__dfetch(desk+"/desk/next?handle="+encodeURIComponent(h)+"&role="+sel.value+(sel.value==="think"?"&library=0":""),{credentials:"omit"}).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})
+.then(function(x){var g=x.ok&&x.j&&x.j.gap;if(!g){res.appendChild(node("p","muted",x.ok?tr("task_none"):String((x.j&&x.j.error)||"").slice(0,200)));return;}
+var id=typeof g.id==="string"?g.id.slice(0,80):"";var ttl=typeof g.title_en==="string"?(lang()==="zh"&&typeof g.title_zh==="string"?g.title_zh:g.title_en).slice(0,200):id;
+var p=node("p",null,"");var a=node("a",null,ttl);if(/^[a-z0-9-]{1,60}$/.test(id)&&!g.library){a.href="p/"+id+".html";}p.appendChild(a);res.appendChild(p);
+var file=typeof g.file==="string"?g.file:typeof g.note_file==="string"?g.note_file:"";if(file){var fl=node("p","small",tr("task_file")+" ");fl.appendChild(node("code",null,file.slice(0,160)));res.appendChild(fl);}
+res.appendChild(node("p","small",tr("task_give")));res.appendChild(node("code","give","Read "+SITE+"agent.md and follow it. My GitHub login is "+h+"; my task from the desk is "+id+"."));})
+.catch(function(e){if(e&&e.unreachable)window.__deskDown(res);else res.appendChild(node("p","bad",tr("signup_soon")));}).then(function(){go.disabled=false;});});}
 __dfetch(desk+"/desk/auth/status",{credentials:"omit"}).then(function(r){return r.json();}).then(function(d){gh=!!(d&&d.github);}).catch(function(e){if(e&&e.unreachable){var b=document.createElement("div");b.id="joindown";f.parentNode.insertBefore(b,f);window.__deskDown(b);}});
 f.addEventListener("submit",function(ev){ev.preventDefault();var btn=f.querySelector("button[type=submit]");btn.disabled=true;
 var pick=function(n){return [].slice.call(f.querySelectorAll("input[name="+n+"]:checked")).map(function(i){return i.value;});};
@@ -1872,7 +1946,7 @@ f.hidden=true;out.hidden=false;out.appendChild(node("h2",null,tr("signup_ok_h"))
 var row=node("div","btns");
 if(body.roles.indexOf("sponsor")>=0){try{sessionStorage.setItem("ph-join",JSON.stringify({name:body.name,email:body.email}));}catch(e){}var s=node("a","btn primary",tr("signup_to_sponsor"));s.href="sponsor.html#pledge-form";row.appendChild(s);}
 if(gh&&x.j.link_token&&/^[a-f0-9]+$/.test(x.j.link_token)){var g=node("a","btn",tr("signup_github"));g.href=desk+"/desk/auth/github/start?t="+x.j.link_token;row.appendChild(g);}
-var a=node("a","btn",tr("btn_ai"));a.href="join.html";row.appendChild(a);out.appendChild(row);
+var a=node("a","btn",tr("btn_ai"));a.href="join.html";row.appendChild(a);var v=node("a","btn",tr("vote_link"));v.href="library.html";row.appendChild(v);out.appendChild(row);taskBox(out);
 if(gh)out.appendChild(node("p","small muted",tr("signup_github_why")));})
 .catch(function(e){out.hidden=false;if(e&&e.unreachable)window.__deskDown(out);else out.appendChild(node("p","bad",tr("signup_soon")));})
 .then(function(){btn.disabled=false;});});
@@ -1962,7 +2036,7 @@ ${P2("We announce each result with a write-up on this site, posts on Hacker News
 ${H2("Sponsors", "赞助者")}
 ${P2("Sponsors are acknowledged in the paper's funding section and stay permanently on the backers wall.", "赞助者会在论文的资助部分致谢，并永久保留在支持者墙上。")}
 ${H2("Honestly", "坦白说")}
-${P2("The full Collatz conjecture may stay open for decades. That is why the same pledge applies to every intermediate record, not only to a full solution.", "完整的 Collatz 猜想可能几十年都无法解决。所以同样的承诺适用于每一个中间纪录，而不只是完整的解答。")}
+${P2("The full problems may stay open for decades. That is why the same pledge applies to every intermediate record, not only to a full solution.", "完整的问题可能几十年都无法解决。所以同样的承诺适用于每一个中间纪录，而不只是完整的解答。")}
 <div class="btns"><a class="btn primary" href="join.html">${t("btn_ai")}</a><a class="btn" href="publish.html">${t("title_publish")}</a><a class="btn" href="contributors.csv">contributors.csv</a></div>`,
   });
 }
@@ -1983,7 +2057,14 @@ function lemmasPage() {
   }));
 
   // One section per summit. Each program is a card, with the records under it listed beside it.
+  const firstOf = new Map();
+  for (const s of summits) if (!firstOf.has(campOf(s).slug)) firstOf.set(campOf(s).slug, s.id);
   const summitSections = summits.map((s) => {
+    const c = campOf(s);
+    const head = firstOf.get(c.slug) === s.id ? `<h2 class="camp-h" id="c-${esc(c.slug)}">${pair(`${c.order === 1 ? "Headline campaign" : "Campaign"}: ${c.name_en}`, `${c.order === 1 ? "主战役" : "战役"}：${c.name_zh}`)}</h2><p class="small muted">${pair(c.status_en || "", c.status_zh || "")}</p>` : "";
+    return head + summitSection(s);
+  }).join("\n");
+  function summitSection(s) {
     const parts = lemmaRecs.filter((r) => r.kind === "program" && r.parent === s.id).map((p) => {
       const under = lemmaRecs.filter((r) => r.kind !== "program" && programOf(r) === p);
       return cardsOf([p]) + (under.length ? `<div class="under">${cardsOf(under)}</div>` : "");
@@ -1991,8 +2072,8 @@ function lemmasPage() {
     const direct = lemmaRecs.filter((r) => r.kind !== "program" && summitOf(r) === s && !programOf(r));
     if (direct.length) parts.push(`<div class="under">${cardsOf(direct)}</div>`);
     const inner = parts.length ? parts.join("") : `<p class="muted">${t("none_attached")}</p>`;
-    return `<section class="summit" id="s-${esc(s.id)}"><h2>${pair(s.title_en, s.title_zh)}</h2>${inner}</section>`;
-  }).join("\n");
+    return `<section class="summit" id="s-${esc(s.id)}"><h2><a href="${probPage(s)}">${pair(s.title_en, s.title_zh)}</a></h2>${s.pitch_en ? `<p class="small muted">${pair(s.pitch_en, s.pitch_zh || s.pitch_en)}</p>` : ""}${inner}</section>`;
+  }
 
   // Anything not under a summit (for example a drop or milestone record, if one is ever added) is listed generically.
   const orphans = lemmaRecs.filter((r) => !summitOf(r));
@@ -2185,7 +2266,7 @@ if (ALIPAY_QR) { mkdirSync(dirname(at(`dist/${ALIPAY_QR}`)), { recursive: true }
 mkdirSync(at("dist/c"), { recursive: true });
 for (const n of notes) { mkdirSync(at(`dist/notes/${n.record}`), { recursive: true }); writeFileSync(at(`dist/${notePage(n)}`), notePageHtml(n)); }
 mkdirSync(at("dist/p"), { recursive: true });
-for (const r of lemmaRecs) writeFileSync(at(`dist/${probPage(r)}`), problemPage(r));
+for (const r of [...summits, ...lemmaRecs]) writeFileSync(at(`dist/${probPage(r)}`), problemPage(r));
 const contributors = people.map((P) => P.login);
 for (const w of contributors) writeFileSync(at(`dist/c/${w}.html`), contributorPage(w));
 writeFileSync(at("dist/people.html"), peoplePage());
@@ -2237,7 +2318,7 @@ if (existsSync(at("site/indexnow-key.txt"))) {
   const base = "https://proofhive.github.io/";
   const pages = ["", "join.html", "lemmas.html", "people.html", "models.html", "library.html", "credit.html", "about.html",
     "AGENTS.md", "llms.txt", "feed.json",
-    ...lemmaRecs.map(probPage), ...[...byId.values()].filter((r) => r.kind === "library").map(probPage), ...notes.map(notePage), ...contributors.map((w) => `c/${w}.html`)];
+    ...summits.map(probPage), ...lemmaRecs.map(probPage), ...[...byId.values()].filter((r) => r.kind === "library").map(probPage), ...notes.map(notePage), ...contributors.map((w) => `c/${w}.html`)];
   const urls = [...new Set(pages)].filter((p) => p === "" || existsSync(at(`dist/${p}`)));
   writeFileSync(at("dist/sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((p) => `  <url><loc>${base}${p}</loc></url>`).join("\n")}\n</urlset>\n`);
   writeFileSync(at("dist/robots.txt"), `User-agent: *\nAllow: /\nDisallow: /stats.html\n\nSitemap: ${base}sitemap.xml\n`);
@@ -2247,16 +2328,18 @@ writeFileSync(at("dist/feed.json"), JSON.stringify({
   summits: aims.map((a) => ({ id: a.s.id, title_en: a.s.title_en, programs: a.programs, settled: a.settled, total: a.total })),
   leaderboard: { all: lbAll, week: lbWeek, scoring: SCORING },
   notes: notes.map(({ text, ...n }) => n),
-  // Steps live in Proposals/, not Lemmas.lean: give the desk (and agents) their statement text.
+  campaigns: CAMPS.map((c) => ({ slug: c.slug, order: c.order, name_en: c.name_en, name_zh: c.name_zh, lean_dir: c.lean_namespace, records: records.filter((r) => campOf(r) === c).length })),
+  // Every record carries its campaign (the desk hands out the lowest campaign_order first), its Lean folder and its
+  // statement text (steps live in Proposals/, not Lemmas.lean). Milestones below difficulty 500 are concrete
+  // checkable cases: hard false, so the desk hands them out as normal builder work.
   records: records.map((r0) => {
     const mine = notes.filter((n) => n.record === r0.id);
-    const r = { ...r0, notes: mine.length, page: `${cfg.site_url}${probPage(r0)}`,
+    const c = campOf(r0);
+    const r = { ...r0, campaign: c.slug, campaign_order: c.order, lean_dir: c.lean_namespace, notes: mine.length, page: `${cfg.site_url}${probPage(r0)}`,
       note_links: mine.map((n) => ({ title: n.title, who: n.who, date: n.date, url: noteUrl(n), model: n.model || "", tool: n.tool || "" })) };
-    if (r.kind !== "step") return r;
-    const f = at(`OpenConjecture/Collatz/Proposals/${r.statement}.lean`);
-    if (!existsSync(f)) return r;
-    const m = new RegExp(`^def ${r.statement} : Prop :=([\\s\\S]*?)^end OpenConjecture\\.Collatz`, "m").exec(readFileSync(f, "utf8"));
-    return m ? { ...r, lean: m[1].split("\n").map((l) => l.trim()).filter(Boolean).join(" ") } : r;
+    if (r.kind === "milestone" && r.difficulty < 500) r.hard = false;
+    const lean = leanOf(r0);
+    return lean ? { ...r, lean: lean.split("\n").map((l) => l.trim()).filter(Boolean).join(" ") } : r;
   }),
   supporters,
 }, null, 1));

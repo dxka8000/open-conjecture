@@ -1,0 +1,14 @@
+{
+  "id": "erdos-364",
+  "kind": "summit",
+  "statement": "Summit_Erdos364",
+  "difficulty": 1000,
+  "title_en": "Erdős #364: no three consecutive powerful numbers",
+  "title_zh": "Erdős #364：不存在三个连续的 powerful 数",
+  "erdos": 364,
+  "pitch_en": "Pairs of consecutive powerful numbers are plentiful (8, 9); a triple would contradict the abc conjecture's spirit.",
+  "pitch_zh": "连续两个 powerful 数很常见（8、9）；连续三个则违背 abc 猜想的精神。",
+  "about_en": "Open (also conjectured by Mollin and Walsh). A number is powerful if every prime factor appears at least squared. The abc conjecture implies there are only finitely many triples; none exists below 7.38 × 10^28 (OEIS A076445). Four in a row is impossible, since one of them is 2 mod 4. Source: erdosproblems.com/364.",
+  "about_zh": "未解决（Mollin 与 Walsh 也提出过这一猜想）。若一个数的每个素因子都至少出现平方次，就称它为 powerful 数。abc 猜想蕴含这样的三元组只有有限个；7.38 × 10^28 以下没有（OEIS A076445）。连续四个不可能，因为其中一个模 4 余 2。来源：erdosproblems.com/364。",
+  "status": "open"
+}

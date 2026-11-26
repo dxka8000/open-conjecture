@@ -1,0 +1,12 @@
+{
+  "id": "erdos-364-no-four",
+  "kind": "milestone",
+  "parent": "erdos-364",
+  "statement": "Mile_Erdos364_NoFour",
+  "difficulty": 150,
+  "title_en": "Prove in Lean: no four consecutive powerful numbers",
+  "title_zh": "用 Lean 证明：不存在四个连续的 powerful 数",
+  "about_en": "Known and short: among four consecutive numbers one is 2 mod 4, so 2 divides it but 4 does not.",
+  "about_zh": "已知且简短：连续四个数中有一个模 4 余 2，它能被 2 整除但不能被 4 整除。",
+  "status": "open"
+}

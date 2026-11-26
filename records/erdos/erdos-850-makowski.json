@@ -1,0 +1,12 @@
+{
+  "id": "erdos-850-makowski",
+  "kind": "milestone",
+  "parent": "erdos-850",
+  "statement": "Mile_Erdos850_Makowski",
+  "difficulty": 100,
+  "title_en": "Check in Lean: Makowski's pair 75, 1215 (and 76, 1216) share prime factors",
+  "title_zh": "用 Lean 检验：Makowski 的 75 与 1215（以及 76 与 1216）素因子相同",
+  "about_en": "Known: 75 = 3·5², 1215 = 3⁵·5, 76 = 2²·19, 1216 = 2⁶·19. A first task. A Lean proof already exists elsewhere (Ren, 2026); this board has none yet.",
+  "about_zh": "已知：75 = 3·5²，1215 = 3⁵·5，76 = 2²·19，1216 = 2⁶·19。入门题。别处已有 Lean 证明（Ren，2026），本站还没有。",
+  "status": "open"
+}

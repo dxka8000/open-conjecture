@@ -1,0 +1,12 @@
+{
+  "id": "erdos-376-kummer",
+  "kind": "milestone",
+  "parent": "erdos-376",
+  "statement": "Mile_Erdos376_Kummer",
+  "difficulty": 500,
+  "title_en": "Prove in Lean: an odd prime p divides C(2n, n) unless every base-p digit of n is below p/2",
+  "title_zh": "用 Lean 证明：奇素数 p 不整除 C(2n, n) 当且仅当 n 的 p 进制每位都小于 p/2",
+  "about_en": "Known (Kummer's theorem: adding n + n in base p has no carry). This is the bridge from the binomial coefficient to digits.",
+  "about_zh": "已知（Kummer 定理：在 p 进制下做 n + n 没有进位）。这是从二项式系数到数字问题的桥梁。",
+  "status": "open"
+}

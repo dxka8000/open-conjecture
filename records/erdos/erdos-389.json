@@ -1,0 +1,14 @@
+{
+  "id": "erdos-389",
+  "kind": "summit",
+  "statement": "Summit_Erdos389",
+  "difficulty": 1000,
+  "title_en": "Erdős #389: for every n, n(n+1)⋯(n+k−1) divides (n+k)⋯(n+2k−1) for some k",
+  "title_zh": "Erdős #389：对每个 n，存在 k 使 n(n+1)⋯(n+k−1) 整除 (n+k)⋯(n+2k−1)",
+  "erdos": 389,
+  "pitch_en": "A divisibility race between two blocks of consecutive numbers, where the smallest k jumps wildly (n = 6 needs k = 2475).",
+  "pitch_zh": "两段连续整数乘积之间的整除比赛，最小的 k 跳动剧烈（n = 6 需要 k = 2475）。",
+  "about_en": "Open (asked by Erdős and Straus). For n = 2, k = 5 works; for n = 3, k = 4. Bhavik Mehta computed the minimal k for n ≤ 18 (OEIS A375071); our own computation gives 1, 5, 4, 207, 206, 2475, 984 for n = 1 to 7. Source: erdosproblems.com/389.",
+  "about_zh": "未解决（Erdős 与 Straus 提出）。n = 2 时 k = 5 可行；n = 3 时 k = 4。Bhavik Mehta 计算了 n ≤ 18 的最小 k（OEIS A375071）；我们自己的计算给出 n = 1 到 7 时为 1、5、4、207、206、2475、984。来源：erdosproblems.com/389。",
+  "status": "open"
+}

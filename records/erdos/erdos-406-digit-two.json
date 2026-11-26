@@ -1,0 +1,12 @@
+{
+  "id": "erdos-406-digit-two",
+  "kind": "program",
+  "parent": "erdos-406",
+  "statement": "Open_Erdos406_DigitTwo",
+  "difficulty": 900,
+  "title_en": "Open: 2^n has a digit 2 in base 3 for every n ≥ 9",
+  "title_zh": "未解决：每个 n ≥ 9，2^n 的三进制都含数字 2",
+  "about_en": "Unsolved. This stronger form implies Erdős #406. It is what the computations suggest: n = 8 (256) is the last power of 2 without a digit 2.",
+  "about_zh": "未解决。这个更强的形式蕴含 Erdős #406，也是计算结果所提示的：n = 8（256）是最后一个不含数字 2 的 2 的幂。",
+  "status": "open"
+}

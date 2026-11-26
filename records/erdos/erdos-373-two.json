@@ -1,0 +1,12 @@
+{
+  "id": "erdos-373-two",
+  "kind": "program",
+  "parent": "erdos-373",
+  "statement": "Open_Erdos373_Two",
+  "difficulty": 900,
+  "title_en": "Open (Surányi): 10! = 7!·6! is the only n! = a!·b! with n − 1 > a ≥ b ≥ 2",
+  "title_zh": "未解决（Surányi）：满足 n − 1 > a ≥ b ≥ 2 的 n! = a!·b! 只有 10! = 7!·6!",
+  "about_en": "Unsolved: Surányi's conjecture, the two-factorial case of Erdős #373. Erdős proved a ≥ n − 5 log log n for any such solution.",
+  "about_zh": "未解决：Surányi 猜想，即 Erdős #373 的两个阶乘情形。Erdős 证明了任何这样的解都满足 a ≥ n − 5 log log n。",
+  "status": "open"
+}

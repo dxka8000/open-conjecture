@@ -1,0 +1,14 @@
+{
+  "id": "erdos-406",
+  "kind": "summit",
+  "statement": "Summit_Erdos406",
+  "difficulty": 1000,
+  "title_en": "Erdős #406: only finitely many powers of 2 use just the digits 0 and 1 in base 3",
+  "title_zh": "Erdős #406：三进制下只用数字 0 和 1 的 2 的幂只有有限个",
+  "erdos": 406,
+  "pitch_en": "Two bases fighting: a simple digit question about 2^n in base 3 that nobody can settle.",
+  "pitch_zh": "两个进制的较量：关于 2^n 三进制数字的简单问题，至今无人能解决。",
+  "about_en": "Open. The only known examples are 1, 4 and 256 (n = 0, 2, 8). Saye (2022) computed that 2^n contains every ternary digit for 16 ≤ n ≤ 5.9 × 10^21. Narkiewicz (1980) bounded how often it can happen. Source: erdosproblems.com/406.",
+  "about_zh": "未解决。已知的例子只有 1、4、256（n = 0、2、8）。Saye（2022）计算了 16 ≤ n ≤ 5.9 × 10^21 时 2^n 的三进制包含全部三个数字。Narkiewicz（1980）给出了出现次数的上界。来源：erdosproblems.com/406。",
+  "status": "open"
+}

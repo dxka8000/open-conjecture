@@ -1,0 +1,14 @@
+{
+  "id": "erdos-850",
+  "kind": "summit",
+  "statement": "Summit_Erdos850",
+  "difficulty": 1000,
+  "title_en": "Erdős #850, the Erdős–Woods question: two numbers whose three successors share prime factors",
+  "title_zh": "Erdős #850，Erdős–Woods 问题：两个数及其后继三项的素因子分别相同",
+  "erdos": 850,
+  "pitch_en": "For two consecutive numbers there are examples like 75, 1215; for three, nobody has found one or ruled it out.",
+  "pitch_zh": "连续两项已有例子（如 75 与 1215）；连续三项，既没人找到例子，也没人证明不存在。",
+  "about_en": "Open (a yes/no question: an example settles it, and so does a proof that none exists; a Lean refutation counts). For x, x+1 there is the family x = 2(2^r − 1), y = x(x + 2), and Makowski's pair 75, 1215. Shorey and Tijdeman showed a strong form of the abc conjecture rules out three. Source: erdosproblems.com/850.",
+  "about_zh": "未解决（是非题：找到例子能解决它，证明不存在也能；用 Lean 推翻同样计分）。两项的情形有族 x = 2(2^r − 1)、y = x(x + 2)，以及 Makowski 的 75 与 1215。Shorey 与 Tijdeman 证明了 abc 猜想的某个强形式排除三项的情形。来源：erdosproblems.com/850。",
+  "status": "open"
+}

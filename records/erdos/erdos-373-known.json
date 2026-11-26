@@ -1,0 +1,12 @@
+{
+  "id": "erdos-373-known",
+  "kind": "milestone",
+  "parent": "erdos-373",
+  "statement": "Mile_Erdos373_Known",
+  "difficulty": 100,
+  "title_en": "Check in Lean: Hickerson's four solutions really are solutions",
+  "title_zh": "用 Lean 检验：Hickerson 的四个解确实是解",
+  "about_en": "Known. A first task: four factorial identities, plus the side conditions.",
+  "about_zh": "已知。入门题：四个阶乘等式，加上附带条件。",
+  "status": "open"
+}

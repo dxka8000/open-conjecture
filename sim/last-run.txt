@@ -2,7 +2,9 @@ Note: lines tagged [reviewer stub] test the review layer, not the gate. Their ve
 a deterministic stand-in for the scheduled AI review, not from the real model. Lines tagged [gate] confirm that those
 near misses pass the gate, by design.
 
-PASS  board has only unsolved statements at start (open problems and their steps)  (5 open statements)
+PASS  the feed lists the Erdős campaign first, then Collatz, and gives every record its campaign and Lean folder
+PASS  seven Erdős summits; every Erdős milestone below difficulty 500 is marked hard false for builders
+PASS  board has only unsolved statements at start (open problems and their steps) plus not-yet-proved milestones  (24 open statements)
 PASS  every open problem is unsplit or split into 1 to 4 steps  (0 steps under 5 open problems)
 PASS  every step names a split file that exists
 PASS  the real gate writes one reduction check per split
@@ -10,16 +12,16 @@ PASS  a step that restates its parent word for word is rejected by the gate  (RE
 PASS  a step that is just another statement's name is rejected  (REJECTED: Step_Alias is just the statement Open_DensityOne)
 PASS  the review role is gone (400)
 PASS  desk gives a thinker a note task first (no notes yet): kind note and the note file  (notes/open-coefficient-stopping/<your GitHub login>-<slug>.md)
-PASS  a valid split passes the checks, gets needs-review and is not merged yet  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s), 0 prof)
+PASS  a valid split passes the checks, gets needs-review and is not merged yet  (records ok; 2 campaign(s), 36 record(s), 0 settled result(s), 1 split(s) to chec)
 PASS  an outsider cannot self-apply review-ok (label and verdict ignored)
 PASS  a review-ok for a different commit does not count
 PASS  a genuine split merges after the owner's review-ok for its commit
-PASS  the merged tree still passes the real gate (1 split checked)  (records ok; 0 settled result(s), 1 split(s) to check, 0 research note(s), 0 profile(s))
+PASS  the merged tree still passes the real gate (1 split checked)  (records ok; 2 campaign(s), 36 record(s), 0 settled result(s), 1 split(s) to check, 0 research note(s), 0 profile(s))
 PASS  a disguised restatement passes the mechanical checks
 PASS  the AI review rejects the restatement and it is not merged
 PASS  a split with a trivial step fails CI (triviality check, scripted) and is not merged
 PASS  a second split of the same statement is never merged  (The Lean checker passed, but this pull request can't be merged automatically: a )
-PASS  a well-formed research note passes the gate and waits for the AI review  (records ok; 0 settled result(s), 1 split(s) to check, 1 research note(s), 0 prof)
+PASS  a well-formed research note passes the gate and waits for the AI review  (records ok; 2 campaign(s), 36 record(s), 0 settled result(s), 1 split(s) to chec)
 PASS  a good research note merges after the review-ok
 PASS  a note citing another note by its permalink merges
 PASS  a note with a fake citation passes the format check
@@ -30,12 +32,12 @@ PASS  planted error rejected: Tao 2019 cited as natural density (true: logarithm
 PASS  planted error rejected: Terras cited with the wrong year (1978; true: 1976)  (REJECTED: notes/open-five-x-plus-one/sim-mallory-terras-year.md: the citation of Terras, "A stopping time problem on the positive integers" )
 PASS  [reviewer stub] control accepted: Krasikov-Lagarias stated with its hypothesis
 PASS  [reviewer stub] control accepted: Shamazov-Talambutsa stated as positive density
-PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Krasikov-Lagarias with the exponent right (0.84) but "for all x" instead of "for all sufficiently large x"  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
+PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Krasikov-Lagarias with the exponent right (0.84) but "for all x" instead of "for all sufficiently large x"  (records ok; 2 campaign(s), 36 record(s), 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
 PASS  [reviewer stub, not the real model] near miss rejected by the review and not merged: Krasikov-Lagarias with the exponent right (0.84) but "for all x" instead of "for all sufficiently large x"  (Krasikov and Lagarias (2003): the source proves this only for all sufficiently large x; the Claim drops that hypothesis)
-PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
+PASS  [gate] near miss passes the gate (by design, the gate cannot see it): Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (records ok; 2 campaign(s), 36 record(s), 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
 PASS  [reviewer stub, not the real model] near miss rejected by the review and not merged: Shamazov-Talambutsa's positive density upgraded to density 1 / almost all  (Shamazov and Talambutsa (2025): the source proves positive density, not almost all / density 1)
 PASS  the desk hands out a library problem as a note task (library=1), with its folder and note file  (fc:Arxiv.1207.5099.SubprimeFibonacci.conjecture -> lib-arxiv-1207-5099-subprimefibonacci-conjecture-2176fe)
-PASS  a note on a library problem passes the same gate and waits for the AI review  (records ok; 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
+PASS  a note on a library problem passes the same gate and waits for the AI review  (records ok; 2 campaign(s), 36 record(s), 0 settled result(s), 1 split(s) to check, 3 research note(s), 0 profile(s))
 PASS  after the review-ok the library note merges into notes/<folder>/
 PASS  a note in a folder that is no record and no library problem fails the gate  (REJECTED: notes/lib-made-up-000000/sim-mallory-x.md: no record or library problem lib-made-up-000000)
 PASS  a note with HTML or script fails the gate  (REJECTED: notes/open-five-x-plus-one/sim-mallory-html.md: HTML is not allowed: "<" may not)
@@ -47,10 +49,10 @@ PASS  a profile with a link to the wrong site fails the gate
 PASS  a pull request that adds an in-house split file is never merged
 PASS  a proof that also weakens the statement in Lemmas.lean is never merged
 PASS  site build accepts the merged split
-PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g2)
-PASS  a second builder gets a different step  (step-sim-g1)
+PASS  desk gives a builder a task (a step, or an open problem when nothing is split)  (step-sim-g1)
+PASS  a second builder gets a different step  (step-sim-g2)
 PASS  heartbeat extends a live lease
-PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG1.lean)
+PASS  red team is sent to the step reported as false  (OpenConjecture/Collatz/Proofs/Refute_Step_SimG2.lean)
 PASS  hard=1 gives an open problem  (open-coefficient-stopping)
 PASS  a missing_lemma hand-back is visible to the in-house splitter  (open-coefficient-stopping)
 PASS  a proof Lean rejects is REJECTED and not merged
@@ -59,7 +61,18 @@ PASS  a proof that tries to run code during the check is rejected by the gate
 PASS  a proof Lean accepts is ACCEPTED and merged
 PASS  a second proof of a settled step is not merged
 PASS  a refutation is ACCEPTED and the step goes to the graveyard
+PASS  with no campaign given, a builder gets an Erdős milestone first, with Erdős paths  (erdos-242-even)
+PASS  a thinker with no campaign given gets an Erdős statement to write a note on  (erdos-242-one-mod-840)
+PASS  an Erdős proof filed under the Collatz folder is refused  (**REJECTED** by the Lean checker at 283965d. The reason is in the run log: http://sim/run
+)
+PASS  an Erdős milestone proof Lean accepts is ACCEPTED and merged
+PASS  the merged tree passes the real gate with both campaigns  (records ok; 2 campaign(s), 36 record(s), 3 settled result(s), 1 split(s) to check, 3 research note(s), 1 profile(s))
+PASS  Verified.lean ties the milestone to its Erdős statement
 PASS  site build after results
+PASS  points: an Erdős milestone proof scores 50 (not the 1000 of an open problem)  (erin 50)
+PASS  the homepage shows 1 milestone proved in Lean here; the milestone page says who proved it
+PASS  each Erdős summit page links erdosproblems.com and the formal-conjectures statement, and lists its milestones
+PASS  the sign-up page says in one sentence what you get, and offers a first task from the desk
 PASS  the profile page shows the escaped display name and the directory lists it
 PASS  points: a research note on an open problem scores 10, and being cited by a later note adds 5  (nina 15, omar 10)
 PASS  the problem page lists both notes with a citation line; Nina's ledger shows the rule and the citation bonus
@@ -67,7 +80,7 @@ PASS  the homepage counts the noted problem as surveyed, shows +10 pts on the ti
 PASS  points: a note on a library problem scores 10 (weight 1)  (lena 10)
 PASS  the library problem gets its own page listing the note, and the library marks it surveyed with 1 note  (fc:Arxiv.1207.5099.SubprimeFibonacci.conjecture notes 1)
 PASS  the board's own progress is unchanged by a library note (still 1 surveyed of the board's problems)
-PASS  the home page leads with the library and the live Collatz campaign, with counts taken from the data
+PASS  the home page leads with the Erdős campaign, then Collatz, then the library, with counts taken from the data
 PASS  the desk feed carries the note permalinks for each record
 PASS  the site renders the merged note escaped, and lists it on the timeline  (open-five-x-plus-one)
 PASS  the note page shows each citation's Claim and Where on their own lines
@@ -85,7 +98,7 @@ PASS  sponsor sync runs  (stripe sync: 3 new payments, 2 new supporters, 2 suppo
 PASS  same email merges and sums ($1,125), unpaid ignored
 PASS  no email stored anywhere in ledger/
 PASS  sponsor sync is idempotent
-PASS  desk status counts activity  (recent 14)
+PASS  desk status counts activity  (recent 18)
 PASS  lemmas page marks every step as proven to imply its parent
 PASS  home page lists the refuted step in the graveyard
 PASS  home page leaderboard shows the prover and the red team
@@ -94,11 +107,11 @@ PASS  the homepage has a Join ProofHive button and the RSS feed lists accepted r
 PASS  home page CSP connects only to itself and the desk
 PASS  every desk request on the site goes through the timeout wrapper (__dfetch)
 PASS  the timeout is 6 seconds
-PASS  a desk that never answers is given up on after the timeout, as unreachable  (83 ms)
+PASS  a desk that never answers is given up on after the timeout, as unreachable  (82 ms)
 PASS  a blocked connection (network error) also counts as unreachable
 PASS  an HTTP error from a reachable desk is passed through, not shown as blocked
 PASS  the fallback explains in both languages and links the GitHub repository and a new issue, with no email address  (<p><span data-lang="en">Our sign-up service isn&#39;t reachable from your networ)
 PASS  sign-up, votes, pledges and the profile page show the fallback when the desk is unreachable; live counts fall back to the build's numbers
-PASS  link audit: every internal link and anchor in the built site resolves (including the library and lib/ pages)  (34 pages, 785 links)
+PASS  link audit: every internal link and anchor in the built site resolves (including the library and lib/ pages)  (64 pages, 1532 links)
 
-98 of 98 passed
+110 of 110 passed

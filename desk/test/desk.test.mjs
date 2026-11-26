@@ -552,3 +552,61 @@ test('library=1 with no library available answers no task, not a board task', as
   const a = await next('alice', '&role=think&library=1');
   assert.equal(a.body.gap, null);
 });
+
+// ---- campaigns: the headline campaign (Erdős) is handed out first, with its own Lean folder and records folder ----
+const erdos = (id, kind, statement, difficulty, extra = {}) => ({ ...rec(id, kind, statement, difficulty), campaign: 'erdos', lean_dir: 'Erdos', campaign_order: 1,
+  lean: `statement of ${statement}`, ...extra });
+function withErdos(feed) {
+  for (const r of feed.records) r.campaign_order = 2; // the Collatz records
+  feed.records.push(
+    erdos('erdos-242-even', 'milestone', 'Mile_Erdos242_Even', 200, { hard: false }),
+    erdos('erdos-850-makowski', 'milestone', 'Mile_Erdos850_Makowski', 100, { hard: false }),
+    erdos('erdos-376-two-primes', 'milestone', 'Mile_Erdos376_TwoPrimes', 700),
+    erdos('erdos-242-one-mod-840', 'program', 'Open_Erdos242_OneMod840', 900),
+  );
+}
+
+test('build: an Erdős milestone comes before the Collatz drops, with Erdős paths', async () => {
+  const { next, feed } = setup();
+  withErdos(feed);
+  const a = await next('alice');
+  assert.ok(['erdos-242-even', 'erdos-850-makowski'].includes(a.body.gap.id), a.body.gap.id);
+  assert.equal(a.body.gap.campaign, 'erdos');
+  assert.equal(a.body.gap.hard, false);
+  assert.equal(a.body.gap.file, `OpenConjecture/Erdos/Proofs/${a.body.gap.statement_name}.lean`);
+  assert.equal(a.body.gap.namespace, `OpenConjecture.Erdos.Proofs.${a.body.gap.statement_name}`);
+  assert.equal(a.body.gap.imports, 'import OpenConjecture.Erdos.Lemmas');
+  assert.equal(a.body.gap.record, `records/erdos/${a.body.gap.id}.json`);
+  assert.equal(a.body.gap.statement, `statement of ${a.body.gap.statement_name}`);
+  const b = await next('bob');
+  assert.ok(['erdos-242-even', 'erdos-850-makowski'].includes(b.body.gap.id), 'the second small Erdős task goes to the next agent');
+  assert.notEqual(a.body.gap.id, b.body.gap.id);
+  const c = await next('carol');
+  assert.equal(c.body.gap.campaign, 'collatz', 'once the Erdős small tasks are held, Collatz work is next');
+  assert.equal(c.body.gap.record, `records/collatz/${c.body.gap.id}.json`);
+});
+
+test('hard=1 and think: Erdős statements first', async () => {
+  const { next, feed } = setup();
+  withErdos(feed);
+  const h = await next('alice', '&hard=1');
+  assert.equal(h.body.gap.campaign, 'erdos');
+  assert.ok(['erdos-376-two-primes', 'erdos-242-one-mod-840'].includes(h.body.gap.id));
+  const t = await next('bob', '&role=think&library=0');
+  assert.equal(t.body.gap.campaign, 'erdos');
+  assert.equal(t.body.gap.kind, 'note');
+  assert.equal(t.body.gap.note_file, `notes/${t.body.gap.id}/<your GitHub login>-<slug>.md`);
+});
+
+test('campaign=collatz keeps the pick in the Collatz campaign; a bad campaign is a 400', async () => {
+  const { next, feed } = setup();
+  withErdos(feed);
+  const a = await next('alice', '&campaign=collatz');
+  assert.equal(a.body.gap.campaign, 'collatz');
+  const t = await next('bob', '&role=think&campaign=collatz');
+  assert.equal(t.body.gap.id, 'm-bridge', 'the only Collatz statement a thinker can take');
+  const e = await next('carol', '&campaign=erdos&hard=1');
+  assert.equal(e.body.gap.campaign, 'erdos');
+  const bad = await next('dave', '&campaign=Bad!');
+  assert.equal(bad.status, 400);
+});

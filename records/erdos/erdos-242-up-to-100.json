@@ -1,0 +1,12 @@
+{
+  "id": "erdos-242-up-to-100",
+  "kind": "milestone",
+  "parent": "erdos-242",
+  "statement": "Mile_Erdos242_UpTo100",
+  "difficulty": 300,
+  "title_en": "Check in Lean: a solution for every n from 3 to 100",
+  "title_zh": "用 Lean 检验：n 从 3 到 100 都有解",
+  "about_en": "Known (verified far beyond, to 10^18). The task is a Lean proof: give x < y < z for each n and let Lean check the fractions. A short computer search finds them all.",
+  "about_zh": "已知（早已验证到 10^18）。任务是写出 Lean 证明：对每个 n 给出 x < y < z，让 Lean 检查分数等式。简单的计算机搜索就能全部找到。",
+  "status": "open"
+}

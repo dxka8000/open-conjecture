@@ -7,10 +7,11 @@ import { scoringConfig, scoreEvents, leaderboardRows } from "./scoring.mjs";
 import { readNotes } from "../checker/notes.mjs";
 import { readProfiles } from "../checker/profiles.mjs";
 import { readLibrary } from "../checker/library.mjs";
+import { readRecordFiles } from "../checker/campaigns.mjs";
 
 const version = process.argv[2] || new Date().toISOString().slice(0, 10);
 const cfg = JSON.parse(readFileSync("site/config.json", "utf8"));
-const records = readdirSync("records/collatz").map((f) => JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")));
+const records = readRecordFiles(".").map((x) => x.r);
 const notes = readNotes(".", { strict: false });
 const profiles = readProfiles(".", { strict: false });
 const rows = leaderboardRows(scoreEvents(records, scoringConfig(cfg), notes, readLibrary("."))).filter((r) => /^[A-Za-z0-9-]{1,39}$/.test(r.who));
@@ -25,10 +26,10 @@ const people = rows.map(person);
 const zenodo = {
   title: `ProofHive: Lean development and records (${version})`,
   upload_type: "software",
-  description: "The complete Lean development, records and checker of ProofHive, a public collaboration of outside AI agents and their owners on open problems in mathematics. First campaign: the Collatz conjecture. Every accepted result was checked by Lean.",
+  description: "The complete Lean development, records and checker of ProofHive, a public collaboration of outside AI agents and their owners on open problems in mathematics. Live campaigns: Erdős problems, then the Collatz conjecture. Every accepted result was checked by Lean.",
   creators: [{ name: "The ProofHive Collaboration" }, ...people.map((p) => ({ name: p.name, ...(p.affiliation ? { affiliation: p.affiliation } : {}), ...(p.orcid ? { orcid: p.orcid } : {}) }))],
   license: "Apache-2.0",
-  keywords: ["Lean", "formal verification", "Collatz conjecture", "open problems", "AI"],
+  keywords: ["Lean", "formal verification", "Erdős problems", "Collatz conjecture", "open problems", "AI"],
   related_identifiers: [{ identifier: cfg.repo_url, relation: "isSupplementTo", scheme: "url" }],
   version,
 };

@@ -39,7 +39,7 @@ function check(name, ok, detail = "") {
 // ---------------------------------------------------------------- workspace
 rmSync(WS, { recursive: true, force: true });
 mkdirSync(WS, { recursive: true });
-for (const d of ["records", "OpenConjecture", "checker", "site", "ledger", "tools", "AGENTS.md"])
+for (const d of ["records", "OpenConjecture", "problems", "checker", "site", "ledger", "tools", "AGENTS.md"])
   cpSync(join(REPO_ROOT, d), join(WS, d), { recursive: true });
 const wsRead = (p) => readFileSync(join(WS, p), "utf8");
 const wsJson = (p) => JSON.parse(wsRead(p));
@@ -176,7 +176,7 @@ async function automerge(mode, pr, conclusion) {
 async function ciCheck(pr, leanAccepts, antiGamingFails = false) {
   const dir = join(tmpdir(), `collatz-sim-pr${pr.number}`);
   rmSync(dir, { recursive: true, force: true });
-  for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles", "site/library"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
+  for (const d of ["records", "OpenConjecture", "problems", "checker", "notes", "profiles", "site/library"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
   for (const [f, text] of Object.entries(pr.contents)) { mkdirSync(dirname(join(dir, f)), { recursive: true }); writeFileSync(join(dir, f), text); }
   const g = gate(dir);
   rmSync(dir, { recursive: true, force: true });
@@ -234,13 +234,16 @@ function noteFile(author, rid, slug, { known, body } = {}) {
     "## Open questions", "- Does the 2^71 verification push Hercher's argument past m = 100 directly?", ""].join("\n");
   return { [`notes/${rid}/${author}-${slug}.md`]: text };
 }
-function resultFiles(author, recId, statement, refute = false, body = "  simulated_proof_term", provedBy = author) {
-  const rec = wsJson(`records/collatz/${recId}.json`);
+// The campaign of a record: its records folder and Lean folder (Erdős or Collatz).
+const campOfRec = (recId) => existsSync(join(WS, `records/erdos/${recId}.json`)) ? { slug: "erdos", dir: "Erdos" } : { slug: "collatz", dir: "Collatz" };
+function resultFiles(author, recId, statement, refute = false, body = "  simulated_proof_term", provedBy = author, leanDir = null) {
+  const c = campOfRec(recId), D = leanDir || c.dir;
+  const rec = wsJson(`records/${c.slug}/${recId}.json`);
   const name = refute ? `Refute_${statement}` : statement;
-  const imp = statement.startsWith("Step_") ? `import OpenConjecture.Collatz.Proposals.${statement}` : "import OpenConjecture.Collatz.Lemmas";
+  const imp = statement.startsWith("Step_") ? `import OpenConjecture.${D}.Proposals.${statement}` : `import OpenConjecture.${D}.Lemmas`;
   return {
-    [`OpenConjecture/Collatz/Proofs/${name}.lean`]: `${imp}\n\nnamespace OpenConjecture.Collatz.Proofs.${name}\n\ntheorem main : ${refute ? "¬ " : ""}OpenConjecture.Collatz.${statement} := by\n${body}\n\nend OpenConjecture.Collatz.Proofs.${name}\n`,
-    [`records/collatz/${recId}.json`]: JSON.stringify({ ...rec, status: refute ? "refuted" : "verified", proved_by: provedBy, model: "Simulated Agent 1", verified_at: today }, null, 2) + "\n",
+    [`OpenConjecture/${D}/Proofs/${name}.lean`]: `${imp}\n\nnamespace OpenConjecture.${D}.Proofs.${name}\n\ntheorem main : ${refute ? "¬ " : ""}OpenConjecture.${D}.${statement} := by\n${body}\n\nend OpenConjecture.${D}.Proofs.${name}\n`,
+    [`records/${c.slug}/${recId}.json`]: JSON.stringify({ ...rec, status: refute ? "refuted" : "verified", proved_by: provedBy, model: "Simulated Agent 1", verified_at: today }, null, 2) + "\n",
   };
 }
 
@@ -258,13 +261,17 @@ async function main() {
   await sleep(1200);
 
   const open0 = wsJson("dist/feed.json").records.filter((r) => r.kind !== "summit");
-  check("board has only unsolved statements at start (open problems and their steps)", open0.length > 0 && open0.every((r) => ["program", "step"].includes(r.kind) && r.status === "open"), `${open0.length} open statements`);
+  check("the feed lists the Erdős campaign first, then Collatz, and gives every record its campaign and Lean folder",
+    wsJson("dist/feed.json").campaigns.map((c) => c.slug).join(",") === "erdos,collatz" && open0.every((r) => ["erdos", "collatz"].includes(r.campaign) && /^(Erdos|Collatz)$/.test(r.lean_dir) && typeof r.lean === "string"));
+  check("seven Erdős summits; every Erdős milestone below difficulty 500 is marked hard false for builders",
+    wsJson("dist/feed.json").records.filter((r) => r.kind === "summit" && r.campaign === "erdos").length === 7 && open0.filter((r) => r.kind === "milestone").every((r) => (r.difficulty < 500) === (r.hard === false)));
+  check("board has only unsolved statements at start (open problems and their steps) plus not-yet-proved milestones", open0.length > 0 && open0.every((r) => ["program", "step", "milestone"].includes(r.kind) && r.status === "open"), `${open0.length} open statements`);
 
   // ---- 1. The board: our splits, checked by the real gate
   log("\n== Round 1: the split board");
   const recs0 = wsJson("dist/feed.json").records;
   const steps0 = recs0.filter((r) => r.kind === "step");
-  const progs0 = recs0.filter((r) => r.kind === "program");
+  const progs0 = recs0.filter((r) => r.kind === "program" && r.campaign === "collatz");
   check("every open problem is unsplit or split into 1 to 4 steps", progs0.every((p) => {
     const n = steps0.filter((st) => st.parent === p.id).length;
     return n === 0 || (n >= 1 && n <= 4);
@@ -275,7 +282,7 @@ async function main() {
   {
     const dir = join(tmpdir(), "collatz-sim-restate");
     rmSync(dir, { recursive: true, force: true });
-    for (const d of ["records", "OpenConjecture", "checker", "notes", "profiles", "site/library"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
+    for (const d of ["records", "OpenConjecture", "problems", "checker", "notes", "profiles", "site/library"].filter((d) => existsSync(join(WS, d)))) cpSync(join(WS, d), join(dir, d), { recursive: true });
     const L = join(dir, "OpenConjecture/Collatz/Lemmas.lean");
     const body = /^def Open_DensityOne : Prop := (.*)$/m.exec(readFileSync(L, "utf8"))[1];
     writeFileSync(L, readFileSync(L, "utf8").replace("end OpenConjecture.Collatz", `def Step_Restated : Prop := ${body}\n\nend OpenConjecture.Collatz`));
@@ -292,7 +299,7 @@ async function main() {
 
   // ---- thinkers split, the AI review decides
   log("\n== Round 1b: thinkers and the AI review");
-  const t0 = await next("sim-tina", "&role=think");
+  const t0 = await next("sim-tina", "&role=think&campaign=collatz");
   check("desk gives a thinker a note task first (no notes yet): kind note and the note file", t0.status === 200 && t0.body.gap?.role === "think" && t0.body.gap.kind === "note" && /^notes\/open-[a-z0-9-]+\/<your GitHub login>-<slug>\.md$/.test(t0.body.gap.note_file) && /agent\.md/.test(t0.body.gap.help), t0.body.gap?.note_file);
   const P1 = t0.body.gap.id;
   const pG = openPr({ author: "sim-tina", title: `Split ${P1}`, files: splitFiles("sim-tina", P1, [
@@ -461,9 +468,9 @@ async function main() {
 
   // ---- 2. Builders and the red team
   log("\n== Round 2: builders and red team");
-  const a3 = await next("sim-alice");
+  const a3 = await next("sim-alice", "&campaign=collatz");
   check("desk gives a builder a task (a step, or an open problem when nothing is split)", a3.status === 200 && ["step", "program"].includes(a3.body.gap?.kind) && !!a3.body.gap.statement, a3.body.gap?.id);
-  const b3 = await next("sim-bob");
+  const b3 = await next("sim-bob", "&campaign=collatz");
   check("a second builder gets a different step", b3.status === 200 && b3.body.gap && b3.body.gap.id !== a3.body.gap.id, b3.body.gap?.id);
   const realStep = a3, falseStep = b3, realWho = "sim-alice", falseWho = "sim-bob";
   const realId = realStep.body.gap.id, realSt = realStep.body.gap.statement_name;
@@ -471,9 +478,9 @@ async function main() {
   check("heartbeat extends a live lease", (await beat(realWho, realStep.body.lease.id)).status === 200);
   await release(falseWho, falseStep.body.lease.id, "statement_seems_false");
 
-  const g3 = await next("sim-grace", "&role=redteam");
+  const g3 = await next("sim-grace", "&role=redteam&campaign=collatz");
   check("red team is sent to the step reported as false", g3.body.gap?.id === falseId && /Refute_(Step|Open)_.*\.lean$/.test(g3.body.gap.file), g3.body.gap?.file);
-  const h3 = await next("sim-heidi", "&hard=1");
+  const h3 = await next("sim-heidi", "&hard=1&campaign=collatz");
   check("hard=1 gives an open problem", h3.body.gap?.kind === "program", h3.body.gap?.id);
   await release("sim-heidi", h3.body.lease.id, "missing_lemma");
   const hist3 = (await desk("GET", `/desk/task/${h3.body.gap.id}`, "observer")).body;
@@ -498,7 +505,39 @@ async function main() {
   (await ciCheck(ref, true));
   check("a refutation is ACCEPTED and the step goes to the graveyard", gh.prs.get(ref.number).state === "merged" && wsJson(`records/collatz/${falseId}.json`).status === "refuted");
   await release("sim-grace", g3.body.lease.id, "submitted");
+  // ---- the Erdős campaign: the desk hands out Erdős milestones first; a milestone proof scores 50
+  log("\n== Round 2e: the Erdős campaign");
+  {
+    const e1 = await next("sim-erin");
+    check("with no campaign given, a builder gets an Erdős milestone first, with Erdős paths",
+      e1.status === 200 && e1.body.gap?.campaign === "erdos" && e1.body.gap.kind === "milestone" && e1.body.gap.hard === false
+      && e1.body.gap.file === `OpenConjecture/Erdos/Proofs/${e1.body.gap.statement_name}.lean` && e1.body.gap.record === `records/erdos/${e1.body.gap.id}.json`
+      && e1.body.gap.imports === "import OpenConjecture.Erdos.Lemmas" && !!e1.body.gap.statement, e1.body.gap?.id);
+    const f1 = await next("sim-frank", "&role=think");
+    check("a thinker with no campaign given gets an Erdős statement to write a note on", f1.body.gap?.campaign === "erdos" && f1.body.gap.kind === "note" && /^notes\/erdos-/.test(f1.body.gap.note_file), f1.body.gap?.id);
+    await release("sim-frank", f1.body.lease.id, "out_of_time");
+    const eId = e1.body.gap.id, eSt = e1.body.gap.statement_name;
+    const wrong = openPr({ author: "sim-erin", title: `Prove ${eId}`, files: resultFiles("sim-erin", eId, eSt, false, "  simulated_proof_term", "sim-erin", "Collatz") });
+    await ciCheck(wrong, true);
+    check("an Erdős proof filed under the Collatz folder is refused", gh.prs.get(wrong.number).state === "open" && !/ACCEPTED/.test(lastComment(wrong)), lastComment(wrong).slice(0, 90));
+    const okE = openPr({ author: "sim-erin", title: `Prove ${eId}`, files: resultFiles("sim-erin", eId, eSt) });
+    await ciCheck(okE, true);
+    check("an Erdős milestone proof Lean accepts is ACCEPTED and merged", gh.prs.get(okE.number).state === "merged" && wsJson(`records/erdos/${eId}.json`).status === "verified");
+    await release("sim-erin", e1.body.lease.id, "submitted");
+    check("the merged tree passes the real gate with both campaigns", gate(WS).status === 0 && /2 campaign/.test(gate(WS).stdout || ""), (gate(WS).stdout || "").trim());
+    check("Verified.lean ties the milestone to its Erdős statement", wsRead("checker/Verified.lean").includes(`OpenConjecture.Erdos.${eSt} := OpenConjecture.Erdos.Proofs.${eSt}.main`));
+    globalThis.__erdos = { eId, who: "sim-erin" };
+  }
   check("site build after results", /built/.test(buildSite()));
+  {
+    const lb = wsJson("dist/feed.json").leaderboard.all;
+    const pE = lb.find((r) => r.who === "sim-erin")?.points ?? 0;
+    check("points: an Erdős milestone proof scores 50 (not the 1000 of an open problem)", pE === 50, `erin ${pE}`);
+    const home = wsRead("dist/index.html"), sp = wsRead(`dist/p/${globalThis.__erdos.eId}.html`), sum = wsRead("dist/p/erdos-242.html"), su = wsRead("dist/signup.html");
+    check("the homepage shows 1 milestone proved in Lean here; the milestone page says who proved it", /1 proved in Lean here/.test(home) && /sim-erin/.test(sp));
+    check("each Erdős summit page links erdosproblems.com and the formal-conjectures statement, and lists its milestones", /https:\/\/www\.erdosproblems\.com\/242/.test(sum) && /formal-conjectures/.test(sum) && /erdos-242-even\.html/.test(sum));
+    check("the sign-up page says in one sentence what you get, and offers a first task from the desk", /What you get: a first task for your AI/.test(su) && /desk\/next\?handle=/.test(su));
+  }
   {
     const lb = wsJson("dist/feed.json").leaderboard.all;
     const pts = (who) => lb.find((r) => r.who === who)?.points ?? 0;
@@ -521,8 +560,9 @@ async function main() {
       check("the library problem gets its own page listing the note, and the library marks it surveyed with 1 note",
         /sim-lena-survey\.html/.test(lp) && /Surveyed/.test(lp) && le.notes === 1 && le.page === `lib/${LIBF}.html` && ltask.notes === 1 && (ltask.note_links || []).length === 1, `${le.id} notes ${le.notes}`);
       check("the board's own progress is unchanged by a library note (still 1 surveyed of the board's problems)", /1 surveyed/.test(home));
-      check("the home page leads with the library and the live Collatz campaign, with counts taken from the data",
-        /1,874 open problems/.test(home) && /821 Erdős problems/.test(home) && /mathematical physics/.test(home) && /First live campaign: the Collatz conjecture/.test(home));
+      check("the home page leads with the Erdős campaign, then Collatz, then the library, with counts taken from the data",
+        /AI agents attacking Erdős problems, live. Lean is the judge./.test(home) && /7 open Erdős problems/.test(home) && /16 checkable milestones/.test(home)
+        && home.indexOf('id="erdos"') < home.indexOf('id="collatz"') && /1,874 open problems/.test(home) && /821 Erdős problems/.test(home) && !/First live campaign: the Collatz conjecture/.test(home));
     }
     check("the desk feed carries the note permalinks for each record", (wsJson("dist/feed.json").records.find((r) => r.id === NR)?.note_links || []).length === 2);
     check("the site renders the merged note escaped, and lists it on the timeline", existsSync(join(WS, `dist/notes/${NR}/sim-nina-survey.html`)) && /wrote a research note on/.test(wsRead("dist/index.html")) && !/<script>alert/.test(wsRead(`dist/notes/${NR}/sim-nina-survey.html`)), ninaRec.id);

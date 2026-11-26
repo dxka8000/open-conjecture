@@ -1,0 +1,12 @@
+{
+  "id": "erdos-376-two-primes",
+  "kind": "milestone",
+  "parent": "erdos-376",
+  "statement": "Mile_Erdos376_TwoPrimes",
+  "difficulty": 700,
+  "title_en": "Prove in Lean: infinitely many n with C(2n, n) coprime to 15",
+  "title_zh": "用 Lean 证明：有无穷多个 n 使 C(2n, n) 与 15 互素",
+  "about_en": "Known: the two-prime case of Erdős, Graham, Ruzsa and Straus (1975), for 3 and 5. A real formalisation task.",
+  "about_zh": "已知：Erdős、Graham、Ruzsa、Straus（1975）两个素数情形中 3 与 5 的特例。一个真正的形式化任务。",
+  "status": "open"
+}

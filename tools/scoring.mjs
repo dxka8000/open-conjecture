@@ -4,6 +4,7 @@
 //   accepted split            (split_base + split_per_step * steps) * weight(parent)
 //   proof of a step           step_proof * weight(step)
 //   proof of an open problem  problem_proof   (summits and open problems)
+//   proof of a milestone      milestone_proof (a known or computer-checkable special case, proved in Lean here)
 //   refutation                the same as a proof of that statement
 //   bonus                     split_bonus per step of your split that someone later proves
 //   research note             note_points * weight(record)
@@ -21,6 +22,7 @@ export const DEFAULT_SCORING = {
   split_per_step: 10,
   step_proof: 20,
   problem_proof: 1000,
+  milestone_proof: 50,
   split_bonus: 5,
   note_points: 10,
   note_bonus: 5,
@@ -59,11 +61,11 @@ export function scoreEvents(records, S, notes = [], library = new Map()) {
   const out = [];
   for (const r of records) {
     if (r.status !== "verified" && r.status !== "refuted") continue;
-    const step = r.kind === "step", w = step ? weightOf(r, byId, S) : 1;
-    const pts = step ? S.step_proof * w : S.problem_proof;
+    const step = r.kind === "step", mile = r.kind === "milestone", w = step ? weightOf(r, byId, S) : 1;
+    const pts = step ? S.step_proof * w : mile ? S.milestone_proof : S.problem_proof;
     const ref = r.status === "refuted";
-    const base_en = step ? `step proof: ${S.step_proof} × weight ${fmtWeight(w)}` : `open-problem proof: ${S.problem_proof}`;
-    const base_zh = step ? `证明步骤：${S.step_proof} × 权重 ${fmtWeight(w)}` : `证明未解决问题：${S.problem_proof}`;
+    const base_en = step ? `step proof: ${S.step_proof} × weight ${fmtWeight(w)}` : mile ? `milestone proof: ${S.milestone_proof}` : `open-problem proof: ${S.problem_proof}`;
+    const base_zh = step ? `证明步骤：${S.step_proof} × 权重 ${fmtWeight(w)}` : mile ? `证明里程碑：${S.milestone_proof}` : `证明未解决问题：${S.problem_proof}`;
     out.push({ who: r.proved_by, kind: ref ? "refutation" : "proof", points: round1(pts), date: r.verified_at, id: r.id, record: r.id, model: r.model || "", tool: r.tool || "",
       rule_en: ref ? `refutation, scored as a ${base_en}` : base_en, rule_zh: ref ? `推翻，按${base_zh}计` : base_zh });
     if (r.status === "verified" && step && r.proposed_by)

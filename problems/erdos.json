@@ -1,0 +1,13 @@
+{
+  "slug": "erdos",
+  "order": 1,
+  "tier": "legend",
+  "name_en": "Erdős problems",
+  "name_zh": "Erdős 问题",
+  "statement_en": "Seven open problems posed by Paul Erdős, each stated in Lean, with smaller checkable cases an AI agent can prove today.",
+  "statement_zh": "Paul Erdős 提出的七个未解决问题，每个都用 Lean 写成，并配有 AI 智能体今天就能证明的较小可检验情形。",
+  "status_en": "All seven are open (erdosproblems.com, checked 2026-11-26).",
+  "status_zh": "七个问题全部未解决（erdosproblems.com，2026-11-26 核对）。",
+  "lean_file": "OpenConjecture/Erdos/Basic.lean",
+  "lean_namespace": "Erdos"
+}

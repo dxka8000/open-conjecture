@@ -23,6 +23,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { checkNote } from "../checker/notes.mjs";
 import { checkProfile } from "../checker/profiles.mjs";
 import { readLibrary } from "../checker/library.mjs";
+import { readCampaigns, readRecordFiles } from "../checker/campaigns.mjs";
 
 const { GH_TOKEN, HEAD_SHA, REPO, CONCLUSION, RUN_URL } = process.env;
 const MODE = process.env.MODE || "run";
@@ -47,10 +48,15 @@ const api = async (path, opts = {}) => {
 const comment = (pr, body) => api(`/repos/${REPO}/issues/${pr.number}/comments`, { method: "POST", body: JSON.stringify({ body }) });
 
 // Records on main (this checkout is main).
-const mainRecords = new Map();
-for (const f of readdirSync("records/collatz")) {
-  try { const r = JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")); mainRecords.set(r.id, r); } catch {}
-}
+// Every campaign (problems/<slug>.json): its Lean folder OpenConjecture/<Dir>/ and its records/<slug>/.
+const CAMPS = readCampaigns(".");
+const mainRecords = new Map(), campOfRecord = new Map();
+for (const { r, campaign } of readRecordFiles(".", CAMPS)) { mainRecords.set(r.id, r); campOfRecord.set(r.id, campaign); }
+const DIRS = CAMPS.map((c) => c.lean_namespace).join("|"), SLUGS = CAMPS.map((c) => c.slug).join("|");
+const PROOF_RE = new RegExp(`^OpenConjecture/(${DIRS})/Proofs/[A-Za-z0-9_]+\\.lean$`);
+const PROPOSAL_RE = new RegExp(`^OpenConjecture/(${DIRS})/Proposals/`);
+const RECORD_RE = new RegExp(`^records/(${SLUGS})/[a-z0-9-]+\\.json$`);
+const campBySlug = (slug) => CAMPS.find((c) => c.slug === slug);
 // Library problems (site/library/library.json on main) take research notes too, under notes/<library folder>/.
 const mainLibrary = readLibrary(".");
 async function fileAtHead(pr, path) {
@@ -68,13 +74,13 @@ async function checkPassed(sha) {
 async function evaluate(pr) {
   const author = pr.user.login;
   const files = await api(`/repos/${REPO}/pulls/${pr.number}/files?per_page=100`);
-  if (files && files.some((f) => /^OpenConjecture\/Collatz\/Proposals\//.test(f.filename))) return evaluateSplit(pr, files, author);
+  if (files && files.some((f) => PROPOSAL_RE.test(f.filename))) return evaluateSplit(pr, files, author);
   if (files && files.some((f) => /^notes\//.test(f.filename))) return evaluateNote(pr, files, author);
   if (files && files.some((f) => /^profiles\//.test(f.filename))) return evaluateProfile(pr, files, author);
   if (!files || files.length !== 2) return { ok: false, why: `it must change exactly two files, but it changes ${files ? files.length : "?"}.` };
-  const proof = files.find((f) => /^OpenConjecture\/Collatz\/Proofs\/[A-Za-z0-9_]+\.lean$/.test(f.filename));
-  const rec = files.find((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
-  if (!rec) return { ok: false, why: "it must change one record under records/collatz/." };
+  const proof = files.find((f) => PROOF_RE.test(f.filename));
+  const rec = files.find((f) => RECORD_RE.test(f.filename));
+  if (!rec) return { ok: false, why: `it must change one record under records/<campaign>/ (${CAMPS.map((c) => `records/${c.slug}/`).join(", ")}).` };
   let head;
   try { head = JSON.parse(await fileAtHead(pr, rec.filename)); } catch { return { ok: false, why: "its record is not valid JSON." }; }
   const id = rec.filename.split("/").pop().replace(/\.json$/, "");
@@ -83,6 +89,9 @@ async function evaluate(pr) {
     if (proof.status !== "added" || rec.status !== "modified") return { ok: false, why: "a proof adds one new file under Proofs/ and modifies one existing record." };
     const base = mainRecords.get(id);
     if (!base) return { ok: false, why: `record ${id} does not exist on main.` };
+    const camp = campBySlug(campOfRecord.get(id));
+    if (rec.filename !== `records/${camp.slug}/${id}.json`) return { ok: false, why: `record ${id} lives in records/${camp.slug}/.` };
+    if (!proof.filename.startsWith(`${camp.dir}/Proofs/`)) return { ok: false, why: `a proof for ${id} goes under ${camp.dir}/Proofs/.` };
     if (base.status !== "open") return { ok: false, why: `lemma ${id} is already settled.` };
     const fileName = proof.filename.split("/").pop().replace(/\.lean$/, "");
     const refute = fileName.startsWith("Refute_");
@@ -102,7 +111,7 @@ async function evaluate(pr) {
                        : `**ACCEPTED**. Lean checked every step of \`${base.statement}\`. Merged; it appears on the site within a few minutes, credited to @${author}.` };
   }
 
-  return { ok: false, why: "it must add one file under OpenConjecture/Collatz/Proofs/ and change its record, or be a split (see AGENTS.md)." };
+  return { ok: false, why: "it must add one file under OpenConjecture/<Campaign>/Proofs/ and change its record, or be a split (see AGENTS.md)." };
 }
 
 const day = (d) => Math.floor(Date.parse(d + "T00:00:00Z") / 864e5);
@@ -188,9 +197,9 @@ async function evaluateNote(pr, files, author) {
 // A split: 1-4 new steps under one parent, plus the Lean file proving that together they imply it.
 async function evaluateSplit(pr, files, author) {
   const shape = "a split adds 1 to 4 files Proposals/Step_<Name>.lean, one new step record for each, and one file Proposals/Split_<Parent>.lean, and changes nothing else.";
-  const stepFiles = files.filter((f) => /^OpenConjecture\/Collatz\/Proposals\/Step_[A-Za-z0-9_]+\.lean$/.test(f.filename));
-  const splitFiles = files.filter((f) => /^OpenConjecture\/Collatz\/Proposals\/Split_[A-Za-z0-9_]+\.lean$/.test(f.filename));
-  const recFiles = files.filter((f) => /^records\/collatz\/[a-z0-9-]+\.json$/.test(f.filename));
+  const stepFiles = files.filter((f) => new RegExp(`^OpenConjecture/(${DIRS})/Proposals/Step_[A-Za-z0-9_]+\\.lean$`).test(f.filename));
+  const splitFiles = files.filter((f) => new RegExp(`^OpenConjecture/(${DIRS})/Proposals/Split_[A-Za-z0-9_]+\\.lean$`).test(f.filename));
+  const recFiles = files.filter((f) => RECORD_RE.test(f.filename));
   if (splitFiles.length !== 1 || stepFiles.length < 1 || stepFiles.length > 4 || recFiles.length !== stepFiles.length
       || files.length !== stepFiles.length + recFiles.length + 1 || files.some((f) => f.status !== "added"))
     return { ok: false, why: shape };
@@ -217,6 +226,9 @@ async function evaluateSplit(pr, files, author) {
   const base = mainRecords.get(parent);
   if (!base || base.status !== "open" || base.kind === "summit") return { ok: false, why: `parent ${parent} is not an open statement on main.` };
   if (splitName !== `Split_${base.statement}`) return { ok: false, why: `the split file must be named Split_${base.statement}.lean.` };
+  const camp = campBySlug(campOfRecord.get(parent));
+  if (![...stepFiles, ...splitFiles].every((f) => f.filename.startsWith(`${camp.dir}/Proposals/`)) || !recFiles.every((f) => f.filename.startsWith(`records/${camp.slug}/`)))
+    return { ok: false, why: `${parent} is in the ${camp.slug} campaign: its split goes under ${camp.dir}/Proposals/ and its step records under records/${camp.slug}/.` };
   if ([...mainRecords.values()].some((r) => r.parent === parent && r.kind === "step")) return { ok: false, why: `${parent} is already split.` };
 
   const verdict = await reviewVerdict(pr);

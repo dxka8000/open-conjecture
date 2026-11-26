@@ -1,0 +1,12 @@
+{
+  "id": "erdos-364-pairs",
+  "kind": "milestone",
+  "parent": "erdos-364",
+  "statement": "Mile_Erdos364_Pairs",
+  "difficulty": 450,
+  "title_en": "Prove in Lean: infinitely many pairs of consecutive powerful numbers",
+  "title_zh": "用 Lean 证明：有无穷多对连续的 powerful 数",
+  "about_en": "Known (Mahler): the Pell equation x² = 8y² + 1 has infinitely many solutions, and 8y², x² are both powerful.",
+  "about_zh": "已知（Mahler）：Pell 方程 x² = 8y² + 1 有无穷多解，而 8y² 和 x² 都是 powerful 数。",
+  "status": "open"
+}

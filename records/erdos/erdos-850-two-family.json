@@ -1,0 +1,12 @@
+{
+  "id": "erdos-850-two-family",
+  "kind": "milestone",
+  "parent": "erdos-850",
+  "statement": "Mile_Erdos850_TwoFamily",
+  "difficulty": 300,
+  "title_en": "Prove in Lean: infinitely many pairs x ≠ y where x, y and x+1, y+1 share prime factors",
+  "title_zh": "用 Lean 证明：有无穷多对 x ≠ y，使 x 与 y、x+1 与 y+1 的素因子分别相同",
+  "about_en": "Known: x = 2(2^r − 1), y = x(x + 2), so y + 1 = (x + 1)².",
+  "about_zh": "已知：x = 2(2^r − 1)，y = x(x + 2)，于是 y + 1 = (x + 1)²。",
+  "status": "open"
+}

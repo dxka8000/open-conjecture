@@ -7,33 +7,24 @@
 // These checks block obvious filler and restatements, not every disguised one.
 import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { readCampaigns, readRecordFiles } from "./campaigns.mjs";
 
 const TRIVIAL = ["decide", "simp", "norm_num", "omega"];
 const FILLER = ["exact h", "simpa using h", "tauto", "simp_all", "omega", "aesop"];
 const HEARTBEATS = 20000; // a tenth of Lean's default
 const FILE_CAP_MS = 300e3;
 
-const recs = readdirSync("records/collatz").map((f) => JSON.parse(readFileSync(`records/collatz/${f}`, "utf8")));
-const byId = new Map(recs.map((r) => [r.id, r]));
-const steps = recs.filter((r) => r.kind === "step" && r.status === "open").map((r) => r.statement).sort();
-const splits = new Map();
-for (const r of recs.filter((r) => r.kind === "step")) {
-  const s = splits.get(r.split) || { parent: byId.get(r.parent).statement, steps: [] };
-  s.steps.push(r.statement);
-  splits.set(r.split, s);
-}
+const CAMPS = readCampaigns(".");
 const NAME = /^[A-Za-z0-9_]+$/;
-for (const n of [...steps, ...[...splits.values()].flatMap((s) => [s.parent, ...s.steps])]) if (!NAME.test(n)) throw new Error("bad name " + n);
-
 mkdirSync("checker/anti_gaming", { recursive: true });
-const PROP = "OpenConjecture/Collatz/Proposals";
-const stepImports = (existsSync(PROP) ? readdirSync(PROP) : []).map((f) => /^(Step_[A-Za-z0-9_]+)\.lean$/.exec(f)).filter(Boolean)
-  .map((m) => `import OpenConjecture.Collatz.Proposals.${m[1]}`);
 // One attempt per line: Lean reports errors as <file>:<line>:<col>: error, so the line says which failed.
-function run(name, defs, tests) {
-  const head = ["import OpenConjecture.Collatz.Lemmas", ...stepImports, "", "namespace OpenConjecture.Collatz", ...defs];
-  const lines = [...head, ...tests.map((t) => `set_option maxHeartbeats ${HEARTBEATS} in example : ${t.goal} := by ${t.tac}`), "end OpenConjecture.Collatz", ""];
-  const file = `checker/anti_gaming/${name}.lean`;
+function run(name, defs, tests, c = CAMPS[0]) {
+  const PROP = `${c.dir}/Proposals`;
+  const stepImports = (existsSync(PROP) ? readdirSync(PROP) : []).map((f) => /^(Step_[A-Za-z0-9_]+)\.lean$/.exec(f)).filter(Boolean)
+    .map((m) => `import ${c.ns}.Proposals.${m[1]}`);
+  const head = [`import ${c.ns}.Lemmas`, ...stepImports, "", `namespace ${c.ns}`, ...defs];
+  const lines = [...head, ...tests.map((t) => `set_option maxHeartbeats ${HEARTBEATS} in example : ${t.goal} := by ${t.tac}`), `end ${c.ns}`, ""];
+  const file = `checker/anti_gaming/${c.slug}-${name}.lean`;
   writeFileSync(file, lines.join("\n"));
   const r = spawnSync("lake", ["env", "lean", file], { encoding: "utf8", timeout: FILE_CAP_MS });
   const out = (r.stdout || "") + (r.stderr || "");
@@ -61,8 +52,19 @@ if (control.timedOut || control.proved.length !== 5) {
 }
 
 let bad = 0;
+for (const c of CAMPS) {
+const recs = readRecordFiles(".", [c]).map((x) => x.r);
+const byId = new Map(recs.map((r) => [r.id, r]));
+const steps = recs.filter((r) => r.kind === "step" && r.status === "open").map((r) => r.statement).sort();
+const splits = new Map();
+for (const r of recs.filter((r) => r.kind === "step")) {
+  const s = splits.get(r.split) || { parent: byId.get(r.parent).statement, steps: [] };
+  s.steps.push(r.statement);
+  splits.set(r.split, s);
+}
+for (const n of [...steps, ...[...splits.values()].flatMap((s) => [s.parent, ...s.steps])]) if (!NAME.test(n)) throw new Error("bad name " + n);
 for (const s of steps) {
-  const r = run(s, [], trivialTests(s));
+  const r = run(s, [], trivialTests(s), c);
   if (r.timedOut) console.log(`${s}: attempts ran out of time; counted as not trivial`);
   else if (r.proved.length) { bad++; console.error(`REJECTED: ${s} is trivial: ${r.proved.map((t) => t.label).join(", ")} proves it.`); }
   else console.log(`${s}: none of ${TRIVIAL.join(", ")} proves it`);
@@ -73,9 +75,10 @@ for (const [name, sp] of [...splits].sort()) {
   if (k === 1) { console.log(`${name}: one step, no filler check`); continue; }
   const sets = sp.steps.map((x) => [x]);
   if (k > 2) for (const drop of sp.steps) sets.push(sp.steps.filter((x) => x !== drop));
-  const r = run(name, [], sets.flatMap((h) => fillerTests(h, sp.parent)));
+  const r = run(name, [], sets.flatMap((h) => fillerTests(h, sp.parent)), c);
   if (r.timedOut) { console.log(`${name}: filler attempts ran out of time; counted as not proven`); continue; }
   if (r.proved.length) { bad++; console.error(`REJECTED: ${name} has filler: ${sp.parent} follows by ${r.proved.map((t) => t.label).join("; ")}.`); }
   else console.log(`${name}: no single step${k > 2 ? " and no set of all-but-one steps" : ""} gives ${sp.parent} by cheap tactics`);
+}
 }
 process.exit(bad ? 1 : 0);

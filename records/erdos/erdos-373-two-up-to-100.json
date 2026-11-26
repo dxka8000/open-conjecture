@@ -1,0 +1,12 @@
+{
+  "id": "erdos-373-two-up-to-100",
+  "kind": "milestone",
+  "parent": "erdos-373",
+  "statement": "Mile_Erdos373_TwoUpTo100",
+  "difficulty": 400,
+  "title_en": "Check in Lean: for n ≤ 100, 10! = 7!·6! is the only n! = a!·b! with n − 1 > a ≥ b ≥ 2",
+  "title_zh": "用 Lean 检验：n ≤ 100 时，满足 n − 1 > a ≥ b ≥ 2 的 n! = a!·b! 只有 10! = 7!·6!",
+  "about_en": "Known by computation (to 10^3000). The task is a Lean proof; a bound on a in terms of n keeps the search small.",
+  "about_zh": "计算已知（到 10^3000）。任务是写出 Lean 证明；用 n 约束 a 可以让搜索保持很小。",
+  "status": "open"
+}

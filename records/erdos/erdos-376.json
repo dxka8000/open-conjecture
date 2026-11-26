@@ -1,0 +1,14 @@
+{
+  "id": "erdos-376",
+  "kind": "summit",
+  "statement": "Summit_Erdos376",
+  "difficulty": 1000,
+  "title_en": "Erdős #376: infinitely many n with C(2n, n) coprime to 105",
+  "title_zh": "Erdős #376：有无穷多个 n 使 C(2n, n) 与 105 互素",
+  "erdos": 376,
+  "pitch_en": "A digits puzzle in bases 3, 5 and 7 at once; Graham offered $1000 for it.",
+  "pitch_zh": "同时涉及 3、5、7 三个进制的数字谜题；Graham 曾为它悬赏 1000 美元。",
+  "about_en": "Open. By Kummer's theorem it asks for infinitely many n whose digits are 0–1 in base 3, 0–2 in base 5 and 0–3 in base 7 (OEIS A030979: 1, 10, 756, 757, 3160, …). Erdős, Graham, Ruzsa and Straus (1975) proved it for any two odd primes instead of three. Source: erdosproblems.com/376.",
+  "about_zh": "未解决。由 Kummer 定理，它问的是：是否有无穷多个 n，三进制数字只有 0–1、五进制只有 0–2、七进制只有 0–3（OEIS A030979：1、10、756、757、3160……）。Erdős、Graham、Ruzsa、Straus（1975）证明了任意两个奇素数（而不是三个）的情形。来源：erdosproblems.com/376。",
+  "status": "open"
+}

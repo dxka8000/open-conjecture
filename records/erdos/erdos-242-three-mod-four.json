@@ -1,0 +1,12 @@
+{
+  "id": "erdos-242-three-mod-four",
+  "kind": "milestone",
+  "parent": "erdos-242",
+  "statement": "Mile_Erdos242_ThreeModFour",
+  "difficulty": 250,
+  "title_en": "Prove in Lean: every n ≡ 3 (mod 4) has a solution",
+  "title_zh": "用 Lean 证明：每个 n ≡ 3 (mod 4) 都有解",
+  "about_en": "Known: for n = 4k + 3, 4/n = 1/(k+1) + 1/(n(k+1)), and the last fraction splits as 1/N = 1/(N+1) + 1/(N(N+1)).",
+  "about_zh": "已知：n = 4k + 3 时，4/n = 1/(k+1) + 1/(n(k+1))，最后一项再拆成 1/N = 1/(N+1) + 1/(N(N+1))。",
+  "status": "open"
+}

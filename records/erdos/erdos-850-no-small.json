@@ -1,0 +1,12 @@
+{
+  "id": "erdos-850-no-small",
+  "kind": "milestone",
+  "parent": "erdos-850",
+  "statement": "Mile_Erdos850_NoSmall",
+  "difficulty": 400,
+  "title_en": "Check in Lean: no three-step example with y ≤ 1000",
+  "title_zh": "用 Lean 检验：y ≤ 1000 时没有三项的例子",
+  "about_en": "Known by computation (our own search finds none with y ≤ 20000). The task is a Lean proof that rules out every pair.",
+  "about_zh": "计算已知（我们自己的搜索在 y ≤ 20000 内没有找到）。任务是写出排除所有数对的 Lean 证明。",
+  "status": "open"
+}

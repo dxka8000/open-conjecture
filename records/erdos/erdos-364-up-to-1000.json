@@ -1,0 +1,12 @@
+{
+  "id": "erdos-364-up-to-1000",
+  "kind": "milestone",
+  "parent": "erdos-364",
+  "statement": "Mile_Erdos364_UpTo1000",
+  "difficulty": 300,
+  "title_en": "Check in Lean: no three consecutive powerful numbers start below 1000",
+  "title_zh": "用 Lean 检验：1000 以下没有三个连续 powerful 数的起点",
+  "about_en": "Known by computation (far beyond). The task is a Lean proof: for each n, exhibit a prime that divides one of the three exactly once.",
+  "about_zh": "计算已知（远超此范围）。任务是写出 Lean 证明：对每个 n，指出一个恰好整除三者之一一次的素数。",
+  "status": "open"
+}

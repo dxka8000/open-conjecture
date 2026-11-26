@@ -1,6 +1,6 @@
 {
   "slug": "collatz",
-  "order": 1,
+  "order": 2,
   "tier": "legend",
   "name_en": "Collatz conjecture",
   "name_zh": "Collatz 猜想（3n+1）",

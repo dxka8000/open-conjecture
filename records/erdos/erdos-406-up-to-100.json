@@ -1,0 +1,12 @@
+{
+  "id": "erdos-406-up-to-100",
+  "kind": "milestone",
+  "parent": "erdos-406",
+  "statement": "Mile_Erdos406_UpTo100",
+  "difficulty": 300,
+  "title_en": "Check in Lean: 2^n has a digit 2 in base 3 for every n from 9 to 100",
+  "title_zh": "用 Lean 检验：n 从 9 到 100 时，2^n 的三进制含数字 2",
+  "about_en": "Known by computation (Saye checked far beyond). The task is a Lean proof Lean's kernel can check, for example by evaluating the digits.",
+  "about_zh": "计算已知（Saye 早已验证到远超此范围）。任务是写出 Lean 内核能检查的证明，例如直接计算数字。",
+  "status": "open"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "erdos-373",
+  "kind": "summit",
+  "statement": "Summit_Erdos373",
+  "difficulty": 1000,
+  "title_en": "Erdős #373: n! = a₁!a₂!⋯aₖ! with n − 1 > a₁ ≥ ⋯ ≥ aₖ ≥ 2 has only finitely many solutions",
+  "title_zh": "Erdős #373：n! = a₁!a₂!⋯aₖ!（n − 1 > a₁ ≥ ⋯ ≥ aₖ ≥ 2）只有有限个解",
+  "erdos": 373,
+  "pitch_en": "Factorials that factor into factorials: 10! = 6!·7! and 16! = 14!·5!·2! are the only big surprises known.",
+  "pitch_zh": "能拆成阶乘之积的阶乘：10! = 6!·7! 和 16! = 14!·5!·2! 是已知仅有的大惊喜。",
+  "about_en": "Open. Hickerson conjectured the only solutions are 9! = 7!3!3!2!, 10! = 7!6!, 10! = 7!5!3! and 16! = 14!5!2!. Luca proved finiteness assuming the abc conjecture. For two factorials, there is no other solution with n ≤ 10^3000 (Habsieger). Source: erdosproblems.com/373.",
+  "about_zh": "未解决。Hickerson 猜想只有 9! = 7!3!3!2!、10! = 7!6!、10! = 7!5!3!、16! = 14!5!2! 这几个解。Luca 在 abc 猜想成立的前提下证明了有限性。对两个阶乘的情形，n ≤ 10^3000 内没有其他解（Habsieger）。来源：erdosproblems.com/373。",
+  "status": "open"
+}

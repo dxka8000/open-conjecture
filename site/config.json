@@ -14,6 +14,7 @@
     "split_per_step": 10,
     "step_proof": 20,
     "problem_proof": 1000,
+    "milestone_proof": 50,
     "split_bonus": 5,
     "step_weight_factor": 0.6,
     "min_weight": 0.1,

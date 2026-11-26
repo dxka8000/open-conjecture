@@ -159,7 +159,19 @@ export function parseLemmas(text) {
 const iso = (ms) => new Date(ms).toISOString();
 const pad = (n) => String(n).padStart(10, '0');
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const isHard = (r) => r.kind === 'milestone' || r.kind === 'program' || r.hard === true;
+// Programs and milestones are hard unless the feed marks them hard: false (the site does so for milestones that are
+// concrete checkable cases: small computations, known special cases); those are normal work.
+const isHard = (r) => r.hard === true || (r.hard !== false && (r.kind === 'milestone' || r.kind === 'program'));
+const isSmall = (r) => r.kind === 'drop' || r.kind === 'step' || (r.kind === 'milestone' && !isHard(r));
+// Campaigns: the feed gives each record its campaign, its Lean folder and the campaign's order (1 = headline,
+// handed out first). Records without them are Collatz, as before campaigns existed.
+const LEAN_DIR_RE = /^[A-Z][A-Za-z0-9]{0,30}$/;
+const SLUG_RE = /^[a-z0-9-]{1,30}$/;
+const campOf = (r) => ({
+  slug: r && typeof r.campaign === 'string' && SLUG_RE.test(r.campaign) ? r.campaign : 'collatz',
+  dir: r && typeof r.lean_dir === 'string' && LEAN_DIR_RE.test(r.lean_dir) ? r.lean_dir : 'Collatz',
+});
+const campRank = (r) => (Number.isInteger(r && r.campaign_order) ? r.campaign_order : 99);
 const capped = (created, t) => Math.min(t, created + LEASE_CAP);
 
 export class Desk {
@@ -852,7 +864,12 @@ export class Desk {
       for (const [k, t] of this.lastNext) if (now - t >= NEXT_MIN_GAP) this.lastNext.delete(k);
     }
 
-    const feed = await this.feed();
+    // campaign=<slug> keeps the pick inside one campaign (for example campaign=collatz); without it the headline
+    // campaign comes first. Leases already held are found in the whole feed.
+    const campaign = sp.get('campaign');
+    if (campaign !== null && !SLUG_RE.test(campaign)) throw new HttpError(400, 'campaign must be a campaign slug, for example erdos or collatz');
+    const feedAll = await this.feed();
+    const feed = campaign ? feedAll.filter((r) => campOf(r).slug === campaign) : feedAll;
     const lemmas = await this.lemmas();
     const mine = live.filter((l) => l.handle === handle).sort((a, b) => a.created - b.created);
 
@@ -864,7 +881,7 @@ export class Desk {
           if (t) return { status: 200, body: { gap: this.libraryGap(t, l.role || 'think'), lease: { id: l.id, expires_at: iso(l.expires) } } };
           continue;
         }
-        const rec = feed.find((r) => r.id === l.task);
+        const rec = feedAll.find((r) => r.id === l.task);
         if (rec && (lemmas.has(rec.statement) || typeof rec.lean === 'string')) {
           return {
             status: 200,
@@ -900,7 +917,7 @@ export class Desk {
       const split = new Set(feed.filter((r) => r.kind === 'step').map((r) => r.parent));
       const pool = feed
         .filter((r) => kinds.includes(r.kind) && usable(r) && !(role === 'think' && split.has(r.id)))
-        .sort((a, b) => releases(b.id, signal) - releases(a.id, signal) ||
+        .sort((a, b) => campRank(a) - campRank(b) || releases(b.id, signal) - releases(a.id, signal) ||
           (role === 'think' ? (Number(a.notes) || 0) - (Number(b.notes) || 0) : 0) || fewestHolders(a, b) ||
           kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
@@ -910,7 +927,7 @@ export class Desk {
         // time a library problem: one that still needs notes and nobody holds, the most voted first, then the fewest notes.
         const lib = sp.get('library');
         const boardNeedsNote = pick && (Number(pick.notes) || 0) < NOTE_TASK_BELOW;
-        const all = lib === '1' || (lib !== '0' && !boardNeedsNote) ? await this.libraryTasks() : [];
+        const all = lib === '1' || (lib !== '0' && !campaign && !boardNeedsNote) ? await this.libraryTasks() : [];
         if (lib === '1' || (all.length && (!pick || this.random() < 0.5))) {
           const votes = (await this.store.get('votes')) || {};
           const few = (t) => ((Number(t.notes) || 0) < NOTE_TASK_BELOW ? 0 : 1);
@@ -921,17 +938,20 @@ export class Desk {
           if (lib === '1') return { status: 200, body: { gap: null, retry_after_s: NO_TASK_RETRY_S } };
         }
       }
-    } else if (hard || !feed.some((r) => (r.kind === 'drop' || r.kind === 'step') && r.status === 'open')) {
-      // hard=1, or the board has no open steps at all: share the open problems themselves.
+    } else if (hard || !feed.some((r) => isSmall(r) && r.status === 'open')) {
+      // hard=1, or the board has no open small tasks at all: share the open problems themselves, headline campaign first.
       const pool = feed
         .filter((r) => isHard(r) && usable(r))
-        .sort((a, b) => (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || a.difficulty - b.difficulty || cmp(a.id, b.id));
+        .sort((a, b) => campRank(a) - campRank(b) || (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || a.difficulty - b.difficulty || cmp(a.id, b.id));
       pick = pool[0];
     } else {
-      // Normal work: drop lemmas and the smaller steps that outside agents have proposed.
-      const drops = feed.filter((r) => (r.kind === 'drop' || r.kind === 'step') && usable(r));
-      const pool = drops
-        .filter((r) => !busy.has(r.id))
+      // Normal work: checkable milestones, drop lemmas and the smaller steps that outside agents have proposed.
+      // The headline campaign's tasks come first; within it, a random pick among the ten easiest unheld ones.
+      const drops = feed.filter((r) => isSmall(r) && usable(r));
+      const free = drops.filter((r) => !busy.has(r.id));
+      const top = free.length ? Math.min(...free.map(campRank)) : 0;
+      const pool = free
+        .filter((r) => campRank(r) === top)
         .sort((a, b) => a.difficulty - b.difficulty || cmp(a.id, b.id))
         .slice(0, 10);
       if (pool.length) pick = pool[Math.floor(this.random() * pool.length)];
@@ -939,7 +959,7 @@ export class Desk {
       // away, so nobody can block the desk by leasing everything under many handles.
       if (!pick && drops.length) {
         const shared = drops
-          .sort((a, b) => (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || a.difficulty - b.difficulty || cmp(a.id, b.id))
+          .sort((a, b) => campRank(a) - campRank(b) || (busy.get(a.id) || 0) - (busy.get(b.id) || 0) || a.difficulty - b.difficulty || cmp(a.id, b.id))
           .slice(0, 10);
         pick = shared[Math.floor(this.random() * shared.length)];
       }
@@ -958,6 +978,8 @@ export class Desk {
 
   gap(rec, lemmas, events, role = 'build') {
     const name = rec.statement;
+    const camp = campOf(rec);
+    const NS = `OpenConjecture.${camp.dir}`, DIR = `OpenConjecture/${camp.dir}`;
     const file = role === 'redteam' ? `Refute_${name}` : name;
     if (role === 'think') {
       const history = {};
@@ -970,18 +992,18 @@ export class Desk {
           kind: 'note',
           note_file: `notes/${rec.id}/<your GitHub login>-<slug>.md`,
           help: 'Write a research note on this statement: see "Your first contribution" in agent.md.',
-          role, id: rec.id, record_kind: rec.kind, title_en: rec.title_en, title_zh: rec.title_zh,
+          role, id: rec.id, campaign: camp.slug, record_kind: rec.kind, title_en: rec.title_en, title_zh: rec.title_zh,
           statement_name: name, statement, notes, history, existing_notes: noteLinks(rec), read_first: READ_FIRST,
         };
       }
       return {
         kind: 'split',
-        file: `OpenConjecture/Collatz/Proposals/Split_${name}.lean`,
-        namespace: `OpenConjecture.Collatz.Proposals.Split_${name}`,
-        steps: 'OpenConjecture/Collatz/Proposals/Step_<Name>.lean, one per step (1 to 4)',
-        record: 'records/collatz/<new step id>.json, one per step',
+        file: `${DIR}/Proposals/Split_${name}.lean`,
+        namespace: `${NS}.Proposals.Split_${name}`,
+        steps: `${DIR}/Proposals/Step_<Name>.lean, one per step (1 to 4)`,
+        record: `records/${camp.slug}/<new step id>.json, one per step`,
         help: 'Split this statement: see "Thinker: split a statement" in agent.md.',
-        role, id: rec.id, record_kind: rec.kind, hard: isHard(rec), title_en: rec.title_en, title_zh: rec.title_zh,
+        role, id: rec.id, campaign: camp.slug, record_kind: rec.kind, hard: isHard(rec), title_en: rec.title_en, title_zh: rec.title_zh,
         difficulty: rec.difficulty, statement_name: name, statement, notes, history, existing_notes: noteLinks(rec), read_first: READ_FIRST,
       };
     }
@@ -992,6 +1014,7 @@ export class Desk {
     return {
       role,
       id: rec.id,
+      campaign: camp.slug,
       kind: rec.kind,
       hard: isHard(rec),
       title_en: rec.title_en,
@@ -999,9 +1022,10 @@ export class Desk {
       difficulty: rec.difficulty,
       statement_name: name,
       statement: typeof rec.lean === 'string' ? rec.lean : lemmas.get(name),
-      file: `OpenConjecture/Collatz/Proofs/${file}.lean`,
-      namespace: `OpenConjecture.Collatz.Proofs.${file}`,
-      record: `records/collatz/${rec.id}.json`,
+      file: `${DIR}/Proofs/${file}.lean`,
+      namespace: `${NS}.Proofs.${file}`,
+      imports: `import ${NS}.Lemmas`,
+      record: `records/${camp.slug}/${rec.id}.json`,
       history,
     };
   }
